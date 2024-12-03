@@ -2,11 +2,13 @@
 	import { SITE_URL } from '$lib/constants'
 
 	let { children } = $props()
+
+	const TITLE = 'svelte-llm - Svelte 5 and SvelteKit Developer documentation in an LLM-ready format'
 </script>
 
 <svelte:head>
-	<title>svelte-llm - Svelte 5 and SvelteKit Developer documentation in an LLM-ready format</title>
-	<meta property="og:title" content="Your Page Title" />
+	<title>{TITLE}</title>
+	<meta property="og:title" content={TITLE} />
 	<meta property="og:type" content="website" />
 	<meta property="og:url" content={SITE_URL} />
 	<meta property="og:image" content="{SITE_URL}/og.jpg" />
