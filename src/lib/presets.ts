@@ -21,7 +21,7 @@ export type PresetConfig = {
 }
 
 const SVELTE_5_PROMPT =
-	'Always use Svelte 5 runes and Svelte 5 syntax. Runes do not need to be imported, they are globals.'
+	'Always use Svelte 5 runes and Svelte 5 syntax. Runes do not need to be imported, they are globals. $state() runes are always declared using `let`, never with `const`.'
 
 export const presets: Record<string, PresetConfig> = {
 	'svelte-complete': {

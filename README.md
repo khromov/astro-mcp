@@ -2,6 +2,7 @@ This is a fork of llmctx with improved Svelte presets, deployed at [svelte-llm.k
 
 # TODO
 
+- [ ] Small/Medium preset: $derived.by and sub-runes are missing from tutorial and need to be added
 - [ ] Add Svelte 4 legacy preset
 - [ ] Add SvelteKit legacy preset
 - [ ] Add snapshot tests to validate minification
