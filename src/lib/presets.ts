@@ -20,7 +20,8 @@ export type PresetConfig = {
 	minimize?: MinimizeOptions
 }
 
-const SVELTE_5_PROMPT = 'Always use Svelte 5 runes and Svelte 5 syntax. Runes do not need to be imported, they are globals.'; 
+const SVELTE_5_PROMPT =
+	'Always use Svelte 5 runes and Svelte 5 syntax. Runes do not need to be imported, they are globals.'
 
 export const presets: Record<string, PresetConfig> = {
 	'svelte-complete': {
@@ -32,8 +33,7 @@ export const presets: Record<string, PresetConfig> = {
 			'**/apps/svelte.dev/content/docs/kit/**/*.md',
 			'**/apps/svelte.dev/content/docs/svelte/**/*.md'
 		],
-		ignore: [
-		],
+		ignore: [],
 		prompt: SVELTE_5_PROMPT,
 		minimize: {
 			removeLegacy: true,
@@ -46,7 +46,8 @@ export const presets: Record<string, PresetConfig> = {
 	},
 	'svelte-complete-small': {
 		title: '⭐️ Svelte + SvelteKit (Recommended - Small preset)',
-		description: 'Tutorial content and Svelte + Kit reference docs, excluding legacy, notes and migration docs',
+		description:
+			'Tutorial content and Svelte + Kit reference docs, excluding legacy, notes and migration docs',
 		owner: 'sveltejs',
 		repo: 'svelte.dev',
 		glob: [
@@ -54,8 +55,7 @@ export const presets: Record<string, PresetConfig> = {
 			'**/apps/svelte.dev/content/docs/svelte/98-reference/**/*.md',
 			'**/apps/svelte.dev/content/docs/kit/98-reference/**/*.md'
 		],
-		ignore: [
-		],
+		ignore: [],
 		prompt: SVELTE_5_PROMPT,
 		minimize: {
 			removeLegacy: true,
@@ -71,11 +71,8 @@ export const presets: Record<string, PresetConfig> = {
 		description: 'Tutorial content only',
 		owner: 'sveltejs',
 		repo: 'svelte.dev',
-		glob: [
-			'**/apps/svelte.dev/content/tutorial/**/*.md',
-		],
-		ignore: [
-		],
+		glob: ['**/apps/svelte.dev/content/tutorial/**/*.md'],
+		ignore: [],
 		prompt: SVELTE_5_PROMPT,
 		minimize: {
 			removeLegacy: true,
@@ -94,7 +91,7 @@ export const presets: Record<string, PresetConfig> = {
 		glob: ['**/apps/svelte.dev/content/docs/svelte/**/*.md'],
 		ignore: [],
 		prompt: SVELTE_5_PROMPT,
-		minimize: {},
+		minimize: {}
 	},
 	sveltekit: {
 		title: 'SvelteKit (Full)',

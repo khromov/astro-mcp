@@ -34,6 +34,7 @@ function shouldIncludeFile(filename: string, glob: string, ignore: string[] = []
 	// First check if the file should be ignored
 	const shouldIgnore = ignore.some((pattern) => minimatch(filename, pattern))
 	if (shouldIgnore) {
+		console.log(`❌ Ignored by pattern: ${filename}`)
 		return false
 	}
 
@@ -70,7 +71,11 @@ async function fetchMarkdownFiles({
 
 	// Create a Map to store files for each glob pattern while maintaining order
 	const globResults = new Map<string, string[]>()
-	glob.forEach((pattern) => globResults.set(pattern, []))
+	const filePathsByPattern = new Map<string, string[]>()
+	glob.forEach((pattern) => {
+		globResults.set(pattern, [])
+		filePathsByPattern.set(pattern, [])
+	})
 
 	const extractStream = tarStream.extract()
 
@@ -107,9 +112,11 @@ async function fetchMarkdownFiles({
 						files.push(contentWithHeader)
 						globResults.set(pattern, files)
 
-						if (dev) {
-							// console.log(`Processed file: ${header.name}`)
-						}
+						// Store the file path for logging
+						const paths = filePathsByPattern.get(pattern) || []
+						paths.push(cleanPath)
+						filePathsByPattern.set(pattern, paths)
+
 						next()
 					})
 					return // Exit after first match
@@ -151,6 +158,21 @@ async function fetchMarkdownFiles({
 	if (dev) {
 		console.log(`Total files processed: ${processedFiles}`)
 		console.log(`Files matching glob: ${matchedFiles}`)
+		console.log('\nFinal file order:')
+
+		// Log files in their final order
+		glob.forEach((pattern, index) => {
+			const paths = filePathsByPattern.get(pattern) || []
+			const sortedPaths = sortFilesWithinGroup(paths.map((p) => `## ${p}`)).map((p) =>
+				p.replace('## ', '')
+			)
+			if (sortedPaths.length > 0) {
+				console.log(`\nGlob pattern ${index + 1}: ${pattern}`)
+				sortedPaths.forEach((path, i) => {
+					console.log(`  ${i + 1}. ${path}`)
+				})
+			}
+		})
 	}
 
 	// Combine results in the order of glob patterns
