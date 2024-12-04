@@ -25,7 +25,7 @@ const SVELTE_5_PROMPT =
 
 export const presets: Record<string, PresetConfig> = {
 	'svelte-complete-new': {
-		title: '⭐️ NEW Svelte + SvelteKit (Recommended preset)',
+		title: '⭐️ NEW Svelte (Recommended preset)',
 		description: '',
 		owner: 'sveltejs',
 		repo: 'svelte.dev',
@@ -34,7 +34,7 @@ export const presets: Record<string, PresetConfig> = {
 			//'**/apps/svelte.dev/content/docs/kit/**/*.md'
 		],
 		ignore: [
-			//'**/apps/svelte.dev/content/docs/svelte/07-misc/02-testing.md',
+
 			'**/apps/svelte.dev/content/docs/svelte/07-misc/04-custom-elements.md',
 			'**/apps/svelte.dev/content/docs/svelte/07-misc/06-v4-migration-guide.md',
 			'**/apps/svelte.dev/content/docs/svelte/07-misc/07-v5-migration-guide.md',
@@ -47,6 +47,28 @@ export const presets: Record<string, PresetConfig> = {
 			'**/apps/svelte.dev/content/docs/svelte/98-reference/30-runtime-warnings.md',
 			'**/apps/svelte.dev/content/docs/svelte/98-reference/30-compiler-errors.md',
 			'**/apps/svelte.dev/content/docs/svelte/98-reference/30-compiler-warnings.md',
+			'**/xx-*.md'
+		],
+		prompt: SVELTE_5_PROMPT,
+		minimize: {
+			removeLegacy: true,
+			removePlaygroundLinks: true,
+			removeNoteBlocks: true,
+			removeDetailsBlocks: true,
+			removeHtmlComments: true,
+			normalizeWhitespace: true
+		}
+	},
+	'sveltekit-complete-new': {
+		title: '⭐️ NEW SvelteKit (Recommended preset)',
+		description: '',
+		owner: 'sveltejs',
+		repo: 'svelte.dev',
+		glob: [
+			'**/apps/svelte.dev/content/docs/kit/**/*.md',
+		],
+		ignore: [
+			'**/apps/svelte.dev/content/docs/svelte/99-legacy/**/*.md',
 			'**/xx-*.md'
 		],
 		prompt: SVELTE_5_PROMPT,
