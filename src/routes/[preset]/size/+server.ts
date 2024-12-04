@@ -20,8 +20,8 @@ export const GET: RequestHandler = async ({ params }) => {
             return sizeKb
         }, {
             // Cache size calculations for longer since they change less frequently
-            minTimeToStale: 24 * 60 * 60 * 1000, // 24 hours
-            maxTimeToLive: 7 * 24 * 60 * 60 * 1000 // 7 days
+            minTimeToStale: 0, // 24 hours
+            maxTimeToLive: 1 // 7 days
         })
 
         // Ensure the response is also strictly an integer

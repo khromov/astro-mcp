@@ -24,16 +24,31 @@ const SVELTE_5_PROMPT =
 	'Always use Svelte 5 runes and Svelte 5 syntax. Runes do not need to be imported, they are globals. $state() runes are always declared using `let`, never with `const`. When passing a function to $derived, you must always use $derived.by().'
 
 export const presets: Record<string, PresetConfig> = {
-	'svelte-complete': {
-		title: '⭐️ Svelte + SvelteKit (Recommended - Large preset)',
-		description: 'Complete Svelte + SvelteKit docs excluding legacy, notes and migration docs',
+	'svelte-complete-new': {
+		title: '⭐️ NEW Svelte + SvelteKit (Recommended preset)',
+		description: '',
 		owner: 'sveltejs',
 		repo: 'svelte.dev',
 		glob: [
 			'**/apps/svelte.dev/content/docs/svelte/**/*.md',
-			'**/apps/svelte.dev/content/docs/kit/**/*.md'
+			//'**/apps/svelte.dev/content/docs/kit/**/*.md'
 		],
-		ignore: [],
+		ignore: [
+			//'**/apps/svelte.dev/content/docs/svelte/07-misc/02-testing.md',
+			'**/apps/svelte.dev/content/docs/svelte/07-misc/04-custom-elements.md',
+			'**/apps/svelte.dev/content/docs/svelte/07-misc/06-v4-migration-guide.md',
+			'**/apps/svelte.dev/content/docs/svelte/07-misc/07-v5-migration-guide.md',
+			'**/apps/svelte.dev/content/docs/svelte/07-misc/99-faq.md',
+			'**/apps/svelte.dev/content/docs/svelte/07-misc/xx-reactivity-indepth.md',
+			'**/apps/svelte.dev/content/docs/svelte/98-reference/21-svelte-legacy.md',
+			'**/apps/svelte.dev/content/docs/svelte/99-legacy/**/*.md',
+			//TODO
+			'**/apps/svelte.dev/content/docs/svelte/98-reference/30-runtime-errors.md',
+			'**/apps/svelte.dev/content/docs/svelte/98-reference/30-runtime-warnings.md',
+			'**/apps/svelte.dev/content/docs/svelte/98-reference/30-compiler-errors.md',
+			'**/apps/svelte.dev/content/docs/svelte/98-reference/30-compiler-warnings.md',
+			'**/xx-*.md'
+		],
 		prompt: SVELTE_5_PROMPT,
 		minimize: {
 			removeLegacy: true,
@@ -44,74 +59,4 @@ export const presets: Record<string, PresetConfig> = {
 			normalizeWhitespace: true
 		}
 	},
-	'svelte-complete-small': {
-		title: '⭐️ Svelte + SvelteKit (Recommended - Small preset)',
-		description:
-			'Tutorial content and Svelte + Kit reference docs, excluding legacy, notes and migration docs',
-		owner: 'sveltejs',
-		repo: 'svelte.dev',
-		glob: [
-			'**/apps/svelte.dev/content/tutorial/**/*.md',
-			'**/apps/svelte.dev/content/docs/svelte/02-runes/**/*.md',
-			'**/apps/svelte.dev/content/docs/svelte/98-reference/**/*.md',
-			'**/apps/svelte.dev/content/docs/kit/98-reference/**/*.md'
-		],
-		ignore: [],
-		prompt: SVELTE_5_PROMPT,
-		minimize: {
-			removeLegacy: true,
-			removePlaygroundLinks: true,
-			removeNoteBlocks: true,
-			removeDetailsBlocks: true,
-			removeHtmlComments: true,
-			normalizeWhitespace: true
-		}
-	},
-	'svelte-complete-tiny': {
-		title: '⭐️ Svelte + SvelteKit (Recommended - Tiny preset)',
-		description: 'Tutorial content only',
-		owner: 'sveltejs',
-		repo: 'svelte.dev',
-		glob: [
-			'**/apps/svelte.dev/content/tutorial/**/*.md',
-			'**/apps/svelte.dev/content/docs/svelte/02-runes/**/*.md'
-		],
-		ignore: [],
-		prompt: SVELTE_5_PROMPT,
-		minimize: {
-			removeLegacy: true,
-			removePlaygroundLinks: true,
-			removeNoteBlocks: true,
-			removeDetailsBlocks: true,
-			removeHtmlComments: true,
-			normalizeWhitespace: true
-		}
-	},
-	svelte: {
-		title: 'Svelte (Full)',
-		description: 'Complete documentation including legacy and reference',
-		owner: 'sveltejs',
-		repo: 'svelte.dev',
-		glob: ['**/apps/svelte.dev/content/docs/svelte/**/*.md'],
-		ignore: [],
-		prompt: SVELTE_5_PROMPT,
-		minimize: {}
-	},
-	sveltekit: {
-		title: 'SvelteKit (Full)',
-		description: 'Complete documentation including legacy and reference',
-		owner: 'sveltejs',
-		repo: 'svelte.dev',
-		prompt: SVELTE_5_PROMPT,
-		glob: ['**/apps/svelte.dev/content/docs/kit/**/*.md'],
-		minimize: {}
-	},
-	'svelte-cli': {
-		title: 'Svelte CLI - npx sv',
-		owner: 'sveltejs',
-		repo: 'svelte.dev',
-		glob: ['**/apps/svelte.dev/content/docs/cli/**/*.md'],
-		ignore: [],
-		minimize: {}
-	}
 }
