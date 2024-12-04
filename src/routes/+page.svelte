@@ -44,18 +44,12 @@
 			Documentation is automatically fetched from the official documentation source on GitHub and
 			updated hourly.
 		</p>
-		<p>
-			<em
-				>"Small" versions have reduced file size. Some less important documentation content is
-				omitted.</em
-			>
-		</p>
 	</article>
 
 	<section>
 		<h3>Single preset:</h3>
 		<p>
-			<code>{SITE_URL}/</code><code>[preset]</code> (<a href="/svelte">Link</a>)
+			<code>{SITE_URL}/</code><code>[preset]</code> (<a href="/svelte-complete-medium">Link</a>)
 		</p>
 		<h3>All presets merged:</h3>
 		<p>
