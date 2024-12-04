@@ -21,7 +21,7 @@ export type PresetConfig = {
 }
 
 const SVELTE_5_PROMPT =
-	'Always use Svelte 5 runes and Svelte 5 syntax. Runes do not need to be imported, they are globals. $state() runes are always declared using `let`, never with `const`.'
+	'Always use Svelte 5 runes and Svelte 5 syntax. Runes do not need to be imported, they are globals. $state() runes are always declared using `let`, never with `const`. When passing a function to $derived, you must always use $derived.by().'
 
 export const presets: Record<string, PresetConfig> = {
 	'svelte-complete': {
@@ -30,8 +30,8 @@ export const presets: Record<string, PresetConfig> = {
 		owner: 'sveltejs',
 		repo: 'svelte.dev',
 		glob: [
-			'**/apps/svelte.dev/content/docs/kit/**/*.md',
-			'**/apps/svelte.dev/content/docs/svelte/**/*.md'
+			'**/apps/svelte.dev/content/docs/svelte/**/*.md',
+			'**/apps/svelte.dev/content/docs/kit/**/*.md'
 		],
 		ignore: [],
 		prompt: SVELTE_5_PROMPT,
@@ -52,6 +52,7 @@ export const presets: Record<string, PresetConfig> = {
 		repo: 'svelte.dev',
 		glob: [
 			'**/apps/svelte.dev/content/tutorial/**/*.md',
+			'**/apps/svelte.dev/content/docs/svelte/02-runes/**/*.md',
 			'**/apps/svelte.dev/content/docs/svelte/98-reference/**/*.md',
 			'**/apps/svelte.dev/content/docs/kit/98-reference/**/*.md'
 		],
@@ -71,7 +72,10 @@ export const presets: Record<string, PresetConfig> = {
 		description: 'Tutorial content only',
 		owner: 'sveltejs',
 		repo: 'svelte.dev',
-		glob: ['**/apps/svelte.dev/content/tutorial/**/*.md'],
+		glob: [
+			'**/apps/svelte.dev/content/tutorial/**/*.md',
+			'**/apps/svelte.dev/content/docs/svelte/02-runes/**/*.md'
+		],
 		ignore: [],
 		prompt: SVELTE_5_PROMPT,
 		minimize: {
