@@ -53,12 +53,18 @@ export const GET: RequestHandler = async ({ params }) => {
 			console.log(`Final combined response length: ${response.length}`)
 		}
 
+		const headers: HeadersInit = {
+			'Content-Type': 'text/plain; charset=utf-8'
+		}
+
+		// Serve as a download if not in development mode
+		if (!dev) {
+			headers['Content-Disposition'] = `attachment; filename="${presetNames.join('-')}.txt"`
+		}
+
 		return new Response(response, {
 			status: 200,
-			headers: {
-				'Content-Type': 'text/plain; charset=utf-8',
-				'Content-Disposition': `attachment; filename="${presetNames.join('-')}.txt"`
-			}
+			headers
 		})
 	} catch (e) {
 		console.error(`Error fetching documentation for presets [${presetNames.join(', ')}]:`, e)
