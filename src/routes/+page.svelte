@@ -57,13 +57,16 @@
 				href="/svelte,sveltekit,svelte-cli">Link</a
 			>)
 		</p>
-		<h2>LLM-friendly documentation presets</h2>
+		<h2>Presets</h2>
 		<ul>
 			{#each presets as preset}
 				<PresetListItem {...preset} />
 			{/each}
+		</ul>
 
-			<li>Svelte 4 (Legacy, Coming soon)</li>
+		<h2>Legacy</h2>
+		<ul>
+			<li><a target="_blank" href="https://v4.svelte.dev/content.json">Svelte 4 Legacy + SvelteKit</a></li>
 		</ul>
 	</section>
 
