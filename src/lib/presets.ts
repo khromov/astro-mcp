@@ -23,7 +23,8 @@ export type PresetConfig = {
 const SVELTE_5_PROMPT =
 	'Always use Svelte 5 runes and Svelte 5 syntax. Runes do not need to be imported, they are globals. $state() runes are always declared using `let`, never with `const`. When passing a function to $derived, you must always use $derived.by(() => ...).'
 
-export const presets: Record<string, PresetConfig> = {
+
+export const combinedPresets: Record<string, PresetConfig> = {
 	'svelte-complete-medium': {
 		title: '⭐️ Svelte + SvelteKit (Recommended - Medium preset)',
 		description:
@@ -89,7 +90,6 @@ export const presets: Record<string, PresetConfig> = {
 			normalizeWhitespace: true
 		}
 	},
-
 	'svelte-complete-tiny': {
 		title: 'Svelte + SvelteKit (Tiny preset)',
 		description: 'Tutorial content only',
@@ -110,6 +110,9 @@ export const presets: Record<string, PresetConfig> = {
 			normalizeWhitespace: true
 		}
 	},
+};
+
+export const sveltePresets: Record<string, PresetConfig> = {
 	svelte: {
 		title: 'Svelte (Full)',
 		description: 'Complete documentation including legacy and reference',
@@ -120,6 +123,9 @@ export const presets: Record<string, PresetConfig> = {
 		prompt: SVELTE_5_PROMPT,
 		minimize: {}
 	},
+}
+
+export const svelteKitPresets: Record<string, PresetConfig> = {
 	sveltekit: {
 		title: 'SvelteKit (Full)',
 		description: 'Complete documentation including legacy and reference',
@@ -129,6 +135,9 @@ export const presets: Record<string, PresetConfig> = {
 		glob: ['**/apps/svelte.dev/content/docs/kit/**/*.md'],
 		minimize: {}
 	},
+}
+
+export const otherPresets: Record<string, PresetConfig> = {
 	'svelte-cli': {
 		title: 'Svelte CLI - npx sv',
 		owner: 'sveltejs',
@@ -138,3 +147,19 @@ export const presets: Record<string, PresetConfig> = {
 		minimize: {}
 	}
 }
+
+export const presets = {
+	...combinedPresets,
+	...sveltePresets,
+	...svelteKitPresets,
+	...otherPresets
+};
+
+export function transformAndSortPresets(presetsObject) {
+	return Object.entries(presetsObject)
+	  .map(([key, value]) => ({
+		key: key.toLowerCase(),
+		...value
+	  }))
+	  .sort();
+  }

@@ -1,14 +1,12 @@
 <script lang="ts">
-	import { presets as _presets } from '$lib/presets'
+	import { combinedPresets, sveltePresets, svelteKitPresets, otherPresets, transformAndSortPresets } from '$lib/presets'
 	import PresetListItem from '$lib/components/PresetListItem.svelte'
 	import { SITE_URL } from '$lib/constants'
 
-	let presets = Object.entries(_presets)
-		.map(([key, value]) => ({
-			key: key.toLowerCase(),
-			...value
-		}))
-		.sort()
+	const combinedPresetsFormatted = transformAndSortPresets(combinedPresets)
+	const sveltePresetsFormatted = transformAndSortPresets(sveltePresets)
+	const svelteKitPresetsFormatted = transformAndSortPresets(svelteKitPresets)
+	const otherPresetsFormatted = transformAndSortPresets(otherPresets)
 
 	const instructions = [
 		{
@@ -51,15 +49,39 @@
 		<p>
 			<code>{SITE_URL}/</code><code>[preset]</code> (<a href="/svelte-complete-medium">Link</a>)
 		</p>
-		<h3>All presets merged:</h3>
+		<h3>Multiple presets:</h3>
 		<p>
 			<code>{SITE_URL}/</code><code>svelte,sveltekit,svelte-cli</code> (<a
 				href="/svelte,sveltekit,svelte-cli">Link</a
 			>)
 		</p>
-		<h2>Presets</h2>
+		<h2>Combined presets</h2>
+		<em>
+			Hand-picked combinations in a variety of sizes. 
+		</em>
 		<ul>
-			{#each presets as preset}
+			{#each combinedPresetsFormatted as preset}
+				<PresetListItem {...preset} />
+			{/each}
+		</ul>
+
+		<h2>Svelte</h2>
+		<ul>
+			{#each sveltePresetsFormatted as preset}
+				<PresetListItem {...preset} />
+			{/each}
+		</ul>
+
+		<h2>SvelteKit</h2>
+		<ul>
+			{#each svelteKitPresetsFormatted as preset}
+				<PresetListItem {...preset} />
+			{/each}
+		</ul>
+
+		<h2>Other</h2>
+		<ul>
+			{#each otherPresetsFormatted as preset}
 				<PresetListItem {...preset} />
 			{/each}
 		</ul>
