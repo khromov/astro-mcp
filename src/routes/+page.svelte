@@ -57,7 +57,7 @@
 		</p>
 		<h2>Combined presets</h2>
 		<em>
-			Hand-picked combinations in a variety of sizes. 
+			Hand-picked combinations of the Svelte 5 + SvelteKit docs in a variety of sizes to fit different LLMs.
 		</em>
 		<ul>
 			{#each combinedPresetsFormatted as preset}
