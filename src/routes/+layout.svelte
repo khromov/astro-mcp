@@ -40,6 +40,15 @@
 </div>
 
 <style>
+	:global(body) {
+		line-height: 1.4;
+		font-size: 16px;
+		padding: 0 10px;
+		margin: 50px auto;
+		max-width: 650px;
+		background-color: white;
+	}
+
 	.layout {
 		position: relative;
 		min-height: 100vh;
