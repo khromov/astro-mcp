@@ -65,7 +65,7 @@
 			{/each}
 		</ul>
 
-		<h2>Svelte</h2>
+		<h2>Svelte 5</h2>
 		<ul>
 			{#each sveltePresetsFormatted as preset}
 				<PresetListItem {...preset} />
