@@ -108,7 +108,31 @@ export const combinedPresets: Record<string, PresetConfig> = {
 			removeHtmlComments: true,
 			normalizeWhitespace: true
 		}
-	}
+	},
+	'svelte-migration': {
+		title: 'Svelte + SvelteKit migration guide',
+		description:
+			'Only Svelte + SvelteKit docs for migrating ',
+		owner: 'sveltejs',
+		repo: 'svelte.dev',
+		glob: [
+			// Svelte
+			'**/apps/svelte.dev/content/docs/svelte/07-misc/07-v5-migration-guide.md',
+			// SvelteKit
+			'**/apps/svelte.dev/content/docs/kit/60-appendix/30-migrating-to-sveltekit-2.md'
+		],
+		ignore: [
+		],
+		prompt: SVELTE_5_PROMPT,
+		minimize: {
+			removeLegacy: true,
+			removePlaygroundLinks: true,
+			removeNoteBlocks: true,
+			removeDetailsBlocks: true,
+			removeHtmlComments: true,
+			normalizeWhitespace: true
+		}
+	},	
 }
 
 export const sveltePresets: Record<string, PresetConfig> = {
