@@ -110,7 +110,7 @@ export const combinedPresets: Record<string, PresetConfig> = {
 		}
 	},
 	'svelte-migration': {
-		title: '⭐️ Svelte + SvelteKit migration guide',
+		title: 'Svelte + SvelteKit migration guide',
 		description:
 			'Only Svelte + SvelteKit docs for migrating ',
 		owner: 'sveltejs',
