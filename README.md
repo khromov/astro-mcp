@@ -1,13 +1,12 @@
 This is a fork of llmctx with improved Svelte presets, deployed at [svelte-llm.khromov.se](https://svelte-llm.khromov.se).
 
-# TODO
-
-- [x] Small/Medium preset: $derived.by and sub-runes are missing from tutorial and need to be added
-- [x] Add Svelte 4 legacy preset
-- [x] Add SvelteKit legacy preset
-- [ ] Add snapshot tests to validate minification
-
 OG image from https://dynamic-og-image-generator.vercel.app/
+
+# Setup
+
+* Create a `.env` file with the content `GITHUB_TOKEN=`
+* Create [a Classic GitHub token](https://github.com/settings/tokens). It must have `public_repo` permissions.
+* Enter this in the .env file.
 
 # llmctx
 
