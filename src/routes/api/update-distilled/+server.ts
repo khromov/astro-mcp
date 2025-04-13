@@ -1,29 +1,15 @@
 import { error, json } from '@sveltejs/kit'
 import { env } from '$env/dynamic/private'
 import { dev } from '$app/environment'
-import { writeFile, mkdir } from 'fs/promises'
-import { dirname } from 'path'
 import { presets } from '$lib/presets'
-import { fetchMarkdownFiles } from '$lib/fetchMarkdown'
-import { minimizeContent } from '$lib/fetchMarkdown' // Import the minimizeContent function
+import { fetchMarkdownFiles, minimizeContent } from '$lib/fetchMarkdown'
 import type { RequestHandler } from './$types'
 import {
 	AnthropicProvider,
 	type AnthropicBatchRequest,
 	type AnthropicBatchResult
 } from '$lib/anthropic'
-
-// Ensure output directory exists
-async function ensureDir(path: string) {
-	try {
-		await mkdir(dirname(path), { recursive: true })
-	} catch (e) {
-		// Ignore if directory already exists
-		if (dev && !(e instanceof Error && 'code' in e && e.code === 'EEXIST')) {
-			console.error(`Error creating directory: ${e}`)
-		}
-	}
-}
+import { writeAtomicFile } from '$lib/fileCache'
 
 const DISTILLATION_PROMPT = `
 You are an expert in web development, specifically Svelte 5 and SvelteKit. Your task is to condense and distill the Svelte documentation into a concise format while preserving the most important information.
@@ -223,7 +209,7 @@ export const GET: RequestHandler = async ({ url }) => {
 
 					return {
 						index,
-						path: fileObj.path,
+						path: typeof fileObj === 'string' ? 'unknown' : fileObj.path,
 						content: '',
 						error: 'Failed or no message'
 					}
@@ -239,7 +225,7 @@ export const GET: RequestHandler = async ({ url }) => {
 
 				return {
 					index,
-					path: fileObj.path,
+					path: typeof fileObj === 'string' ? 'unknown' : fileObj.path,
 					content: outputContent
 				}
 			})
@@ -270,13 +256,11 @@ export const GET: RequestHandler = async ({ url }) => {
 		const datedFilename = `outputs/${distilledPreset.distilledFilenameBase}-${dateStr}.md`
 		const debugFilename = `outputs/${distilledPreset.distilledFilenameBase}-debug.json`
 
-		// Ensure directories exist
-		await ensureDir(latestFilename)
-
-		// Write files
-		await writeFile(latestFilename, finalContent)
-		await writeFile(datedFilename, finalContent)
-		await writeFile(debugFilename, JSON.stringify(debugData, null, 2))
+		// Write files using writeAtomicFile from fileCache.ts
+		// Note: writeAtomicFile handles directory creation, so we don't need separate ensureDir calls
+		await writeAtomicFile(latestFilename, finalContent)
+		await writeAtomicFile(datedFilename, finalContent)
+		await writeAtomicFile(debugFilename, JSON.stringify(debugData, null, 2))
 
 		return json({
 			success: true,
