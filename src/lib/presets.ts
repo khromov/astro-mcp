@@ -28,8 +28,54 @@ const SVELTE_5_PROMPT =
 	'Always use Svelte 5 runes and Svelte 5 syntax. Runes do not need to be imported, they are globals. $state() runes are always declared using `let`, never with `const`. When passing a function to $derived, you must always use $derived.by(() => ...). Error boundaries can only catch errors during component rendering and at the top level of an $effect inside the error boundary. Error boundaries do not catch errors in onclick or other event handlers.'
 
 export const combinedPresets: Record<string, PresetConfig> = {
+	'svelte-complete-distilled': {
+		title: '🔮 Svelte + SvelteKit (Recommended - LLM Distilled)',
+		description: 'AI-condensed version of the docs focused on code examples and key concepts',
+		owner: 'sveltejs',
+		repo: 'svelte.dev',
+		glob: [
+			// Svelte
+			'**/apps/svelte.dev/content/docs/svelte/**/*.md',
+			// SvelteKit
+			'**/apps/svelte.dev/content/docs/kit/**/*.md'
+		],
+		minimize: {
+			normalizeWhitespace: false,
+			removeLegacy: true,
+			removePlaygroundLinks: true,
+			removePrettierIgnore: true,
+			removeNoteBlocks: false,
+			removeDetailsBlocks: false,
+			removeHtmlComments: true,
+			removeDiffMarkers: true
+		},
+		ignore: [
+			// Svelte ignores (same as medium preset)
+			'**/apps/svelte.dev/content/docs/svelte/07-misc/04-custom-elements.md',
+			'**/apps/svelte.dev/content/docs/svelte/07-misc/06-v4-migration-guide.md',
+			'**/apps/svelte.dev/content/docs/svelte/07-misc/07-v5-migration-guide.md',
+			'**/apps/svelte.dev/content/docs/svelte/07-misc/99-faq.md',
+			'**/apps/svelte.dev/content/docs/svelte/07-misc/xx-reactivity-indepth.md',
+			'**/apps/svelte.dev/content/docs/svelte/98-reference/21-svelte-legacy.md',
+			'**/apps/svelte.dev/content/docs/svelte/99-legacy/**/*.md',
+			'**/apps/svelte.dev/content/docs/svelte/98-reference/**/*.md',
+			'**/xx-*.md',
+			// SvelteKit ignores (same as medium preset)
+			'**/apps/svelte.dev/content/docs/kit/25-build-and-deploy/*adapter-*.md',
+			'**/apps/svelte.dev/content/docs/kit/25-build-and-deploy/99-writing-adapters.md',
+			'**/apps/svelte.dev/content/docs/kit/30-advanced/70-packaging.md',
+			'**/apps/svelte.dev/content/docs/kit/40-best-practices/05-performance.md',
+			'**/apps/svelte.dev/content/docs/kit/40-best-practices/10-accessibility.md',
+			'**/apps/svelte.dev/content/docs/kit/60-appendix/**/*.md',
+			'**/apps/svelte.dev/content/docs/kit/98-reference/**/*.md',
+			'**/xx-*.md'
+		],
+		prompt: SVELTE_5_PROMPT,
+		distilled: true,
+		distilledFilenameBase: 'svelte-complete-distilled'
+	},
 	'svelte-complete-medium': {
-		title: '⭐️ Svelte + SvelteKit (Recommended - Medium preset)',
+		title: '⭐️ Svelte + SvelteKit (Medium preset)',
 		description:
 			'Complete Svelte + SvelteKit docs excluding certain advanced sections, legacy, notes and migration docs',
 		owner: 'sveltejs',
@@ -134,44 +180,6 @@ export const combinedPresets: Record<string, PresetConfig> = {
 			removeHtmlComments: true,
 			normalizeWhitespace: true
 		}
-	},
-	'svelte-complete-distilled': {
-		title: '🔮 Svelte + SvelteKit (LLM Distilled)',
-		description: 'AI-condensed version of the docs focused on code examples and key concepts',
-		owner: 'sveltejs',
-		repo: 'svelte.dev',
-		glob: [
-			// Svelte
-			'**/apps/svelte.dev/content/docs/svelte/**/*.md',
-			// SvelteKit
-			'**/apps/svelte.dev/content/docs/kit/**/*.md'
-		],
-		ignore: [
-			// Svelte ignores (same as medium preset)
-			'**/apps/svelte.dev/content/docs/svelte/07-misc/04-custom-elements.md',
-			'**/apps/svelte.dev/content/docs/svelte/07-misc/06-v4-migration-guide.md',
-			'**/apps/svelte.dev/content/docs/svelte/07-misc/07-v5-migration-guide.md',
-			'**/apps/svelte.dev/content/docs/svelte/07-misc/99-faq.md',
-			'**/apps/svelte.dev/content/docs/svelte/07-misc/xx-reactivity-indepth.md',
-			'**/apps/svelte.dev/content/docs/svelte/98-reference/21-svelte-legacy.md',
-			'**/apps/svelte.dev/content/docs/svelte/99-legacy/**/*.md',
-			'**/apps/svelte.dev/content/docs/svelte/98-reference/30-runtime-errors.md',
-			'**/apps/svelte.dev/content/docs/svelte/98-reference/30-runtime-warnings.md',
-			'**/apps/svelte.dev/content/docs/svelte/98-reference/30-compiler-errors.md',
-			'**/apps/svelte.dev/content/docs/svelte/98-reference/30-compiler-warnings.md',
-			'**/xx-*.md',
-			// SvelteKit ignores (same as medium preset)
-			'**/apps/svelte.dev/content/docs/kit/25-build-and-deploy/*adapter-*.md',
-			'**/apps/svelte.dev/content/docs/kit/25-build-and-deploy/99-writing-adapters.md',
-			'**/apps/svelte.dev/content/docs/kit/30-advanced/70-packaging.md',
-			'**/apps/svelte.dev/content/docs/kit/40-best-practices/05-performance.md',
-			'**/apps/svelte.dev/content/docs/kit/40-best-practices/10-accessibility.md',
-			'**/apps/svelte.dev/content/docs/kit/60-appendix/**/*.md',
-			'**/xx-*.md'
-		],
-		prompt: SVELTE_5_PROMPT,
-		distilled: true,
-		distilledFilenameBase: 'svelte-complete-distilled'
 	}
 }
 
