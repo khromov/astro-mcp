@@ -25,7 +25,8 @@ async function ensureDir(path: string) {
 }
 
 const DISTILLATION_PROMPT = `
-You are an expert in web development, specifically Svelte 5 and SvelteKit. Your task is to condense the Svelte documentation into a concise format while preserving the most important information.
+You are an expert in web development, specifically Svelte 5 and SvelteKit. Your task is to condense and distill the Svelte documentation into a concise format while preserving the most important information.
+Shorten the text information AS MUCH AS POSSIBLE while covering key concepts.
 
 Focus on:
 1. Code examples with short explanations of how they work
@@ -43,19 +44,20 @@ Remove:
 Keep your output in markdown format. Preserve code blocks with their language annotations.
 Maintain headings but feel free to combine or restructure sections to improve clarity.
 
-Make sure all code examples use Svelte 5 runes syntax ($state, $derived, $effect, etc.) Always use Svelte 5 syntax in your examples.
+Make sure all code examples use Svelte 5 runes syntax ($state, $derived, $effect, etc.)
 
 Keep the following Svelte 5 syntax rules in mind:
+* There is no colon (:) in event modifiers. You MUST use "onclick" instead of "on:click".
 * Runes do not need to be imported, they are globals. 
 * $state() runes are always declared using let, never with const. 
 * When passing a function to $derived, you must always use $derived.by(() => ...). 
 * Error boundaries can only catch errors during component rendering and at the top level of an $effect inside the error boundary.
 * Error boundaries do not catch errors in onclick or other event handlers.
 
-IMPORTANT: All code examples MUST come from the documentation verbatim, do NOT create new code examples.
+IMPORTANT: All code examples MUST come from the documentation verbatim, do NOT create new code examples. Do NOT modify existing code examples.
 IMPORTANT: Because of changes in Svelte 5 syntax, do not include content from your existing knowledge, you may only use knowledge from the documentation to condense.
 
-Here is the documentation you shall condense:
+Here is the documentation you must condense:
 
 `
 
@@ -97,7 +99,7 @@ export const GET: RequestHandler = async ({ url }) => {
 
 		if (dev) {
 			// DEBUG: Limit to first 10 normal files for debugging
-			filesToProcess = filesToProcess.slice(0, 10)
+			//filesToProcess = filesToProcess.slice(0, 10)
 			console.log(
 				`Using ${filesToProcess.length} files for LLM distillation (limited to 10 for debugging)`
 			)
@@ -125,13 +127,14 @@ export const GET: RequestHandler = async ({ url }) => {
 
 		// Prepare batch requests
 		const batchRequests: AnthropicBatchRequest[] = filesToProcess.map((fileObj, index) => {
-			const fullPrompt = DISTILLATION_PROMPT + fileObj.content
+			const content = typeof fileObj === 'string' ? fileObj : fileObj.content
+			const fullPrompt = DISTILLATION_PROMPT + content
 
 			// Store input for debugging
 			debugData.requests.push({
 				index,
-				path: fileObj.path,
-				originalContent: fileObj.content,
+				path: typeof fileObj === 'string' ? 'unknown' : fileObj.path,
+				originalContent: typeof fileObj === 'string' ? fileObj : fileObj.content,
 				fullPrompt
 			})
 
