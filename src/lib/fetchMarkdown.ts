@@ -279,7 +279,7 @@ function removeDiffMarkersFromContent(content: string): string {
 	return processedLines.join('\n')
 }
 
-function minimizeContent(content: string, options?: Partial<MinimizeOptions>): string {
+export function minimizeContent(content: string, options?: Partial<MinimizeOptions>): string {
 	// Merge with defaults, but only for properties that are defined
 	const settings: MinimizeOptions = options ? { ...defaultOptions, ...options } : defaultOptions
 
