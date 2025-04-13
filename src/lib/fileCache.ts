@@ -59,15 +59,15 @@ export async function readCachedFile(path: string): Promise<string | null> {
 /**
  * Get file path in outputs directory for a preset
  */
-export function getPresetFilePath(presetName: string): string {
-	return `outputs/${presetName}.md`
+export function getPresetFilePath(presetKey: string): string {
+	return `outputs/${presetKey}.md`
 }
 
 /**
  * Check if a file exists and get its content if it does
  */
-export async function getPresetContent(presetName: string): Promise<string | null> {
-	const filePath = getPresetFilePath(presetName)
+export async function getPresetContent(presetKey: string): Promise<string | null> {
+	const filePath = getPresetFilePath(presetKey)
 	return await readCachedFile(filePath)
 }
 

@@ -22,14 +22,17 @@ function sortFilesWithinGroup(files: string[]): string[] {
 }
 
 // Main function to fetch and process markdown files
-export async function fetchAndProcessMarkdown(preset: PresetConfig): Promise<string> {
-	const filePath = getPresetFilePath(preset.title)
+export async function fetchAndProcessMarkdown(
+	preset: PresetConfig,
+	presetKey: string
+): Promise<string> {
+	const filePath = getPresetFilePath(presetKey)
 
 	// Check if we already have the file cached on disk
 	const cachedContent = await readCachedFile(filePath)
 	if (cachedContent) {
 		if (dev) {
-			console.log(`Using cached content for ${preset.title} from ${filePath}`)
+			console.log(`Using cached content for ${presetKey} from ${filePath}`)
 		}
 		return cachedContent
 	}
@@ -38,7 +41,7 @@ export async function fetchAndProcessMarkdown(preset: PresetConfig): Promise<str
 	const files = await fetchMarkdownFiles(preset)
 
 	if (dev) {
-		console.log(`Fetched ${files.length} files for ${preset.title}`)
+		console.log(`Fetched ${files.length} files for ${presetKey}`)
 	}
 
 	const content = files.join('\n\n')

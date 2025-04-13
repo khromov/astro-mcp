@@ -5,15 +5,38 @@ import { getPresetFilePath, getFileSizeKb } from '$lib/fileCache'
 import { dev } from '$app/environment'
 
 export const GET: RequestHandler = async ({ params }) => {
-	const preset = params.preset
+	const presetKey = params.preset
 
-	if (!(preset in presets)) {
-		error(400, `Invalid preset: "${preset}"`)
+	if (!(presetKey in presets)) {
+		error(400, `Invalid preset: "${presetKey}"`)
 	}
 
 	try {
-		// For all presets, we now check the file size from the outputs directory
-		const filePath = getPresetFilePath(preset)
+		// For distilled presets, we still need special handling for versions
+		if (presets[presetKey]?.distilled) {
+			const baseFilename = presets[presetKey].distilledFilenameBase || 'svelte-complete-distilled'
+			const latestFilePath = `outputs/${baseFilename}-latest.md`
+
+			const sizeKb = await getFileSizeKb(latestFilePath)
+
+			if (sizeKb !== null) {
+				return new Response(JSON.stringify({ sizeKb }), {
+					headers: {
+						'Content-Type': 'application/json'
+					}
+				})
+			}
+
+			// If distilled file doesn't exist yet
+			return new Response(JSON.stringify({ sizeKb: 0, status: 'not_generated' }), {
+				headers: {
+					'Content-Type': 'application/json'
+				}
+			})
+		}
+
+		// For regular presets, we use the outputs directory
+		const filePath = getPresetFilePath(presetKey)
 		const sizeKb = await getFileSizeKb(filePath)
 
 		if (sizeKb !== null) {
@@ -26,7 +49,7 @@ export const GET: RequestHandler = async ({ params }) => {
 
 		// If file doesn't exist yet, return a placeholder size
 		if (dev) {
-			console.log(`File not found for preset "${preset}": ${filePath}`)
+			console.log(`File not found for preset "${presetKey}": ${filePath}`)
 		}
 
 		return new Response(JSON.stringify({ sizeKb: 0, status: 'not_generated' }), {
@@ -35,7 +58,7 @@ export const GET: RequestHandler = async ({ params }) => {
 			}
 		})
 	} catch (e) {
-		console.error(`Error calculating size for preset "${preset}":`, e)
-		error(500, `Failed to calculate size for preset "${preset}"`)
+		console.error(`Error calculating size for preset "${presetKey}":`, e)
+		error(500, `Failed to calculate size for preset "${presetKey}"`)
 	}
 }

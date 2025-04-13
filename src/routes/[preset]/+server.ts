@@ -7,7 +7,7 @@ import { presets } from '$lib/presets'
 import { dev } from '$app/environment'
 import { fetchAndProcessMarkdown } from '$lib/fetchMarkdown'
 import { readFile } from 'fs/promises'
-import { getPresetFilePath, readCachedFile, writeAtomicFile } from '$lib/fileCache'
+import { getPresetFilePath, readCachedFile } from '$lib/fileCache'
 
 export const GET: RequestHandler = async ({ params, url }) => {
 	const presetNames = params.preset.split(',').map((p) => p.trim())
@@ -27,17 +27,16 @@ export const GET: RequestHandler = async ({ params, url }) => {
 		const version = url.searchParams.get('version')
 
 		// Fetch all contents in parallel
-		const contentPromises = presetNames.map(async (presetName) => {
+		const contentPromises = presetNames.map(async (presetKey) => {
 			if (dev) {
 				console.time('dataFetching')
 			}
 
 			let content
 
-			if (presets[presetName]?.distilled) {
+			if (presets[presetKey]?.distilled) {
 				// Handle distilled preset differently
-				const baseFilename =
-					presets[presetName].distilledFilenameBase || 'svelte-complete-distilled'
+				const baseFilename = presets[presetKey].distilledFilenameBase || 'svelte-complete-distilled'
 				let filename
 
 				if (version) {
@@ -57,30 +56,28 @@ export const GET: RequestHandler = async ({ params, url }) => {
 				}
 			} else {
 				// Regular preset processing with file-based caching
-				const filePath = getPresetFilePath(presetName)
+				const filePath = getPresetFilePath(presetKey)
 				content = await readCachedFile(filePath)
 
 				if (!content) {
 					// If not in cache, fetch and process markdown
-					content = await fetchAndProcessMarkdown(presets[presetName])
-
-					// Save to cache for future requests (this happens in fetchAndProcessMarkdown now)
+					content = await fetchAndProcessMarkdown(presets[presetKey], presetKey)
 				}
 			}
 
 			if (dev) {
 				console.timeEnd('dataFetching')
-				console.log(`Content length for ${presetName}: ${content.length}`)
+				console.log(`Content length for ${presetKey}: ${content.length}`)
 			}
 
 			if (content.length === 0) {
-				throw new Error(`No content found for ${presetName}`)
+				throw new Error(`No content found for ${presetKey}`)
 			}
 
 			// Add the prompt if it exists and we're not using a distilled preset
 			// (distilled presets already have the prompt added)
-			return !presets[presetName]?.distilled && presets[presetName].prompt
-				? `${content}\n\nInstructions for LLMs: <SYSTEM>${presets[presetName].prompt}</SYSTEM>`
+			return !presets[presetKey]?.distilled && presets[presetKey].prompt
+				? `${content}\n\nInstructions for LLMs: <SYSTEM>${presets[presetKey].prompt}</SYSTEM>`
 				: content
 		})
 
