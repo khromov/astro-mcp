@@ -1,7 +1,10 @@
-import { writeFile, readFile, rename, mkdir } from 'fs/promises'
+import { writeFile, readFile, rename, mkdir, stat } from 'fs/promises'
 import { existsSync } from 'fs'
 import { dirname } from 'path'
 import { dev } from '$app/environment'
+
+// Maximum age of cached files in milliseconds (24 hours)
+export const MAX_CACHE_AGE_MS = 24 * 60 * 60 * 1000
 
 /**
  * Ensure a directory exists before writing to it
@@ -84,5 +87,25 @@ export async function getFileSizeKb(path: string): Promise<number | null> {
 	} catch (e) {
 		console.error(`Error getting file size for ${path}:`, e)
 		return null
+	}
+}
+
+/**
+ * Check if a file is older than the maximum cache age
+ * @returns true if the file is older than MAX_CACHE_AGE_MS, false otherwise
+ */
+export async function isFileStale(path: string): Promise<boolean> {
+	try {
+		if (!existsSync(path)) {
+			return true // File doesn't exist, consider it stale
+		}
+
+		const fileStats = await stat(path)
+		const fileAge = Date.now() - fileStats.mtime.getTime()
+
+		return fileAge > MAX_CACHE_AGE_MS
+	} catch (e) {
+		console.error(`Error checking file age for ${path}:`, e)
+		return true // On error, assume the file is stale
 	}
 }

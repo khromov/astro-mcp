@@ -7,7 +7,27 @@ import { presets } from '$lib/presets'
 import { dev } from '$app/environment'
 import { fetchAndProcessMarkdown } from '$lib/fetchMarkdown'
 import { readFile } from 'fs/promises'
-import { getPresetFilePath, readCachedFile } from '$lib/fileCache'
+import { getPresetFilePath, readCachedFile, isFileStale } from '$lib/fileCache'
+
+/**
+ * Trigger a background update for a preset without awaiting the result
+ */
+function triggerBackgroundUpdate(presetKey: string): void {
+	const preset = presets[presetKey]
+	if (!preset) return
+
+	// Don't update distilled presets, they have their own update mechanism
+	if (preset.distilled) return
+
+	// Fire and forget - don't await this promise
+	fetchAndProcessMarkdown(preset, presetKey)
+		.then(() => {
+			if (dev) console.log(`Background update completed for ${presetKey}`)
+		})
+		.catch((err) => {
+			console.error(`Background update failed for ${presetKey}:`, err)
+		})
+}
 
 export const GET: RequestHandler = async ({ params, url }) => {
 	const presetNames = params.preset.split(',').map((p) => p.trim())
@@ -59,8 +79,15 @@ export const GET: RequestHandler = async ({ params, url }) => {
 				const filePath = getPresetFilePath(presetKey)
 				content = await readCachedFile(filePath)
 
-				if (!content) {
-					// If not in cache, fetch and process markdown
+				if (content) {
+					// Check if the file is stale and needs a background update
+					const isStale = await isFileStale(filePath)
+					if (isStale) {
+						if (dev) console.log(`File for ${presetKey} is stale, triggering background update`)
+						triggerBackgroundUpdate(presetKey)
+					}
+				} else {
+					// If not in cache, fetch and process markdown (this will also save to disk)
 					content = await fetchAndProcessMarkdown(presets[presetKey], presetKey)
 				}
 			}
