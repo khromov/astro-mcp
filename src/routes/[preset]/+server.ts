@@ -9,6 +9,9 @@ import { fetchAndProcessMarkdown } from '$lib/fetchMarkdown'
 import { readFile } from 'fs/promises'
 import { getPresetFilePath, readCachedFile, isFileStale } from '$lib/fileCache'
 
+// Valid virtual presets that aren't in the presets object
+const VIRTUAL_DISTILLED_PRESETS = ['svelte-distilled', 'sveltekit-distilled']
+
 /**
  * Trigger a background update for a preset without awaiting the result
  */
@@ -37,7 +40,10 @@ export const GET: RequestHandler = async ({ params, url }) => {
 	}
 
 	// Validate all preset names first
-	const invalidPresets = presetNames.filter((name) => !(name in presets))
+	const invalidPresets = presetNames.filter(
+		(name) => !(name in presets) && !VIRTUAL_DISTILLED_PRESETS.includes(name)
+	)
+
 	if (invalidPresets.length > 0) {
 		error(400, `Invalid preset(s): "${invalidPresets.join('", "')}"`)
 	}
@@ -54,9 +60,10 @@ export const GET: RequestHandler = async ({ params, url }) => {
 
 			let content
 
-			if (presets[presetKey]?.distilled) {
-				// Handle distilled preset differently
-				const baseFilename = presets[presetKey].distilledFilenameBase || 'svelte-complete-distilled'
+			// Handle both regular distilled presets and virtual ones
+			if (presets[presetKey]?.distilled || VIRTUAL_DISTILLED_PRESETS.includes(presetKey)) {
+				// For virtual presets, use their basename directly
+				const baseFilename = presets[presetKey]?.distilledFilenameBase || presetKey
 				let filename
 
 				if (version) {
@@ -103,7 +110,9 @@ export const GET: RequestHandler = async ({ params, url }) => {
 
 			// Add the prompt if it exists and we're not using a distilled preset
 			// (distilled presets already have the prompt added)
-			return !presets[presetKey]?.distilled && presets[presetKey].prompt
+			return !presets[presetKey]?.distilled &&
+				!VIRTUAL_DISTILLED_PRESETS.includes(presetKey) &&
+				presets[presetKey]?.prompt
 				? `${content}\n\nInstructions for LLMs: <SYSTEM>${presets[presetKey].prompt}</SYSTEM>`
 				: content
 		})

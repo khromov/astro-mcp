@@ -15,21 +15,62 @@
 	const svelteKitPresetsFormatted = transformAndSortPresets(svelteKitPresets)
 	const otherPresetsFormatted = transformAndSortPresets(otherPresets)
 
-	let distilledVersions = $state<{ filename: string; date: string; path: string }[]>([])
+	// Define virtual distilled presets
+	const svelteDistilledPreset = {
+		key: 'svelte-distilled',
+		title: '🔮 Svelte (LLM Distilled)',
+		description: 'AI-condensed version of just the Svelte 5 docs'
+	}
+
+	const svelteKitDistilledPreset = {
+		key: 'sveltekit-distilled',
+		title: '🔮 SvelteKit (LLM Distilled)',
+		description: 'AI-condensed version of just the SvelteKit docs'
+	}
+
+	type DistilledVersion = {
+		filename: string
+		date: string
+		path: string
+		sizeKb: number
+	}
+
+	let distilledVersions = $state<Record<string, DistilledVersion[]>>({
+		'svelte-complete-distilled': [],
+		'svelte-distilled': [],
+		'sveltekit-distilled': []
+	})
 	let loadingVersions = $state(true)
 	let distilledError = $state<string | null>(null)
+
+	const loadVersions = async (preset: string) => {
+		try {
+			const response = await fetch(`/api/distilled-versions?preset=${preset}`)
+			if (response.ok) {
+				return await response.json()
+			} else {
+				throw new Error(`Failed to load versions: ${response.status} ${response.statusText}`)
+			}
+		} catch (e) {
+			console.error(`Failed to load distilled versions for ${preset}:`, e)
+			throw e
+		}
+	}
 
 	onMount(async () => {
 		try {
 			loadingVersions = true
-			const response = await fetch('/api/distilled-versions')
-			if (response.ok) {
-				distilledVersions = await response.json()
-			} else {
-				distilledError = `Failed to load versions: ${response.status} ${response.statusText}`
-			}
+
+			// Load all versions in parallel
+			const presetKeys = Object.keys(distilledVersions)
+			const versionPromises = presetKeys.map((key) => loadVersions(key))
+			const allVersions = await Promise.all(versionPromises)
+
+			// Store results
+			presetKeys.forEach((key, index) => {
+				distilledVersions[key] = allVersions[index]
+			})
 		} catch (e) {
-			console.error('Failed to load distilled versions:', e)
 			distilledError = `Error loading versions: ${e instanceof Error ? e.message : String(e)}`
 		} finally {
 			loadingVersions = false
@@ -95,27 +136,58 @@
 			{#each combinedPresetsFormatted as preset}
 				<PresetListItem {...preset} />
 
-				{#if preset.key === 'svelte-complete-distilled' && distilledVersions.length > 0}
-					<details class="distilled-versions">
-						<summary>Previous distilled versions</summary>
-						<ul>
-							{#each distilledVersions as version}
-								<li>
-									<a href="/svelte-complete-distilled?version={version.date}">{version.date}</a>
-								</li>
-							{/each}
-						</ul>
-					</details>
-				{:else if preset.key === 'svelte-complete-distilled' && loadingVersions}
-					<p class="versions-status"><em>Loading previous distilled versions...</em></p>
-				{:else if preset.key === 'svelte-complete-distilled' && distilledError}
-					<p class="versions-status error"><em>Error: {distilledError}</em></p>
+				{#if preset.key === 'svelte-complete-distilled'}
+					{#if loadingVersions}
+						<div class="versions-status"><em>Loading previous distilled versions...</em></div>
+					{:else if distilledError}
+						<div class="versions-status error"><em>Error: {distilledError}</em></div>
+					{:else if distilledVersions['svelte-complete-distilled']?.length > 0}
+						<div class="distilled-versions">
+							<details>
+								<summary>Previous distilled versions</summary>
+								<ul>
+									{#each distilledVersions['svelte-complete-distilled'] as version}
+										<li>
+											<a href="/svelte-complete-distilled?version={version.date}">
+												{version.date}
+											</a>
+											({version.sizeKb}KB)
+										</li>
+									{/each}
+								</ul>
+							</details>
+						</div>
+					{/if}
 				{/if}
 			{/each}
 		</ul>
 
 		<h2>Svelte 5</h2>
 		<ul>
+			<!-- Add the Svelte-only distilled preset at the top of the Svelte section -->
+			<PresetListItem {...svelteDistilledPreset} />
+			{#if loadingVersions}
+				<div class="versions-status"><em>Loading previous distilled versions...</em></div>
+			{:else if distilledError}
+				<div class="versions-status error"><em>Error: {distilledError}</em></div>
+			{:else if distilledVersions['svelte-distilled']?.length > 0}
+				<div class="distilled-versions">
+					<details>
+						<summary>Previous distilled versions</summary>
+						<ul>
+							{#each distilledVersions['svelte-distilled'] as version}
+								<li>
+									<a href="/svelte-distilled?version={version.date}">
+										{version.date}
+									</a>
+									({version.sizeKb}KB)
+								</li>
+							{/each}
+						</ul>
+					</details>
+				</div>
+			{/if}
+
 			{#each sveltePresetsFormatted as preset}
 				<PresetListItem {...preset} />
 			{/each}
@@ -123,6 +195,30 @@
 
 		<h2>SvelteKit</h2>
 		<ul>
+			<!-- Add the SvelteKit-only distilled preset at the top of the SvelteKit section -->
+			<PresetListItem {...svelteKitDistilledPreset} />
+			{#if loadingVersions}
+				<div class="versions-status"><em>Loading previous distilled versions...</em></div>
+			{:else if distilledError}
+				<div class="versions-status error"><em>Error: {distilledError}</em></div>
+			{:else if distilledVersions['sveltekit-distilled']?.length > 0}
+				<div class="distilled-versions">
+					<details>
+						<summary>Previous distilled versions</summary>
+						<ul>
+							{#each distilledVersions['sveltekit-distilled'] as version}
+								<li>
+									<a href="/sveltekit-distilled?version={version.date}">
+										{version.date}
+									</a>
+									({version.sizeKb}KB)
+								</li>
+							{/each}
+						</ul>
+					</details>
+				</div>
+			{/if}
+
 			{#each svelteKitPresetsFormatted as preset}
 				<PresetListItem {...preset} />
 			{/each}
