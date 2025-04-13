@@ -1,5 +1,6 @@
 import type { LLMProvider } from './llm.ts'
 import { Anthropic } from '@anthropic-ai/sdk'
+import { env } from '$env/dynamic/private'
 
 // Batch API interfaces
 export interface AnthropicBatchRequest {
@@ -75,7 +76,7 @@ export class AnthropicProvider implements LLMProvider {
 	]
 
 	constructor(modelId?: string) {
-		const apiKey = process.env.ANTHROPIC_API_KEY
+		const apiKey = env.ANTHROPIC_API_KEY
 		if (!apiKey) {
 			throw new Error('ANTHROPIC_API_KEY environment variable is required')
 		}
