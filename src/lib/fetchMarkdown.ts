@@ -43,7 +43,7 @@ function shouldIncludeFile(filename: string, glob: string, ignore: string[] = []
 }
 
 // Fetch markdown files using GitHub's tarball API
-async function fetchMarkdownFiles({
+export async function fetchMarkdownFiles({
 	owner,
 	repo,
 	glob,
