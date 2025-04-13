@@ -25,10 +25,10 @@ async function ensureDir(path: string) {
 }
 
 const DISTILLATION_PROMPT = `
-You are an expert in web development, specifically Svelte 5 and SvelteKit. Your task is to condense this documentation into a more concise format while preserving the most important information.
+You are an expert in web development, specifically Svelte 5 and SvelteKit. Your task is to condense the Svelte documentation into a concise format while preserving the most important information.
 
 Focus on:
-1. Code examples with explanations of how they work
+1. Code examples with short explanations of how they work
 2. Key concepts and APIs with their usage patterns
 3. Important gotchas and best practices
 4. Patterns that developers commonly use
@@ -38,15 +38,24 @@ Remove:
 2. Verbose content that can be simplified
 3. Marketing language
 4. Legacy or deprecated content
+5. Anything else that is not strictly necessary
 
 Keep your output in markdown format. Preserve code blocks with their language annotations.
 Maintain headings but feel free to combine or restructure sections to improve clarity.
 
-IMPORTANT: Make sure all code examples use Svelte 5 runes syntax ($state, $derived, $effect, etc.) and NOT Svelte 4 reactivity syntax (writable, readable, derived, stores). Always use Svelte 5 syntax in your examples.
+Make sure all code examples use Svelte 5 runes syntax ($state, $derived, $effect, etc.) Always use Svelte 5 syntax in your examples.
 
-IMPORTANT: DO NOT include the original file path in your response. I will add it back myself.
+Keep the following Svelte 5 syntax rules in mind:
+* Runes do not need to be imported, they are globals. 
+* $state() runes are always declared using let, never with const. 
+* When passing a function to $derived, you must always use $derived.by(() => ...). 
+* Error boundaries can only catch errors during component rendering and at the top level of an $effect inside the error boundary.
+* Error boundaries do not catch errors in onclick or other event handlers.
 
-Here is the documentation to condense:
+IMPORTANT: All code examples MUST come from the documentation verbatim, do NOT create new code examples.
+IMPORTANT: Because of changes in Svelte 5 syntax, do not include content from your existing knowledge, you may only use knowledge from the documentation to condense.
+
+Here is the documentation you shall condense:
 
 `
 
@@ -74,28 +83,21 @@ export const GET: RequestHandler = async ({ url }) => {
 		// Fetch all markdown files for the preset with their file paths
 		const filesWithPaths = await fetchMarkdownFiles(distilledPreset, true)
 
-		// Separate short files from normal files
-		const shortFiles = []
-		const normalFiles = []
+		// Filter out short files, only keep normal files
+		const originalFileCount = filesWithPaths.length
+		let filesToProcess = filesWithPaths.filter((file) => file.content.length >= 200)
 
-		for (const fileWithPath of filesWithPaths) {
-			if (fileWithPath.content.length < 200) {
-				shortFiles.push(fileWithPath)
-			} else {
-				normalFiles.push(fileWithPath)
-			}
+		if (dev) {
+			console.log(`Total files: ${originalFileCount}`)
+			console.log(
+				`Filtered out ${originalFileCount - filesToProcess.length} short files (< 200 chars)`
+			)
+			console.log(`Processing ${filesToProcess.length} normal files`)
 		}
 
 		if (dev) {
-			console.log(`Total files: ${filesWithPaths.length}`)
-			console.log(`Short files (< 200 chars) to be included verbatim: ${shortFiles.length}`)
-			console.log(`Normal files to be processed by LLM: ${normalFiles.length}`)
-		}
-
-		// DEBUG: Limit to first 10 normal files for debugging
-		const filesToProcess = normalFiles.slice(0, 10)
-
-		if (dev) {
+			// DEBUG: Limit to first 10 normal files for debugging
+			filesToProcess = filesToProcess.slice(0, 10)
 			console.log(
 				`Using ${filesToProcess.length} files for LLM distillation (limited to 10 for debugging)`
 			)
@@ -108,7 +110,9 @@ export const GET: RequestHandler = async ({ url }) => {
 		const debugData = {
 			timestamp: new Date().toISOString(),
 			model: anthropic.getModelIdentifier(),
-			shortFiles: shortFiles.map((f) => ({ path: f.path, content: f.content })),
+			totalFiles: originalFileCount,
+			processedFiles: filesToProcess.length,
+			shortFilesRemoved: originalFileCount - filesToProcess.length,
 			requests: [] as Array<{
 				index: number
 				path: string
@@ -211,19 +215,10 @@ export const GET: RequestHandler = async ({ url }) => {
 		// Sort by index to maintain original order
 		processedResults.sort((a, b) => a.index - b.index)
 
-		// Create final content by combining:
-		// 1. Short files (verbatim)
-		// 2. Processed files (LLM-distilled)
-
-		// First, add all short files with their paths
-		const contentParts = shortFiles.map((file) => `## ${file.path}\n\n${file.content}`)
-
-		// Then add all successfully processed files with their paths
-		processedResults
+		// Create final content with all successfully processed files
+		const contentParts = processedResults
 			.filter((result) => result.content) // Only include successful responses
-			.forEach((result) => {
-				contentParts.push(`## ${result.path}\n\n${result.content}`)
-			})
+			.map((result) => `## ${result.path}\n\n${result.content}`)
 
 		// Join all parts
 		const distilledContent = contentParts.join('\n\n')
@@ -253,8 +248,8 @@ export const GET: RequestHandler = async ({ url }) => {
 
 		return json({
 			success: true,
-			totalFiles: filesWithPaths.length,
-			shortFiles: shortFiles.length,
+			totalFiles: originalFileCount,
+			shortFilesRemoved: originalFileCount - filesToProcess.length,
 			filesProcessed: filesToProcess.length,
 			resultsReceived: results.length,
 			successfulResults: processedResults.filter((r) => r.content).length,
