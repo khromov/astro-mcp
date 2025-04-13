@@ -1,4 +1,3 @@
-import type { GlobPattern } from 'glob'
 import type { MinimizeOptions } from './fetchMarkdown'
 
 export type PresetConfig = {
@@ -11,9 +10,9 @@ export type PresetConfig = {
 	/** The name of the GitHub repository */
 	repo: string
 	/** List of glob patterns for including files */
-	glob: GlobPattern[]
+	glob: any[]
 	/** List of glob patterns for excluding files */
-	ignore?: GlobPattern[]
+	ignore?: any[]
 	/** Optional prompt to provide additional context or instructions to language models */
 	prompt?: string
 	/** Minimization options for the content */
