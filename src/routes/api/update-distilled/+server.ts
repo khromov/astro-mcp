@@ -88,7 +88,7 @@ export const GET: RequestHandler = async ({ url }) => {
 
 		if (dev) {
 			// DEBUG: Limit to first 10 normal files for debugging
-			//filesToProcess = filesToProcess.slice(0, 10)
+			filesToProcess = filesToProcess.slice(0, 10)
 			console.log(
 				`Using ${filesToProcess.length} files for LLM distillation (limited to 10 for debugging)`
 			)
