@@ -5,7 +5,7 @@ import tarStream from 'tar-stream'
 import { Readable } from 'stream'
 import { createGunzip } from 'zlib'
 import { minimatch } from 'minimatch'
-import { swr } from './cache'
+import { getPresetFilePath, readCachedFile, writeAtomicFile } from './fileCache'
 
 function sortFilesWithinGroup(files: string[]): string[] {
 	return files.sort((a, b) => {
@@ -23,11 +23,30 @@ function sortFilesWithinGroup(files: string[]): string[] {
 
 // Main function to fetch and process markdown files
 export async function fetchAndProcessMarkdown(preset: PresetConfig): Promise<string> {
-	const { value: files } = await swr(preset.title, async () => fetchMarkdownFiles(preset))
+	const filePath = getPresetFilePath(preset.title)
+
+	// Check if we already have the file cached on disk
+	const cachedContent = await readCachedFile(filePath)
+	if (cachedContent) {
+		if (dev) {
+			console.log(`Using cached content for ${preset.title} from ${filePath}`)
+		}
+		return cachedContent
+	}
+
+	// If no cached content, fetch and process the files
+	const files = await fetchMarkdownFiles(preset)
+
 	if (dev) {
 		console.log(`Fetched ${files.length} files for ${preset.title}`)
 	}
-	return files.join('\n\n')
+
+	const content = files.join('\n\n')
+
+	// Write to cache file (atomic write)
+	await writeAtomicFile(filePath, content)
+
+	return content
 }
 
 function shouldIncludeFile(filename: string, glob: string, ignore: string[] = []): boolean {

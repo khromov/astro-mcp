@@ -7,6 +7,7 @@ import { presets } from '$lib/presets'
 import { dev } from '$app/environment'
 import { fetchAndProcessMarkdown } from '$lib/fetchMarkdown'
 import { readFile } from 'fs/promises'
+import { getPresetFilePath, readCachedFile, writeAtomicFile } from '$lib/fileCache'
 
 export const GET: RequestHandler = async ({ params, url }) => {
 	const presetNames = params.preset.split(',').map((p) => p.trim())
@@ -55,8 +56,16 @@ export const GET: RequestHandler = async ({ params, url }) => {
 					)
 				}
 			} else {
-				// Regular preset processing
-				content = await fetchAndProcessMarkdown(presets[presetName])
+				// Regular preset processing with file-based caching
+				const filePath = getPresetFilePath(presetName)
+				content = await readCachedFile(filePath)
+
+				if (!content) {
+					// If not in cache, fetch and process markdown
+					content = await fetchAndProcessMarkdown(presets[presetName])
+
+					// Save to cache for future requests (this happens in fetchAndProcessMarkdown now)
+				}
 			}
 
 			if (dev) {
