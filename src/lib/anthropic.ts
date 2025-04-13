@@ -110,7 +110,6 @@ export class AnthropicProvider implements LLMProvider {
 				temperature: temperature || 0.7
 			})
 
-			// Clean up any markdown code block indicators if present
 			return completion.content[0]?.text || ''
 		} catch (error) {
 			console.error('Error generating code with Anthropic:', error)
