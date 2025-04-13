@@ -5,6 +5,7 @@ import { writeFile, mkdir } from 'fs/promises'
 import { dirname } from 'path'
 import { presets } from '$lib/presets'
 import { fetchMarkdownFiles } from '$lib/fetchMarkdown'
+import { minimizeContent } from '$lib/fetchMarkdown' // Import the minimizeContent function
 import type { RequestHandler } from './$types'
 import {
 	AnthropicProvider,
@@ -87,7 +88,9 @@ export const GET: RequestHandler = async ({ url }) => {
 
 		// Filter out short files, only keep normal files
 		const originalFileCount = filesWithPaths.length
-		let filesToProcess = filesWithPaths.filter((file) => file.content.length >= 200)
+		let filesToProcess = filesWithPaths.filter((file) =>
+			typeof file === 'string' ? false : file.content.length >= 200
+		)
 
 		if (dev) {
 			console.log(`Total files: ${originalFileCount}`)
@@ -105,6 +108,31 @@ export const GET: RequestHandler = async ({ url }) => {
 			)
 		}
 
+		// Apply the minimize config to each file's content if the preset has a minimize configuration
+		if (distilledPreset.minimize) {
+			if (dev) {
+				console.log(`Applying minimize configuration before LLM processing`)
+			}
+
+			filesToProcess = filesToProcess.map((fileObj) => {
+				if (typeof fileObj === 'string') {
+					return fileObj // Should not happen with includePathInfo=true
+				}
+
+				// Apply minimization to the content
+				const minimized = minimizeContent(fileObj.content, distilledPreset.minimize)
+
+				return {
+					...fileObj,
+					content: minimized
+				}
+			})
+
+			if (dev) {
+				console.log(`Content minimized according to preset configuration`)
+			}
+		}
+
 		// Initialize Anthropic client
 		const anthropic = new AnthropicProvider()
 
@@ -115,6 +143,7 @@ export const GET: RequestHandler = async ({ url }) => {
 			totalFiles: originalFileCount,
 			processedFiles: filesToProcess.length,
 			shortFilesRemoved: originalFileCount - filesToProcess.length,
+			minimizeApplied: !!distilledPreset.minimize,
 			requests: [] as Array<{
 				index: number
 				path: string
@@ -254,6 +283,7 @@ export const GET: RequestHandler = async ({ url }) => {
 			totalFiles: originalFileCount,
 			shortFilesRemoved: originalFileCount - filesToProcess.length,
 			filesProcessed: filesToProcess.length,
+			minimizeApplied: !!distilledPreset.minimize,
 			resultsReceived: results.length,
 			successfulResults: processedResults.filter((r) => r.content).length,
 			bytes: finalContent.length,
