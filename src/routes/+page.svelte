@@ -18,17 +18,22 @@
 	// Define virtual distilled presets
 	const svelteDistilledPreset = {
 		key: 'svelte-distilled',
-		title: '🔮 Svelte (LLM Distilled)',
+		title: '🔮 Svelte Only (LLM Distilled)',
 		description: 'AI-condensed version of just the Svelte 5 docs'
 	}
 
 	const svelteKitDistilledPreset = {
 		key: 'sveltekit-distilled',
-		title: '🔮 SvelteKit (LLM Distilled)',
+		title: '🔮 SvelteKit Only (LLM Distilled)',
 		description: 'AI-condensed version of just the SvelteKit docs'
 	}
 
-	type DistilledVersion = { filename: string; date: string; path: string }
+	type DistilledVersion = {
+		filename: string
+		date: string
+		path: string
+		sizeKb: number
+	}
 
 	let distilledVersions = $state<Record<string, DistilledVersion[]>>({
 		'svelte-complete-distilled': [],
@@ -133,20 +138,25 @@
 
 				{#if preset.key === 'svelte-complete-distilled'}
 					{#if loadingVersions}
-						<p class="versions-status"><em>Loading previous distilled versions...</em></p>
+						<div class="versions-status"><em>Loading previous distilled versions...</em></div>
 					{:else if distilledError}
-						<p class="versions-status error"><em>Error: {distilledError}</em></p>
+						<div class="versions-status error"><em>Error: {distilledError}</em></div>
 					{:else if distilledVersions['svelte-complete-distilled']?.length > 0}
-						<details class="distilled-versions">
-							<summary>Previous distilled versions</summary>
-							<ul>
-								{#each distilledVersions['svelte-complete-distilled'] as version}
-									<li>
-										<a href="/svelte-complete-distilled?version={version.date}">{version.date}</a>
-									</li>
-								{/each}
-							</ul>
-						</details>
+						<div class="distilled-versions">
+							<details>
+								<summary>Previous distilled versions</summary>
+								<ul>
+									{#each distilledVersions['svelte-complete-distilled'] as version}
+										<li>
+											<a href="/svelte-complete-distilled?version={version.date}">
+												{version.date}
+											</a>
+											({version.sizeKb}KB)
+										</li>
+									{/each}
+								</ul>
+							</details>
+						</div>
 					{/if}
 				{/if}
 			{/each}
@@ -167,7 +177,10 @@
 						<ul>
 							{#each distilledVersions['svelte-distilled'] as version}
 								<li>
-									<a href="/svelte-distilled?version={version.date}">{version.date}</a>
+									<a href="/svelte-distilled?version={version.date}">
+										{version.date}
+									</a>
+									({version.sizeKb}KB)
 								</li>
 							{/each}
 						</ul>
@@ -195,7 +208,10 @@
 						<ul>
 							{#each distilledVersions['sveltekit-distilled'] as version}
 								<li>
-									<a href="/sveltekit-distilled?version={version.date}">{version.date}</a>
+									<a href="/sveltekit-distilled?version={version.date}">
+										{version.date}
+									</a>
+									({version.sizeKb}KB)
 								</li>
 							{/each}
 						</ul>
