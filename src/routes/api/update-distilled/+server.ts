@@ -44,6 +44,8 @@ Maintain headings but feel free to combine or restructure sections to improve cl
 
 IMPORTANT: Make sure all code examples use Svelte 5 runes syntax ($state, $derived, $effect, etc.) and NOT Svelte 4 reactivity syntax (writable, readable, derived, stores). Always use Svelte 5 syntax in your examples.
 
+IMPORTANT: DO NOT include the original file path in your response. I will add it back myself.
+
 Here is the documentation to condense:
 
 `
@@ -69,24 +71,34 @@ export const GET: RequestHandler = async ({ url }) => {
 	}
 
 	try {
-		// Fetch all markdown files for the preset
-		let files = await fetchMarkdownFiles(distilledPreset)
+		// Fetch all markdown files for the preset with their file paths
+		const filesWithPaths = await fetchMarkdownFiles(distilledPreset, true)
 
-		// Filter out files that are too short (less than 200 characters)
-		const originalFileCount = files.length
-		files = files.filter((file) => file.length >= 200)
+		// Separate short files from normal files
+		const shortFiles = []
+		const normalFiles = []
+
+		for (const fileWithPath of filesWithPaths) {
+			if (fileWithPath.content.length < 200) {
+				shortFiles.push(fileWithPath)
+			} else {
+				normalFiles.push(fileWithPath)
+			}
+		}
+
+		if (dev) {
+			console.log(`Total files: ${filesWithPaths.length}`)
+			console.log(`Short files (< 200 chars) to be included verbatim: ${shortFiles.length}`)
+			console.log(`Normal files to be processed by LLM: ${normalFiles.length}`)
+		}
+
+		// DEBUG: Limit to first 10 normal files for debugging
+		const filesToProcess = normalFiles.slice(0, 10)
 
 		if (dev) {
 			console.log(
-				`Filtered out ${originalFileCount - files.length} files that were too short (< 200 chars)`
+				`Using ${filesToProcess.length} files for LLM distillation (limited to 10 for debugging)`
 			)
-		}
-
-		// DEBUG: Limit to first 10 files
-		files = files.slice(0, 10)
-
-		if (dev) {
-			console.log(`Using ${files.length} files for distillation (limited to 10 for debugging)`)
 		}
 
 		// Initialize Anthropic client
@@ -96,8 +108,10 @@ export const GET: RequestHandler = async ({ url }) => {
 		const debugData = {
 			timestamp: new Date().toISOString(),
 			model: anthropic.getModelIdentifier(),
+			shortFiles: shortFiles.map((f) => ({ path: f.path, content: f.content })),
 			requests: [] as Array<{
 				index: number
+				path: string
 				originalContent: string
 				fullPrompt: string
 				response?: string
@@ -106,13 +120,14 @@ export const GET: RequestHandler = async ({ url }) => {
 		}
 
 		// Prepare batch requests
-		const batchRequests: AnthropicBatchRequest[] = files.map((file, index) => {
-			const fullPrompt = DISTILLATION_PROMPT + file
+		const batchRequests: AnthropicBatchRequest[] = filesToProcess.map((fileObj, index) => {
+			const fullPrompt = DISTILLATION_PROMPT + fileObj.content
 
 			// Store input for debugging
 			debugData.requests.push({
 				index,
-				originalContent: file,
+				path: fileObj.path,
+				originalContent: fileObj.content,
 				fullPrompt
 			})
 
@@ -161,6 +176,7 @@ export const GET: RequestHandler = async ({ url }) => {
 			.filter((result) => result.result.type === 'succeeded')
 			.map((result) => {
 				const index = parseInt(result.custom_id.split('-')[1])
+				const fileObj = filesToProcess[index]
 
 				if (result.result.type !== 'succeeded' || !result.result.message) {
 					// Update debug data with error
@@ -171,6 +187,7 @@ export const GET: RequestHandler = async ({ url }) => {
 
 					return {
 						index,
+						path: fileObj.path,
 						content: '',
 						error: 'Failed or no message'
 					}
@@ -186,6 +203,7 @@ export const GET: RequestHandler = async ({ url }) => {
 
 				return {
 					index,
+					path: fileObj.path,
 					content: outputContent
 				}
 			})
@@ -193,11 +211,22 @@ export const GET: RequestHandler = async ({ url }) => {
 		// Sort by index to maintain original order
 		processedResults.sort((a, b) => a.index - b.index)
 
-		// Extract just the content
-		const distilledContent = processedResults
+		// Create final content by combining:
+		// 1. Short files (verbatim)
+		// 2. Processed files (LLM-distilled)
+
+		// First, add all short files with their paths
+		const contentParts = shortFiles.map((file) => `## ${file.path}\n\n${file.content}`)
+
+		// Then add all successfully processed files with their paths
+		processedResults
 			.filter((result) => result.content) // Only include successful responses
-			.map((result) => result.content)
-			.join('\n\n')
+			.forEach((result) => {
+				contentParts.push(`## ${result.path}\n\n${result.content}`)
+			})
+
+		// Join all parts
+		const distilledContent = contentParts.join('\n\n')
 
 		// Add the prompt if it exists
 		const finalContent = distilledPreset.prompt
@@ -224,8 +253,9 @@ export const GET: RequestHandler = async ({ url }) => {
 
 		return json({
 			success: true,
-			totalFiles: originalFileCount,
-			filesUsed: files.length,
+			totalFiles: filesWithPaths.length,
+			shortFiles: shortFiles.length,
+			filesProcessed: filesToProcess.length,
 			resultsReceived: results.length,
 			successfulResults: processedResults.filter((r) => r.content).length,
 			bytes: finalContent.length,

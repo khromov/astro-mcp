@@ -43,13 +43,10 @@ function shouldIncludeFile(filename: string, glob: string, ignore: string[] = []
 }
 
 // Fetch markdown files using GitHub's tarball API
-export async function fetchMarkdownFiles({
-	owner,
-	repo,
-	glob,
-	ignore = [],
-	minimize = undefined
-}: PresetConfig): Promise<string[]> {
+export async function fetchMarkdownFiles(
+	{ owner, repo, glob, ignore = [], minimize = undefined }: PresetConfig,
+	includePathInfo = false
+): Promise<string[] | { path: string; content: string }[]> {
 	// Construct the tarball URL
 	const url = `https://api.github.com/repos/${owner}/${repo}/tarball`
 
@@ -70,7 +67,7 @@ export async function fetchMarkdownFiles({
 	}
 
 	// Create a Map to store files for each glob pattern while maintaining order
-	const globResults = new Map<string, string[]>()
+	const globResults = new Map<string, any[]>()
 	const filePathsByPattern = new Map<string, string[]>()
 	glob.forEach((pattern) => {
 		globResults.set(pattern, [])
@@ -104,13 +101,26 @@ export async function fetchMarkdownFiles({
 							.join('/')
 							.replace('apps/svelte.dev/content/', '') // Remove the fixed prefix
 
-						// Add the file header before the content
-						const contentWithHeader = `## ${cleanPath}\n\n${minimizeContent(content, minimize)}`
+						// Minimize the content if needed
+						const processedContent = minimizeContent(content, minimize)
 
-						// Add to the appropriate glob pattern's results
-						const files = globResults.get(pattern) || []
-						files.push(contentWithHeader)
-						globResults.set(pattern, files)
+						// Store with or without path info based on the parameter
+						if (includePathInfo) {
+							const files = globResults.get(pattern) || []
+							files.push({
+								path: cleanPath,
+								content: processedContent
+							})
+							globResults.set(pattern, files)
+						} else {
+							// Add the file header before the content
+							const contentWithHeader = `## ${cleanPath}\n\n${processedContent}`
+
+							// Add to the appropriate glob pattern's results
+							const files = globResults.get(pattern) || []
+							files.push(contentWithHeader)
+							globResults.set(pattern, files)
+						}
 
 						// Store the file path for logging
 						const paths = filePathsByPattern.get(pattern) || []
@@ -163,9 +173,10 @@ export async function fetchMarkdownFiles({
 		// Log files in their final order
 		glob.forEach((pattern, index) => {
 			const paths = filePathsByPattern.get(pattern) || []
-			const sortedPaths = sortFilesWithinGroup(paths.map((p) => `## ${p}`)).map((p) =>
-				p.replace('## ', '')
-			)
+			const sortedPaths = includePathInfo
+				? paths
+				: sortFilesWithinGroup(paths.map((p) => `## ${p}`)).map((p) => p.replace('## ', ''))
+
 			if (sortedPaths.length > 0) {
 				console.log(`\nGlob pattern ${index + 1}: ${pattern}`)
 				sortedPaths.forEach((path, i) => {
@@ -176,11 +187,16 @@ export async function fetchMarkdownFiles({
 	}
 
 	// Combine results in the order of glob patterns
-	const orderedResults: string[] = []
+	const orderedResults: any[] = []
 	for (const pattern of glob) {
 		const filesForPattern = globResults.get(pattern) || []
-		// Sort files within each glob pattern group
-		orderedResults.push(...sortFilesWithinGroup(filesForPattern))
+		if (includePathInfo) {
+			// For path info mode, just add the objects directly
+			orderedResults.push(...filesForPattern)
+		} else {
+			// For normal mode, sort and add strings
+			orderedResults.push(...sortFilesWithinGroup(filesForPattern))
+		}
 	}
 
 	return orderedResults
