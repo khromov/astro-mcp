@@ -42,6 +42,8 @@ Remove:
 Keep your output in markdown format. Preserve code blocks with their language annotations.
 Maintain headings but feel free to combine or restructure sections to improve clarity.
 
+IMPORTANT: Make sure all code examples use Svelte 5 runes syntax ($state, $derived, $effect, etc.) and NOT Svelte 4 reactivity syntax (writable, readable, derived, stores). Always use Svelte 5 syntax in your examples.
+
 Here is the documentation to condense:
 
 `
@@ -68,32 +70,67 @@ export const GET: RequestHandler = async ({ url }) => {
 
 	try {
 		// Fetch all markdown files for the preset
-		const files = await fetchMarkdownFiles(distilledPreset)
+		let files = await fetchMarkdownFiles(distilledPreset)
+
+		// Filter out files that are too short (less than 200 characters)
+		const originalFileCount = files.length
+		files = files.filter((file) => file.length >= 200)
 
 		if (dev) {
-			console.log(`Fetched ${files.length} files for distillation`)
+			console.log(
+				`Filtered out ${originalFileCount - files.length} files that were too short (< 200 chars)`
+			)
+		}
+
+		// DEBUG: Limit to first 10 files
+		files = files.slice(0, 10)
+
+		if (dev) {
+			console.log(`Using ${files.length} files for distillation (limited to 10 for debugging)`)
 		}
 
 		// Initialize Anthropic client
 		const anthropic = new AnthropicProvider()
 
-		// Prepare batch requests
-		const batchRequests: AnthropicBatchRequest[] = files.map((file, index) => ({
-			custom_id: `file-${index}`,
-			params: {
-				model: anthropic.getModelIdentifier(),
-				max_tokens: 8192,
-				messages: [
-					{
-						role: 'user',
-						content: DISTILLATION_PROMPT + file
-					}
-				],
-				temperature: 0 // Low temperature for consistent results
-			}
-		}))
+		// Create debug structure to store inputs and outputs
+		const debugData = {
+			timestamp: new Date().toISOString(),
+			model: anthropic.getModelIdentifier(),
+			requests: [] as Array<{
+				index: number
+				originalContent: string
+				fullPrompt: string
+				response?: string
+				error?: string
+			}>
+		}
 
-		console.log('batchRequests', batchRequests)
+		// Prepare batch requests
+		const batchRequests: AnthropicBatchRequest[] = files.map((file, index) => {
+			const fullPrompt = DISTILLATION_PROMPT + file
+
+			// Store input for debugging
+			debugData.requests.push({
+				index,
+				originalContent: file,
+				fullPrompt
+			})
+
+			return {
+				custom_id: `file-${index}`,
+				params: {
+					model: anthropic.getModelIdentifier(),
+					max_tokens: 8192,
+					messages: [
+						{
+							role: 'user',
+							content: fullPrompt
+						}
+					],
+					temperature: 0 // Low temperature for consistent results
+				}
+			}
+		})
 
 		// Create batch
 		const batchResponse = await anthropic.createBatch(batchRequests)
@@ -119,16 +156,47 @@ export const GET: RequestHandler = async ({ url }) => {
 
 		const results = await anthropic.getBatchResults(batchStatus.results_url)
 
-		// Merge results
-		const distilledContent = results
+		// Process results
+		const processedResults = results
 			.filter((result) => result.result.type === 'succeeded')
-			.sort((a, b) => parseInt(a.custom_id.split('-')[1]) - parseInt(b.custom_id.split('-')[1]))
 			.map((result) => {
+				const index = parseInt(result.custom_id.split('-')[1])
+
 				if (result.result.type !== 'succeeded' || !result.result.message) {
-					return ''
+					// Update debug data with error
+					const debugEntry = debugData.requests.find((r) => r.index === index)
+					if (debugEntry) {
+						debugEntry.error = result.result.error?.message || 'Failed or no message'
+					}
+
+					return {
+						index,
+						content: '',
+						error: 'Failed or no message'
+					}
 				}
-				return result.result.message.content[0].text
+
+				const outputContent = result.result.message.content[0].text
+
+				// Update debug data with response
+				const debugEntry = debugData.requests.find((r) => r.index === index)
+				if (debugEntry) {
+					debugEntry.response = outputContent
+				}
+
+				return {
+					index,
+					content: outputContent
+				}
 			})
+
+		// Sort by index to maintain original order
+		processedResults.sort((a, b) => a.index - b.index)
+
+		// Extract just the content
+		const distilledContent = processedResults
+			.filter((result) => result.content) // Only include successful responses
+			.map((result) => result.content)
 			.join('\n\n')
 
 		// Add the prompt if it exists
@@ -138,10 +206,13 @@ export const GET: RequestHandler = async ({ url }) => {
 
 		// Generate filenames
 		const today = new Date()
-		const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+		const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(
+			today.getDate()
+		).padStart(2, '0')}`
 
 		const latestFilename = `outputs/${distilledPreset.distilledFilenameBase}-latest.md`
 		const datedFilename = `outputs/${distilledPreset.distilledFilenameBase}-${dateStr}.md`
+		const debugFilename = `outputs/${distilledPreset.distilledFilenameBase}-debug.json`
 
 		// Ensure directories exist
 		await ensureDir(latestFilename)
@@ -149,14 +220,18 @@ export const GET: RequestHandler = async ({ url }) => {
 		// Write files
 		await writeFile(latestFilename, finalContent)
 		await writeFile(datedFilename, finalContent)
+		await writeFile(debugFilename, JSON.stringify(debugData, null, 2))
 
 		return json({
 			success: true,
-			files: files.length,
-			results: results.length,
+			totalFiles: originalFileCount,
+			filesUsed: files.length,
+			resultsReceived: results.length,
+			successfulResults: processedResults.filter((r) => r.content).length,
 			bytes: finalContent.length,
 			latestFile: latestFilename,
-			datedFile: datedFilename
+			datedFile: datedFilename,
+			debugFile: debugFilename
 		})
 	} catch (e) {
 		console.error('Error in distillation process:', e)
