@@ -1,5 +1,12 @@
 <script lang="ts">
-	import { combinedPresets, sveltePresets, svelteKitPresets, otherPresets, transformAndSortPresets } from '$lib/presets'
+	import { onMount } from 'svelte'
+	import {
+		combinedPresets,
+		sveltePresets,
+		svelteKitPresets,
+		otherPresets,
+		transformAndSortPresets
+	} from '$lib/presets'
 	import PresetListItem from '$lib/components/PresetListItem.svelte'
 	import { SITE_URL } from '$lib/constants'
 
@@ -7,6 +14,27 @@
 	const sveltePresetsFormatted = transformAndSortPresets(sveltePresets)
 	const svelteKitPresetsFormatted = transformAndSortPresets(svelteKitPresets)
 	const otherPresetsFormatted = transformAndSortPresets(otherPresets)
+
+	let distilledVersions = $state<{ filename: string; date: string; path: string }[]>([])
+	let loadingVersions = $state(true)
+	let distilledError = $state<string | null>(null)
+
+	onMount(async () => {
+		try {
+			loadingVersions = true
+			const response = await fetch('/api/distilled-versions')
+			if (response.ok) {
+				distilledVersions = await response.json()
+			} else {
+				distilledError = `Failed to load versions: ${response.status} ${response.statusText}`
+			}
+		} catch (e) {
+			console.error('Failed to load distilled versions:', e)
+			distilledError = `Error loading versions: ${e instanceof Error ? e.message : String(e)}`
+		} finally {
+			loadingVersions = false
+		}
+	})
 
 	const instructions = [
 		{
@@ -39,8 +67,11 @@
 			with AI assistants like Cursor or Zed, or uploading to Claude Projects.
 		</p>
 		<p>
-			Documentation is automatically fetched from the <a target="_blank" href="https://github.com/sveltejs/svelte.dev/tree/main/apps/svelte.dev/content">official documentation</a> source on GitHub and
-			updated hourly.
+			Documentation is automatically fetched from the <a
+				target="_blank"
+				href="https://github.com/sveltejs/svelte.dev/tree/main/apps/svelte.dev/content"
+				>official documentation</a
+			> source on GitHub and updated hourly.
 		</p>
 	</article>
 
@@ -57,11 +88,29 @@
 		</p>
 		<h2>Combined presets</h2>
 		<em>
-			Hand-picked combinations of the Svelte 5 + SvelteKit docs in a variety of sizes to fit different LLMs.
+			Hand-picked combinations of the Svelte 5 + SvelteKit docs in a variety of sizes to fit
+			different LLMs.
 		</em>
 		<ul>
 			{#each combinedPresetsFormatted as preset}
 				<PresetListItem {...preset} />
+
+				{#if preset.key === 'svelte-complete-distilled' && distilledVersions.length > 0}
+					<details class="distilled-versions">
+						<summary>Previous distilled versions</summary>
+						<ul>
+							{#each distilledVersions as version}
+								<li>
+									<a href="/svelte-complete-distilled?version={version.date}">{version.date}</a>
+								</li>
+							{/each}
+						</ul>
+					</details>
+				{:else if preset.key === 'svelte-complete-distilled' && loadingVersions}
+					<p class="versions-status"><em>Loading previous distilled versions...</em></p>
+				{:else if preset.key === 'svelte-complete-distilled' && distilledError}
+					<p class="versions-status error"><em>Error: {distilledError}</em></p>
+				{/if}
 			{/each}
 		</ul>
 
@@ -88,7 +137,9 @@
 
 		<h2>Legacy</h2>
 		<ul>
-			<li><a target="_blank" href="https://v4.svelte.dev/content.json">Svelte 4 Legacy + SvelteKit</a></li>
+			<li>
+				<a target="_blank" href="https://v4.svelte.dev/content.json">Svelte 4 Legacy + SvelteKit</a>
+			</li>
 		</ul>
 	</section>
 
@@ -109,7 +160,6 @@
 </main>
 
 <style>
-
 	main {
 		max-width: 42em;
 		margin: 15 auto;
@@ -117,5 +167,23 @@
 
 	details summary {
 		cursor: pointer;
+	}
+
+	.distilled-versions {
+		margin-left: 2em;
+		margin-top: 0.25em;
+		margin-bottom: 0.5em;
+		font-size: 0.9em;
+	}
+
+	.versions-status {
+		margin-left: 2em;
+		margin-top: 0.25em;
+		margin-bottom: 0.5em;
+		font-size: 0.9em;
+	}
+
+	.error {
+		color: #c41c1c;
 	}
 </style>

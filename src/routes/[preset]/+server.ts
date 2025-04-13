@@ -6,8 +6,30 @@ import { error } from '@sveltejs/kit'
 import { presets } from '$lib/presets'
 import { dev } from '$app/environment'
 import { fetchAndProcessMarkdown } from '$lib/fetchMarkdown'
+import { readFile } from 'fs/promises'
+import { getPresetFilePath, readCachedFile, isFileStale } from '$lib/fileCache'
 
-export const GET: RequestHandler = async ({ params }) => {
+/**
+ * Trigger a background update for a preset without awaiting the result
+ */
+function triggerBackgroundUpdate(presetKey: string): void {
+	const preset = presets[presetKey]
+	if (!preset) return
+
+	// Don't update distilled presets, they have their own update mechanism
+	if (preset.distilled) return
+
+	// Fire and forget - don't await this promise
+	fetchAndProcessMarkdown(preset, presetKey)
+		.then(() => {
+			if (dev) console.log(`Background update completed for ${presetKey}`)
+		})
+		.catch((err) => {
+			console.error(`Background update failed for ${presetKey}:`, err)
+		})
+}
+
+export const GET: RequestHandler = async ({ params, url }) => {
 	const presetNames = params.preset.split(',').map((p) => p.trim())
 
 	if (dev) {
@@ -21,26 +43,68 @@ export const GET: RequestHandler = async ({ params }) => {
 	}
 
 	try {
+		// Determine which version of the distilled doc to use
+		const version = url.searchParams.get('version')
+
 		// Fetch all contents in parallel
-		const contentPromises = presetNames.map(async (presetName) => {
+		const contentPromises = presetNames.map(async (presetKey) => {
 			if (dev) {
 				console.time('dataFetching')
 			}
 
-			const content = await fetchAndProcessMarkdown(presets[presetName])
+			let content
+
+			if (presets[presetKey]?.distilled) {
+				// Handle distilled preset differently
+				const baseFilename = presets[presetKey].distilledFilenameBase || 'svelte-complete-distilled'
+				let filename
+
+				if (version) {
+					// Use specific version if provided
+					filename = `outputs/${baseFilename}-${version}.md`
+				} else {
+					// Use latest version otherwise
+					filename = `outputs/${baseFilename}-latest.md`
+				}
+
+				try {
+					content = await readFile(filename, 'utf-8')
+				} catch (e) {
+					throw new Error(
+						`Failed to read distilled content: ${e instanceof Error ? e.message : String(e)}. Make sure to run the distillation process first.`
+					)
+				}
+			} else {
+				// Regular preset processing with file-based caching
+				const filePath = getPresetFilePath(presetKey)
+				content = await readCachedFile(filePath)
+
+				if (content) {
+					// Check if the file is stale and needs a background update
+					const isStale = await isFileStale(filePath)
+					if (isStale) {
+						if (dev) console.log(`File for ${presetKey} is stale, triggering background update`)
+						triggerBackgroundUpdate(presetKey)
+					}
+				} else {
+					// If not in cache, fetch and process markdown (this will also save to disk)
+					content = await fetchAndProcessMarkdown(presets[presetKey], presetKey)
+				}
+			}
 
 			if (dev) {
 				console.timeEnd('dataFetching')
-				console.log(`Content length for ${presetName}: ${content.length}`)
+				console.log(`Content length for ${presetKey}: ${content.length}`)
 			}
 
 			if (content.length === 0) {
-				throw new Error(`No content found for ${presetName}`)
+				throw new Error(`No content found for ${presetKey}`)
 			}
 
-			// Add the prompt if it exists
-			return presets[presetName].prompt
-				? `${content}\n\nInstructions for LLMs: <SYSTEM>${presets[presetName].prompt}</SYSTEM>`
+			// Add the prompt if it exists and we're not using a distilled preset
+			// (distilled presets already have the prompt added)
+			return !presets[presetKey]?.distilled && presets[presetKey].prompt
+				? `${content}\n\nInstructions for LLMs: <SYSTEM>${presets[presetKey].prompt}</SYSTEM>`
 				: content
 		})
 
@@ -69,12 +133,5 @@ export const GET: RequestHandler = async ({ params }) => {
 	} catch (e) {
 		console.error(`Error fetching documentation for presets [${presetNames.join(', ')}]:`, e)
 		error(500, `Failed to fetch documentation for presets "${presetNames.join(', ')}"`)
-	}
-}
-
-export const config = {
-	isr: {
-		expiration: 3600
-		// bypassToken: 'REPLACE_ME_WITH_SECRET_VALUE',
 	}
 }

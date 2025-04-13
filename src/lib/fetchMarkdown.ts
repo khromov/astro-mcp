@@ -5,7 +5,7 @@ import tarStream from 'tar-stream'
 import { Readable } from 'stream'
 import { createGunzip } from 'zlib'
 import { minimatch } from 'minimatch'
-import { swr } from './cache'
+import { getPresetFilePath, readCachedFile, writeAtomicFile } from './fileCache'
 
 function sortFilesWithinGroup(files: string[]): string[] {
 	return files.sort((a, b) => {
@@ -22,12 +22,34 @@ function sortFilesWithinGroup(files: string[]): string[] {
 }
 
 // Main function to fetch and process markdown files
-export async function fetchAndProcessMarkdown(preset: PresetConfig): Promise<string> {
-	const { value: files } = await swr(preset.title, async () => fetchMarkdownFiles(preset))
-	if (dev) {
-		console.log(`Fetched ${files.length} files for ${preset.title}`)
+export async function fetchAndProcessMarkdown(
+	preset: PresetConfig,
+	presetKey: string
+): Promise<string> {
+	const filePath = getPresetFilePath(presetKey)
+
+	// Check if we already have the file cached on disk
+	const cachedContent = await readCachedFile(filePath)
+	if (cachedContent) {
+		if (dev) {
+			console.log(`Using cached content for ${presetKey} from ${filePath}`)
+		}
+		return cachedContent
 	}
-	return files.join('\n\n')
+
+	// If no cached content, fetch and process the files
+	const files = await fetchMarkdownFiles(preset)
+
+	if (dev) {
+		console.log(`Fetched ${files.length} files for ${presetKey}`)
+	}
+
+	const content = files.join('\n\n')
+
+	// Write to cache file (atomic write)
+	await writeAtomicFile(filePath, content)
+
+	return content
 }
 
 function shouldIncludeFile(filename: string, glob: string, ignore: string[] = []): boolean {
@@ -43,13 +65,10 @@ function shouldIncludeFile(filename: string, glob: string, ignore: string[] = []
 }
 
 // Fetch markdown files using GitHub's tarball API
-async function fetchMarkdownFiles({
-	owner,
-	repo,
-	glob,
-	ignore = [],
-	minimize = undefined
-}: PresetConfig): Promise<string[]> {
+export async function fetchMarkdownFiles(
+	{ owner, repo, glob, ignore = [], minimize = undefined }: PresetConfig,
+	includePathInfo = false
+): Promise<string[] | { path: string; content: string }[]> {
 	// Construct the tarball URL
 	const url = `https://api.github.com/repos/${owner}/${repo}/tarball`
 
@@ -70,7 +89,7 @@ async function fetchMarkdownFiles({
 	}
 
 	// Create a Map to store files for each glob pattern while maintaining order
-	const globResults = new Map<string, string[]>()
+	const globResults = new Map<string, any[]>()
 	const filePathsByPattern = new Map<string, string[]>()
 	glob.forEach((pattern) => {
 		globResults.set(pattern, [])
@@ -104,13 +123,26 @@ async function fetchMarkdownFiles({
 							.join('/')
 							.replace('apps/svelte.dev/content/', '') // Remove the fixed prefix
 
-						// Add the file header before the content
-						const contentWithHeader = `## ${cleanPath}\n\n${minimizeContent(content, minimize)}`
+						// Minimize the content if needed
+						const processedContent = minimizeContent(content, minimize)
 
-						// Add to the appropriate glob pattern's results
-						const files = globResults.get(pattern) || []
-						files.push(contentWithHeader)
-						globResults.set(pattern, files)
+						// Store with or without path info based on the parameter
+						if (includePathInfo) {
+							const files = globResults.get(pattern) || []
+							files.push({
+								path: cleanPath,
+								content: processedContent
+							})
+							globResults.set(pattern, files)
+						} else {
+							// Add the file header before the content
+							const contentWithHeader = `## ${cleanPath}\n\n${processedContent}`
+
+							// Add to the appropriate glob pattern's results
+							const files = globResults.get(pattern) || []
+							files.push(contentWithHeader)
+							globResults.set(pattern, files)
+						}
 
 						// Store the file path for logging
 						const paths = filePathsByPattern.get(pattern) || []
@@ -163,9 +195,10 @@ async function fetchMarkdownFiles({
 		// Log files in their final order
 		glob.forEach((pattern, index) => {
 			const paths = filePathsByPattern.get(pattern) || []
-			const sortedPaths = sortFilesWithinGroup(paths.map((p) => `## ${p}`)).map((p) =>
-				p.replace('## ', '')
-			)
+			const sortedPaths = includePathInfo
+				? paths
+				: sortFilesWithinGroup(paths.map((p) => `## ${p}`)).map((p) => p.replace('## ', ''))
+
 			if (sortedPaths.length > 0) {
 				console.log(`\nGlob pattern ${index + 1}: ${pattern}`)
 				sortedPaths.forEach((path, i) => {
@@ -176,11 +209,16 @@ async function fetchMarkdownFiles({
 	}
 
 	// Combine results in the order of glob patterns
-	const orderedResults: string[] = []
+	const orderedResults: any[] = []
 	for (const pattern of glob) {
 		const filesForPattern = globResults.get(pattern) || []
-		// Sort files within each glob pattern group
-		orderedResults.push(...sortFilesWithinGroup(filesForPattern))
+		if (includePathInfo) {
+			// For path info mode, just add the objects directly
+			orderedResults.push(...filesForPattern)
+		} else {
+			// For normal mode, sort and add strings
+			orderedResults.push(...sortFilesWithinGroup(filesForPattern))
+		}
 	}
 
 	return orderedResults
@@ -263,7 +301,7 @@ function removeDiffMarkersFromContent(content: string): string {
 	return processedLines.join('\n')
 }
 
-function minimizeContent(content: string, options?: Partial<MinimizeOptions>): string {
+export function minimizeContent(content: string, options?: Partial<MinimizeOptions>): string {
 	// Merge with defaults, but only for properties that are defined
 	const settings: MinimizeOptions = options ? { ...defaultOptions, ...options } : defaultOptions
 
