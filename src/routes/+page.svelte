@@ -18,13 +18,13 @@
 	// Define virtual distilled presets
 	const svelteDistilledPreset = {
 		key: 'svelte-distilled',
-		title: '🔮 Svelte Only (LLM Distilled)',
+		title: '🔮 Svelte (LLM Distilled)',
 		description: 'AI-condensed version of just the Svelte 5 docs'
 	}
 
 	const svelteKitDistilledPreset = {
 		key: 'sveltekit-distilled',
-		title: '🔮 SvelteKit Only (LLM Distilled)',
+		title: '🔮 SvelteKit (LLM Distilled)',
 		description: 'AI-condensed version of just the SvelteKit docs'
 	}
 
