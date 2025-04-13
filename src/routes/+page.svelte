@@ -15,19 +15,18 @@
 	const svelteKitPresetsFormatted = transformAndSortPresets(svelteKitPresets)
 	const otherPresetsFormatted = transformAndSortPresets(otherPresets)
 
-	// Add virtual distilled presets
-	const virtualDistilledPresets = [
-		{
-			key: 'svelte-distilled',
-			title: '🔮 Svelte (LLM Distilled)',
-			description: 'AI-condensed version of just the Svelte 5 docs'
-		},
-		{
-			key: 'sveltekit-distilled',
-			title: '🔮 SvelteKit (LLM Distilled)',
-			description: 'AI-condensed version of just the SvelteKit docs'
-		}
-	]
+	// Define virtual distilled presets
+	const svelteDistilledPreset = {
+		key: 'svelte-distilled',
+		title: '🔮 Svelte (LLM Distilled)',
+		description: 'AI-condensed version of just the Svelte 5 docs'
+	}
+
+	const svelteKitDistilledPreset = {
+		key: 'sveltekit-distilled',
+		title: '🔮 SvelteKit (LLM Distilled)',
+		description: 'AI-condensed version of just the SvelteKit docs'
+	}
 
 	type DistilledVersion = { filename: string; date: string; path: string }
 
@@ -151,50 +150,31 @@
 					{/if}
 				{/if}
 			{/each}
-
-			{#each virtualDistilledPresets as preset}
-				<PresetListItem {...preset} />
-
-				{#if preset.key === 'svelte-distilled'}
-					{#if loadingVersions}
-						<p class="versions-status"><em>Loading previous distilled versions...</em></p>
-					{:else if distilledError}
-						<p class="versions-status error"><em>Error: {distilledError}</em></p>
-					{:else if distilledVersions['svelte-distilled']?.length > 0}
-						<details class="distilled-versions">
-							<summary>Previous distilled versions</summary>
-							<ul>
-								{#each distilledVersions['svelte-distilled'] as version}
-									<li>
-										<a href="/svelte-distilled?version={version.date}">{version.date}</a>
-									</li>
-								{/each}
-							</ul>
-						</details>
-					{/if}
-				{:else if preset.key === 'sveltekit-distilled'}
-					{#if loadingVersions}
-						<p class="versions-status"><em>Loading previous distilled versions...</em></p>
-					{:else if distilledError}
-						<p class="versions-status error"><em>Error: {distilledError}</em></p>
-					{:else if distilledVersions['sveltekit-distilled']?.length > 0}
-						<details class="distilled-versions">
-							<summary>Previous distilled versions</summary>
-							<ul>
-								{#each distilledVersions['sveltekit-distilled'] as version}
-									<li>
-										<a href="/sveltekit-distilled?version={version.date}">{version.date}</a>
-									</li>
-								{/each}
-							</ul>
-						</details>
-					{/if}
-				{/if}
-			{/each}
 		</ul>
 
 		<h2>Svelte 5</h2>
 		<ul>
+			<!-- Add the Svelte-only distilled preset at the top of the Svelte section -->
+			<PresetListItem {...svelteDistilledPreset} />
+			{#if loadingVersions}
+				<div class="versions-status"><em>Loading previous distilled versions...</em></div>
+			{:else if distilledError}
+				<div class="versions-status error"><em>Error: {distilledError}</em></div>
+			{:else if distilledVersions['svelte-distilled']?.length > 0}
+				<div class="distilled-versions">
+					<details>
+						<summary>Previous distilled versions</summary>
+						<ul>
+							{#each distilledVersions['svelte-distilled'] as version}
+								<li>
+									<a href="/svelte-distilled?version={version.date}">{version.date}</a>
+								</li>
+							{/each}
+						</ul>
+					</details>
+				</div>
+			{/if}
+
 			{#each sveltePresetsFormatted as preset}
 				<PresetListItem {...preset} />
 			{/each}
@@ -202,6 +182,27 @@
 
 		<h2>SvelteKit</h2>
 		<ul>
+			<!-- Add the SvelteKit-only distilled preset at the top of the SvelteKit section -->
+			<PresetListItem {...svelteKitDistilledPreset} />
+			{#if loadingVersions}
+				<div class="versions-status"><em>Loading previous distilled versions...</em></div>
+			{:else if distilledError}
+				<div class="versions-status error"><em>Error: {distilledError}</em></div>
+			{:else if distilledVersions['sveltekit-distilled']?.length > 0}
+				<div class="distilled-versions">
+					<details>
+						<summary>Previous distilled versions</summary>
+						<ul>
+							{#each distilledVersions['sveltekit-distilled'] as version}
+								<li>
+									<a href="/sveltekit-distilled?version={version.date}">{version.date}</a>
+								</li>
+							{/each}
+						</ul>
+					</details>
+				</div>
+			{/if}
+
 			{#each svelteKitPresetsFormatted as preset}
 				<PresetListItem {...preset} />
 			{/each}
