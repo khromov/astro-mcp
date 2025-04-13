@@ -1,14 +1,21 @@
 import { json } from '@sveltejs/kit'
 import { readdir } from 'fs/promises'
-import { presets } from '$lib/presets'
 import type { RequestHandler } from './$types'
 
-export const GET: RequestHandler = async () => {
-	try {
-		// Find the distilled preset to get the base filename
-		const distilledPreset = Object.values(presets).find((preset) => preset.distilled)
+// Valid basenames for distilled content
+const VALID_DISTILLED_BASENAMES = [
+	'svelte-complete-distilled',
+	'svelte-distilled',
+	'sveltekit-distilled'
+]
 
-		if (!distilledPreset || !distilledPreset.distilledFilenameBase) {
+export const GET: RequestHandler = async ({ url }) => {
+	try {
+		// Get the preset key from the URL query parameter
+		const presetKey = url.searchParams.get('preset') || 'svelte-complete-distilled'
+
+		// Validate the preset key
+		if (!VALID_DISTILLED_BASENAMES.includes(presetKey)) {
 			return json([])
 		}
 
@@ -16,9 +23,7 @@ export const GET: RequestHandler = async () => {
 		const files = await readdir('outputs')
 
 		// Filter files matching the pattern and exclude the latest
-		const pattern = new RegExp(
-			`^${distilledPreset.distilledFilenameBase}-\\d{4}-\\d{2}-\\d{2}\\.md$`
-		)
+		const pattern = new RegExp(`^${presetKey}-\\d{4}-\\d{2}-\\d{2}\\.md$`)
 		const versions = files
 			.filter((file) => pattern.test(file))
 			.map((file) => {

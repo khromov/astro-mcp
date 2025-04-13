@@ -4,6 +4,11 @@ import { presets } from '$lib/presets'
 import { getPresetFilePath, getFileSizeKb, isFileStale } from '$lib/fileCache'
 import { dev } from '$app/environment'
 import { fetchAndProcessMarkdown } from '$lib/fetchMarkdown'
+import { existsSync } from 'fs'
+import { readFile } from 'fs/promises'
+
+// Virtual distilled presets that aren't in the presets object
+const VIRTUAL_DISTILLED_PRESETS = ['svelte-distilled', 'sveltekit-distilled']
 
 /**
  * Trigger a background update for a preset without awaiting the result
@@ -25,15 +30,48 @@ function triggerBackgroundUpdate(presetKey: string): void {
 		})
 }
 
+/**
+ * Get the size of a file in KB
+ */
+async function getVirtualPresetSizeKb(filePath: string): Promise<number> {
+	try {
+		if (existsSync(filePath)) {
+			const content = await readFile(filePath, 'utf-8')
+			return Math.floor(new TextEncoder().encode(content).length / 1024)
+		}
+		return 0
+	} catch (e) {
+		console.error(`Error getting file size for ${filePath}:`, e)
+		return 0
+	}
+}
+
 export const GET: RequestHandler = async ({ params }) => {
 	const presetKey = params.preset
 
-	if (!(presetKey in presets)) {
+	// Handle both regular presets and virtual distilled presets
+	const isVirtualPreset = VIRTUAL_DISTILLED_PRESETS.includes(presetKey)
+	const isRegularPreset = presetKey in presets
+
+	// If it's neither a virtual nor a regular preset, it's invalid
+	if (!isVirtualPreset && !isRegularPreset) {
 		error(400, `Invalid preset: "${presetKey}"`)
 	}
 
 	try {
-		// For distilled presets, we still need special handling for versions
+		// Handle virtual distilled presets
+		if (isVirtualPreset) {
+			const latestFilePath = `outputs/${presetKey}-latest.md`
+			const sizeKb = await getVirtualPresetSizeKb(latestFilePath)
+
+			return new Response(JSON.stringify({ sizeKb }), {
+				headers: {
+					'Content-Type': 'application/json'
+				}
+			})
+		}
+
+		// For regular distilled presets
 		if (presets[presetKey]?.distilled) {
 			const baseFilename = presets[presetKey].distilledFilenameBase || 'svelte-complete-distilled'
 			const latestFilePath = `outputs/${baseFilename}-latest.md`

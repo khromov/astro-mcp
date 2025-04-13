@@ -48,6 +48,10 @@ Here is the documentation you must condense:
 
 `
 
+// Virtual preset basenames for the split content
+const SVELTE_DISTILLED_BASENAME = 'svelte-distilled'
+const SVELTEKIT_DISTILLED_BASENAME = 'sveltekit-distilled'
+
 export const GET: RequestHandler = async ({ url }) => {
 	// Check secret key
 	const secretKey = url.searchParams.get('secret_key')
@@ -62,7 +66,9 @@ export const GET: RequestHandler = async ({ url }) => {
 	}
 
 	// Find the distilled preset
-	const distilledPreset = Object.values(presets).find((preset) => preset.distilled)
+	const distilledPreset = Object.values(presets).find(
+		(preset) => preset.distilled && preset.distilledFilenameBase === 'svelte-complete-distilled'
+	)
 
 	if (!distilledPreset) {
 		throw error(500, 'No distilled preset found')
@@ -233,18 +239,38 @@ export const GET: RequestHandler = async ({ url }) => {
 		// Sort by index to maintain original order
 		processedResults.sort((a, b) => a.index - b.index)
 
-		// Create final content with all successfully processed files
-		const contentParts = processedResults
-			.filter((result) => result.content) // Only include successful responses
-			.map((result) => `## ${result.path}\n\n${result.content}`)
+		// Filter successful responses
+		const successfulResults = processedResults.filter((result) => result.content)
 
-		// Join all parts
-		const distilledContent = contentParts.join('\n\n')
+		// Split results into Svelte and SvelteKit categories
+		const svelteResults = successfulResults.filter((result) => result.path.includes('docs/svelte/'))
 
-		// Add the prompt if it exists
-		const finalContent = distilledPreset.prompt
-			? `${distilledContent}\n\nInstructions for LLMs: <SYSTEM>${distilledPreset.prompt}</SYSTEM>`
-			: distilledContent
+		const svelteKitResults = successfulResults.filter((result) => result.path.includes('docs/kit/'))
+
+		// Create content for each category
+		const createContentFromResults = (results: typeof successfulResults) => {
+			const contentParts = results.map((result) => `## ${result.path}\n\n${result.content}`)
+			return contentParts.join('\n\n')
+		}
+
+		// Generate combined content
+		const distilledContent = createContentFromResults(successfulResults)
+
+		// Generate Svelte content
+		const svelteContent = createContentFromResults(svelteResults)
+
+		// Generate SvelteKit content
+		const svelteKitContent = createContentFromResults(svelteKitResults)
+
+		// Add prompt if it exists
+		const prompt = distilledPreset.prompt
+			? `\n\nInstructions for LLMs: <SYSTEM>${distilledPreset.prompt}</SYSTEM>`
+			: ''
+
+		// Finalize content with prompts
+		const finalContent = distilledContent + prompt
+		const finalSvelteContent = svelteContent + prompt
+		const finalSvelteKitContent = svelteKitContent + prompt
 
 		// Generate filenames
 		const today = new Date()
@@ -252,14 +278,31 @@ export const GET: RequestHandler = async ({ url }) => {
 			today.getDate()
 		).padStart(2, '0')}`
 
+		// Combined content file paths
 		const latestFilename = `outputs/${distilledPreset.distilledFilenameBase}-latest.md`
 		const datedFilename = `outputs/${distilledPreset.distilledFilenameBase}-${dateStr}.md`
+
+		// Svelte content file paths
+		const svelteLatestFilename = `outputs/${SVELTE_DISTILLED_BASENAME}-latest.md`
+		const svelteDatedFilename = `outputs/${SVELTE_DISTILLED_BASENAME}-${dateStr}.md`
+
+		// SvelteKit content file paths
+		const svelteKitLatestFilename = `outputs/${SVELTEKIT_DISTILLED_BASENAME}-latest.md`
+		const svelteKitDatedFilename = `outputs/${SVELTEKIT_DISTILLED_BASENAME}-${dateStr}.md`
+
+		// Debug file path
 		const debugFilename = `outputs/${distilledPreset.distilledFilenameBase}-debug.json`
 
 		// Write files using writeAtomicFile from fileCache.ts
-		// Note: writeAtomicFile handles directory creation, so we don't need separate ensureDir calls
 		await writeAtomicFile(latestFilename, finalContent)
 		await writeAtomicFile(datedFilename, finalContent)
+
+		await writeAtomicFile(svelteLatestFilename, finalSvelteContent)
+		await writeAtomicFile(svelteDatedFilename, finalSvelteContent)
+
+		await writeAtomicFile(svelteKitLatestFilename, finalSvelteKitContent)
+		await writeAtomicFile(svelteKitDatedFilename, finalSvelteKitContent)
+
 		await writeAtomicFile(debugFilename, JSON.stringify(debugData, null, 2))
 
 		return json({
@@ -269,11 +312,29 @@ export const GET: RequestHandler = async ({ url }) => {
 			filesProcessed: filesToProcess.length,
 			minimizeApplied: !!distilledPreset.minimize,
 			resultsReceived: results.length,
-			successfulResults: processedResults.filter((r) => r.content).length,
-			bytes: finalContent.length,
-			latestFile: latestFilename,
-			datedFile: datedFilename,
-			debugFile: debugFilename
+			successfulResults: successfulResults.length,
+			svelteResults: svelteResults.length,
+			svelteKitResults: svelteKitResults.length,
+			bytes: {
+				combined: finalContent.length,
+				svelte: finalSvelteContent.length,
+				svelteKit: finalSvelteKitContent.length
+			},
+			files: {
+				combined: {
+					latest: latestFilename,
+					dated: datedFilename
+				},
+				svelte: {
+					latest: svelteLatestFilename,
+					dated: svelteDatedFilename
+				},
+				svelteKit: {
+					latest: svelteKitLatestFilename,
+					dated: svelteKitDatedFilename
+				},
+				debug: debugFilename
+			}
 		})
 	} catch (e) {
 		console.error('Error in distillation process:', e)
