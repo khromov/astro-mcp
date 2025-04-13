@@ -19,12 +19,12 @@
 	const virtualDistilledPresets = [
 		{
 			key: 'svelte-distilled',
-			title: '🔮 Svelte Only (LLM Distilled)',
+			title: '🔮 Svelte (LLM Distilled)',
 			description: 'AI-condensed version of just the Svelte 5 docs'
 		},
 		{
 			key: 'sveltekit-distilled',
-			title: '🔮 SvelteKit Only (LLM Distilled)',
+			title: '🔮 SvelteKit (LLM Distilled)',
 			description: 'AI-condensed version of just the SvelteKit docs'
 		}
 	]
