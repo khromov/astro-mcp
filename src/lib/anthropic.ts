@@ -171,32 +171,65 @@ export class AnthropicProvider implements LLMProvider {
 	/**
 	 * Get the status of a batch
 	 * @param batchId The ID of the batch
+	 * @param maxRetries Maximum number of retry attempts (default: 10)
+	 * @param retryDelay Delay between retries in milliseconds (default: 30000)
 	 * @returns The batch status
 	 */
-	async getBatchStatus(batchId: string): Promise<AnthropicBatchResponse> {
-		try {
-			const response = await fetch(`${this.baseUrl}/messages/batches/${batchId}`, {
-				method: 'GET',
-				headers: {
-					'x-api-key': this.apiKey,
-					'anthropic-version': '2023-06-01'
+	async getBatchStatus(
+		batchId: string,
+		maxRetries = 10,
+		retryDelay = 30000
+	): Promise<AnthropicBatchResponse> {
+		let retryCount = 0
+
+		while (retryCount <= maxRetries) {
+			try {
+				const response = await fetch(`${this.baseUrl}/messages/batches/${batchId}`, {
+					method: 'GET',
+					headers: {
+						'x-api-key': this.apiKey,
+						'anthropic-version': '2023-06-01'
+					}
+				})
+
+				if (!response.ok) {
+					const errorText = await response.text()
+					throw new Error(
+						`Failed to get batch status: ${response.status} ${response.statusText} - ${errorText}`
+					)
 				}
-			})
 
-			if (!response.ok) {
-				const errorText = await response.text()
-				throw new Error(
-					`Failed to get batch status: ${response.status} ${response.statusText} - ${errorText}`
+				return await response.json()
+			} catch (error) {
+				retryCount++
+
+				if (retryCount > maxRetries) {
+					// If we've exceeded the maximum number of retries, log the error and throw
+					console.error(
+						`Error getting batch status for ${batchId} after ${maxRetries} retries:`,
+						error
+					)
+					throw new Error(
+						`Failed to get batch status after ${maxRetries} retries: ${
+							error instanceof Error ? error.message : String(error)
+						}`
+					)
+				}
+
+				// Log retry attempt
+				console.warn(
+					`Error getting batch status for ${batchId} (attempt ${retryCount}/${maxRetries}):`,
+					error
 				)
-			}
+				console.log(`Retrying in ${retryDelay / 1000} seconds...`)
 
-			return await response.json()
-		} catch (error) {
-			console.error(`Error getting batch status for ${batchId}:`, error)
-			throw new Error(
-				`Failed to get batch status: ${error instanceof Error ? error.message : String(error)}`
-			)
+				// Wait for the specified delay before retrying
+				await new Promise((resolve) => setTimeout(resolve, retryDelay))
+			}
 		}
+
+		// This should never be reached due to the throw in the catch block, but TypeScript needs a return
+		throw new Error(`Failed to get batch status for ${batchId} after ${maxRetries} retries`)
 	}
 
 	/**
