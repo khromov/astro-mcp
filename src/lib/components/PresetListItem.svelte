@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte'
+	import toast from 'svelte-french-toast'
 
 	let { title, key, description } = $props<{
 		title: string
@@ -25,12 +26,35 @@
 			sizeLoading = false
 		}
 	})
+
+	async function copyToClipboard(e: Event) {
+		e.preventDefault()
+
+		const copyPromise = async () => {
+			// Fetch the preset content
+			const response = await fetch(`/${key}`)
+			if (!response.ok) {
+				throw new Error('Failed to fetch content')
+			}
+
+			const text = await response.text()
+			await navigator.clipboard.writeText(text)
+
+			return text
+		}
+
+		toast.promise(copyPromise(), {
+			loading: 'Copying...',
+			success: 'Copied to clipboard!',
+			error: 'Failed to copy content.'
+		})
+	}
 </script>
 
 <li>
 	<a href="/{key}">{title}</a>
 	{#if description}
-		<button class="info-marker" onclick={() => dialog?.showModal()}>*</button>
+		<button class="info-marker" onclick={() => dialog?.showModal()}>[?]</button>
 		<dialog bind:this={dialog}>
 			<form method="dialog">
 				<p>{description}</p>
@@ -39,6 +63,7 @@
 			</form>
 		</dialog>
 	{/if}
+	<a href="#{key}" class="copy-link" onclick={copyToClipboard}>[📋 Copy]</a>
 	{#if sizeKb}
 		&nbsp;(~{sizeKb}KB)
 	{:else if sizeLoading}
@@ -88,5 +113,15 @@
 		text-align: inherit;
 		margin: 0;
 		padding: 0;
+	}
+
+	.copy-link {
+		margin-left: 8px;
+		font-size: 0.85em;
+		text-decoration: none;
+	}
+
+	.copy-link:hover {
+		text-decoration: underline;
 	}
 </style>

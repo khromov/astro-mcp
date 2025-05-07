@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { SITE_URL } from '$lib/constants'
+	import { Toaster } from 'svelte-french-toast'
 
 	let { children } = $props()
 
@@ -36,6 +37,7 @@
 			></path>
 		</svg>
 	</a>
+	<Toaster position="top-center" />
 	{@render children?.()}
 </div>
 
