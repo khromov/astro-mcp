@@ -134,11 +134,14 @@
 			<p>Use these endpoints to connect this service to AI assistants that support MCP:</p>
 			<ul>
 				<li>
-					<strong>SSE (Claude Desktop):</strong> <code>https://svelte-llm.khromov.se/mcp/sse</code>
+					<strong>SSE (Claude Desktop):</strong> 
+					<code>https://svelte-llm.khromov.se/mcp/sse</code>
+					<a href="#mcp-sse" class="copy-link" on:click|preventDefault={() => navigator.clipboard.writeText('https://svelte-llm.khromov.se/mcp/sse')}>[📋 Copy]</a>
 				</li>
 				<li>
 					<strong>Streamable HTTP (most other clients):</strong>
 					<code>https://svelte-llm.khromov.se/mcp/mcp</code>
+					<a href="#mcp-http" class="copy-link" on:click|preventDefault={() => navigator.clipboard.writeText('https://svelte-llm.khromov.se/mcp/mcp')}>[📋 Copy]</a>
 				</li>
 			</ul>
 		</details>
@@ -311,5 +314,15 @@
 
 	.error {
 		color: #c41c1c;
+	}
+
+	.copy-link {
+		margin-left: 8px;
+		font-size: 0.85em;
+		text-decoration: none;
+	}
+
+	.copy-link:hover {
+		text-decoration: underline;
 	}
 </style>
