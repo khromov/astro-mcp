@@ -8,78 +8,161 @@ import { fetchAndProcessMarkdown } from '$lib/fetchMarkdown'
 const handler = createMcpHandler(
 	(server) => {
 		server.tool(
-			'get_documentation',
-			'Retrieves documentation for a specific preset or lists available presets',
-			{ 
-				preset: z.string().optional().describe('The preset name to retrieve documentation for. If not provided, lists available presets.'),
-				section: z.string().optional().describe('Optional: specific section/file to search for within the documentation')
-			},
-			async ({ preset, section }) => {
-				console.log({ preset, section })
-				
-				// If no preset provided, list available presets
-				if (!preset) {
-					const presetList = Object.entries(presets)
-						.map(([key, config]) => `- **${key}**: ${config.title}${config.description ? ` - ${config.description}` : ''}`)
-						.join('\n')
-					
-					return {
-						content: [{ 
-							type: 'text', 
-							text: `📚 Available documentation presets:\n\n${presetList}\n\nUse get_documentation with a preset name to retrieve specific documentation.`
-						}]
-					}
-				}
-				
-				// Check if preset exists
-				const presetConfig = presets[preset.toLowerCase()]
-				if (!presetConfig) {
-					const availablePresets = Object.keys(presets).join(', ')
-					return {
-						content: [{ 
-							type: 'text', 
-							text: `❌ Preset "${preset}" not found. Available presets: ${availablePresets}`
-						}]
-					}
-				}
+			'list_sections',
+			'Lists all available documentation sections from Svelte (Full) and SvelteKit (Full) presets',
+			{},
+			async () => {
+				console.log('Listing sections from Svelte and SvelteKit full presets')
 				
 				try {
-					// Fetch the documentation
-					const documentation = await fetchAndProcessMarkdown(presetConfig, preset.toLowerCase())
+					// Get sections from both full presets
+					const svelteDoc = await fetchAndProcessMarkdown(presets['svelte'], 'svelte')
+					const svelteKitDoc = await fetchAndProcessMarkdown(presets['sveltekit'], 'sveltekit')
 					
-					// If section is specified, try to find and return only that section
-					if (section) {
-						const sections = documentation.split('\n\n## ')
-						const matchingSection = sections.find(s => 
-							s.toLowerCase().includes(section.toLowerCase())
-						)
+					// Helper function to extract titles from frontmatter
+					const extractSectionTitles = (doc: string, framework: string) => {
+						return doc.split('\n\n## ').map(section => {
+							const lines = section.split('\n')
+							const firstLine = lines[0].replace('## ', '').trim()
+							
+							// Skip file path headings
+							if (firstLine.startsWith('docs/')) {
+								return null
+							}
+							
+							// Look for frontmatter title
+							const frontmatterMatch = section.match(/---\s*\n([\s\S]*?)\n---/)
+							if (frontmatterMatch) {
+								const frontmatter = frontmatterMatch[1]
+								const titleMatch = frontmatter.match(/title:\s*(.+)/)
+								if (titleMatch) {
+									const title = titleMatch[1].trim().replace(/^['"]|['"]$/g, '')
+									return `**${framework}**: ${title}`
+								}
+							}
+							
+							// Fallback to first heading that's not a file path
+							const headingMatch = section.match(/^#+ (.+)/m)
+							if (headingMatch && !headingMatch[1].startsWith('docs/')) {
+								return `**${framework}**: ${headingMatch[1].trim()}`
+							}
+							
+							return null
+						}).filter(Boolean)
+					}
+					
+					const svelteSections = extractSectionTitles(svelteDoc, 'Svelte')
+					const svelteKitSections = extractSectionTitles(svelteKitDoc, 'SvelteKit')
+					
+					const allSections = [...svelteSections, ...svelteKitSections]
+					
+					return {
+						content: [{ 
+							type: 'text', 
+							text: `📋 Available documentation sections:\n\n${allSections.join('\n')}\n\nUse get_documentation with a section name to retrieve specific content.`
+						}]
+					}
+				} catch (error) {
+					console.error('Error listing sections:', error)
+					return {
+						content: [{ 
+							type: 'text', 
+							text: `❌ Error listing sections: ${error.message}`
+						}]
+					}
+				}
+			}
+		)
+
+		server.tool(
+			'get_documentation',
+			'Retrieves documentation for a specific section from Svelte or SvelteKit full presets',
+			{ 
+				section: z.string().describe('The section name to retrieve documentation for')
+			},
+			async ({ section }) => {
+				console.log({ section })
+				
+				try {
+					// Get documentation from both full presets
+					const svelteDoc = await fetchAndProcessMarkdown(presets['svelte'], 'svelte')
+					const svelteKitDoc = await fetchAndProcessMarkdown(presets['sveltekit'], 'sveltekit')
+					
+					// Helper function to find section by title or content
+					const findSection = (doc: string, searchTerm: string) => {
+						return doc.split('\n\n## ').find(sectionText => {
+							const lines = sectionText.split('\n')
+							const firstLine = lines[0].replace('## ', '').trim()
+							
+							// Skip file path headings
+							if (firstLine.startsWith('docs/')) {
+								// Look for frontmatter title
+								const frontmatterMatch = sectionText.match(/---\s*\n([\s\S]*?)\n---/)
+								if (frontmatterMatch) {
+									const frontmatter = frontmatterMatch[1]
+									const titleMatch = frontmatter.match(/title:\s*(.+)/)
+									if (titleMatch) {
+										const title = titleMatch[1].trim().replace(/^['"]|['"]$/g, '')
+										return title.toLowerCase().includes(searchTerm.toLowerCase())
+									}
+								}
+								
+								// Also search in the content itself
+								return sectionText.toLowerCase().includes(searchTerm.toLowerCase())
+							}
+							
+							// For non-file-path headings, search in the heading and content
+							return sectionText.toLowerCase().includes(searchTerm.toLowerCase())
+						})
+					}
+					
+					// Search in Svelte documentation first
+					const svelteMatch = findSection(svelteDoc, section)
+					
+					if (svelteMatch) {
+						// Clean up the content - remove file path headings
+						let cleanContent = svelteMatch
+						if (!svelteMatch.startsWith('## ')) {
+							cleanContent = `## ${svelteMatch}`
+						}
 						
-						if (matchingSection) {
-							const sectionContent = matchingSection.startsWith('## ') ? matchingSection : `## ${matchingSection}`
-							return {
-								content: [{ 
-									type: 'text', 
-									text: `📖 Documentation section for "${preset}" (${section}):\n\n${sectionContent}`
-								}]
-							}
-						} else {
-							return {
-								content: [{ 
-									type: 'text', 
-									text: `❌ Section "${section}" not found in preset "${preset}". Try without specifying a section to see all available content.`
-								}]
-							}
+						// Remove the docs/ heading if present
+						cleanContent = cleanContent.replace(/^## docs\/[^\n]+\n\n/, '')
+						
+						return {
+							content: [{ 
+								type: 'text', 
+								text: `📖 Svelte documentation section (${section}):\n\n${cleanContent}`
+							}]
 						}
 					}
 					
-					// Return full documentation if no section specified
-					const truncated = documentation.length > 50000 
-					const content = truncated ? documentation.substring(0, 50000) + '\n\n... (truncated)' : documentation
+					// Search in SvelteKit documentation if not found in Svelte
+					const svelteKitMatch = findSection(svelteKitDoc, section)
 					
+					if (svelteKitMatch) {
+						// Clean up the content - remove file path headings
+						let cleanContent = svelteKitMatch
+						if (!svelteKitMatch.startsWith('## ')) {
+							cleanContent = `## ${svelteKitMatch}`
+						}
+						
+						// Remove the docs/ heading if present
+						cleanContent = cleanContent.replace(/^## docs\/[^\n]+\n\n/, '')
+						
+						return {
+							content: [{ 
+								type: 'text', 
+								text: `📖 SvelteKit documentation section (${section}):\n\n${cleanContent}`
+							}]
+						}
+					}
+					
+					// If not found in either
 					return {
 						content: [{ 
 							type: 'text', 
-							text: `📖 Documentation for "${preset}" (${presetConfig.title}):\n\n${content}`
+							text: `❌ Section "${section}" not found in Svelte or SvelteKit documentation. Use list_sections to see all available sections.`
 						}]
 					}
 				} catch (error) {
@@ -87,7 +170,7 @@ const handler = createMcpHandler(
 					return {
 						content: [{ 
 							type: 'text', 
-							text: `❌ Error fetching documentation for preset "${preset}": ${error.message}`
+							text: `❌ Error fetching documentation for section "${section}": ${error.message}`
 						}]
 					}
 				}
