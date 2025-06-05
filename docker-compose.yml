@@ -1,0 +1,13 @@
+services:
+  redis:
+    image: 'redis:8.0.2-alpine'
+    ports:
+      - '6379:6379'
+  redis-commander:
+    depends_on:
+      - redis
+    image: rediscommander/redis-commander:latest
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    ports:
+      - '8081:8081'
