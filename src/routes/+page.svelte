@@ -127,6 +127,22 @@
 				href="/svelte,sveltekit,svelte-cli">Link</a
 			>)
 		</p>
+
+		<h3>👀 MCP server (New!)</h3>
+		<details>
+			<summary>MCP (Model Context Protocol) Endpoints</summary>
+			<p>Use these endpoints to connect this service to AI assistants that support MCP:</p>
+			<ul>
+				<li>
+					<strong>SSE (Claude Desktop):</strong> <code>https://svelte-llm.khromov.se/mcp/sse</code>
+				</li>
+				<li>
+					<strong>Streamable HTTP (most other clients):</strong>
+					<code>https://svelte-llm.khromov.se/mcp/mcp</code>
+				</li>
+			</ul>
+		</details>
+
 		<h2>Combined presets</h2>
 		<em>
 			Hand-picked combinations of the Svelte 5 + SvelteKit docs in a variety of sizes to fit
