@@ -240,6 +240,20 @@
 	</section>
 
 	<br />
+	<details>
+		<summary>MCP (Model Context Protocol) Endpoints - Experimental</summary>
+		<p>Use these endpoints to connect this service to AI assistants that support MCP:</p>
+		<ul>
+			<li>
+				<strong>SSE (Claude Desktop):</strong> <code>https://svelte-llm.khromov.se/mcp/sse</code>
+			</li>
+			<li>
+				<strong>Streamable HTTP (most other clients):</strong>
+				<code>https://svelte-llm.khromov.se/mcp/mcp</code>
+			</li>
+		</ul>
+	</details>
+
 	{#each instructions as { title, description, command }}
 		<details>
 			<summary>{title}</summary>
