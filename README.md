@@ -1,12 +1,21 @@
-This is a fork of llmctx with improved Svelte presets, deployed at [svelte-llm.khromov.se](https://svelte-llm.khromov.se).
+## svelte-llm
+
+LLM presets for Svelte 5 and SvelteKit. Visit the site at [svelte-llm.khromov.se](https://svelte-llm.khromov.se).
+
+## MCP Endpoint
+
+This service provides an MCP (Model Context Protocol) endpoint for use with AI assistants:
+
+- **SSE (Claude Desktop)**: `https://svelte-llm.khromov.se/mcp/sse`
+- **Streamable HTTP (most other clients)**: `https://svelte-llm.khromov.se/mcp/mcp`
 
 OG image from https://dynamic-og-image-generator.vercel.app/
 
 # Setup
 
-* Create a `.env` file with the content `GITHUB_TOKEN=`
-* Create [a Classic GitHub token](https://github.com/settings/tokens). It must have `public_repo` permissions.
-* Enter this in the .env file.
+- Create a `.env` file with the content `GITHUB_TOKEN=`
+- Create [a Classic GitHub token](https://github.com/settings/tokens). It must have `public_repo` permissions.
+- Enter this in the .env file.
 
 # llmctx
 
