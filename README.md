@@ -4,9 +4,9 @@ OG image from https://dynamic-og-image-generator.vercel.app/
 
 # Setup
 
-* Create a `.env` file with the content `GITHUB_TOKEN=`
-* Create [a Classic GitHub token](https://github.com/settings/tokens). It must have `public_repo` permissions.
-* Enter this in the .env file.
+- Create a `.env` file with the content `GITHUB_TOKEN=`
+- Create [a Classic GitHub token](https://github.com/settings/tokens). It must have `public_repo` permissions.
+- Enter this in the .env file.
 
 # llmctx
 
@@ -49,8 +49,8 @@ The `glob` field supports glob patterns, providing flexible file matching:
 
 Please ensure that the documentation source is reliable and actively maintained.
 
-## Feature requests
+## Debug MCP
 
-- [x] Combine multiple documentation sources (e.g., https://llmctx.com/svelte,sveltekit)
-- [ ] Create a "stack" of frequently used frameworks and libraries
-- [ ] Implement a checkbox UI for selecting presets and generate custom URLs based on selected documentation
+```
+NODE_TLS_REJECT_UNAUTHORIZED=0 NODE_OPTIONS="--insecure-http-parser" npx @modelcontextprotocol/inspector
+```

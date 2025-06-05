@@ -5,6 +5,8 @@ import { building } from '$app/environment'
 const headers: Handle = async ({ event, resolve }) => {
 	const response = await resolve(event)
 	response.headers.set('cache-control', 'no-cache')
+	response.headers.set('X-Accel-Buffering', 'no')
+
 	return response
 }
 
