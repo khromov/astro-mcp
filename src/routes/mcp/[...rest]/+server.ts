@@ -19,40 +19,23 @@ const handler = createMcpHandler(
 					const svelteDoc = await fetchAndProcessMarkdown(presets['svelte'], 'svelte')
 					const svelteKitDoc = await fetchAndProcessMarkdown(presets['sveltekit'], 'sveltekit')
 					
-					// Helper function to extract titles from frontmatter
-					const extractSectionTitles = (doc: string, framework: string) => {
+					// Helper function to extract file path headings
+					const extractFileHeadings = (doc: string, framework: string) => {
 						return doc.split('\n\n## ').map(section => {
 							const lines = section.split('\n')
 							const firstLine = lines[0].replace('## ', '').trim()
 							
-							// Skip file path headings
+							// Only return file path headings
 							if (firstLine.startsWith('docs/')) {
-								return null
-							}
-							
-							// Look for frontmatter title
-							const frontmatterMatch = section.match(/---\s*\n([\s\S]*?)\n---/)
-							if (frontmatterMatch) {
-								const frontmatter = frontmatterMatch[1]
-								const titleMatch = frontmatter.match(/title:\s*(.+)/)
-								if (titleMatch) {
-									const title = titleMatch[1].trim().replace(/^['"]|['"]$/g, '')
-									return `**${framework}**: ${title}`
-								}
-							}
-							
-							// Fallback to first heading that's not a file path
-							const headingMatch = section.match(/^#+ (.+)/m)
-							if (headingMatch && !headingMatch[1].startsWith('docs/')) {
-								return `**${framework}**: ${headingMatch[1].trim()}`
+								return `**${framework}**: ${firstLine}`
 							}
 							
 							return null
 						}).filter(Boolean)
 					}
 					
-					const svelteSections = extractSectionTitles(svelteDoc, 'Svelte')
-					const svelteKitSections = extractSectionTitles(svelteKitDoc, 'SvelteKit')
+					const svelteSections = extractFileHeadings(svelteDoc, 'Svelte')
+					const svelteKitSections = extractFileHeadings(svelteKitDoc, 'SvelteKit')
 					
 					const allSections = [...svelteSections, ...svelteKitSections]
 					
@@ -88,72 +71,53 @@ const handler = createMcpHandler(
 					const svelteDoc = await fetchAndProcessMarkdown(presets['svelte'], 'svelte')
 					const svelteKitDoc = await fetchAndProcessMarkdown(presets['sveltekit'], 'sveltekit')
 					
-					// Helper function to find section by title or content
-					const findSection = (doc: string, searchTerm: string) => {
+					// Helper function to find section by file path
+					const findSectionByFilePath = (doc: string, searchPath: string) => {
 						return doc.split('\n\n## ').find(sectionText => {
 							const lines = sectionText.split('\n')
 							const firstLine = lines[0].replace('## ', '').trim()
 							
-							// Skip file path headings
+							// Look for exact or partial match in file path
 							if (firstLine.startsWith('docs/')) {
-								// Look for frontmatter title
-								const frontmatterMatch = sectionText.match(/---\s*\n([\s\S]*?)\n---/)
-								if (frontmatterMatch) {
-									const frontmatter = frontmatterMatch[1]
-									const titleMatch = frontmatter.match(/title:\s*(.+)/)
-									if (titleMatch) {
-										const title = titleMatch[1].trim().replace(/^['"]|['"]$/g, '')
-										return title.toLowerCase().includes(searchTerm.toLowerCase())
-									}
-								}
-								
-								// Also search in the content itself
-								return sectionText.toLowerCase().includes(searchTerm.toLowerCase())
+								return firstLine.toLowerCase().includes(searchPath.toLowerCase())
 							}
 							
-							// For non-file-path headings, search in the heading and content
-							return sectionText.toLowerCase().includes(searchTerm.toLowerCase())
+							return false
 						})
 					}
 					
 					// Search in Svelte documentation first
-					const svelteMatch = findSection(svelteDoc, section)
+					const svelteMatch = findSectionByFilePath(svelteDoc, section)
 					
 					if (svelteMatch) {
-						// Clean up the content - remove file path headings
-						let cleanContent = svelteMatch
+						// Return the content with the file path heading
+						let content = svelteMatch
 						if (!svelteMatch.startsWith('## ')) {
-							cleanContent = `## ${svelteMatch}`
+							content = `## ${svelteMatch}`
 						}
-						
-						// Remove the docs/ heading if present
-						cleanContent = cleanContent.replace(/^## docs\/[^\n]+\n\n/, '')
 						
 						return {
 							content: [{ 
 								type: 'text', 
-								text: `📖 Svelte documentation section (${section}):\n\n${cleanContent}`
+								text: `📖 Svelte documentation file (${section}):\n\n${content}`
 							}]
 						}
 					}
 					
 					// Search in SvelteKit documentation if not found in Svelte
-					const svelteKitMatch = findSection(svelteKitDoc, section)
+					const svelteKitMatch = findSectionByFilePath(svelteKitDoc, section)
 					
 					if (svelteKitMatch) {
-						// Clean up the content - remove file path headings
-						let cleanContent = svelteKitMatch
+						// Return the content with the file path heading
+						let content = svelteKitMatch
 						if (!svelteKitMatch.startsWith('## ')) {
-							cleanContent = `## ${svelteKitMatch}`
+							content = `## ${svelteKitMatch}`
 						}
-						
-						// Remove the docs/ heading if present
-						cleanContent = cleanContent.replace(/^## docs\/[^\n]+\n\n/, '')
 						
 						return {
 							content: [{ 
 								type: 'text', 
-								text: `📖 SvelteKit documentation section (${section}):\n\n${cleanContent}`
+								text: `📖 SvelteKit documentation file (${section}):\n\n${content}`
 							}]
 						}
 					}
