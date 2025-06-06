@@ -6,7 +6,7 @@
 		title: string
 		key: string
 		description?: string
-		distilledVersions?: Array<{filename: string, date: string, path: string, sizeKb: number}>
+		distilledVersions?: Array<{ filename: string; date: string; path: string; sizeKb: number }>
 		loadingVersions?: boolean
 		distilledError?: string | null
 	}>()
@@ -60,7 +60,7 @@
 		{#if description}
 			<button class="info-button" onclick={() => dialog?.showModal()}>
 				<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-					<circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5" fill="none"/>
+					<circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5" fill="none" />
 					<text x="8" y="12" text-anchor="middle" font-size="10" font-weight="600">?</text>
 				</svg>
 			</button>
@@ -82,14 +82,31 @@
 	{/if}
 
 	<div class="preset-actions">
-		<button class="copy-button" onclick={copyToClipboard}>
-			<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-				<path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"/>
-				<path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"/>
-			</svg>
-			Copy to clipboard
-		</button>
-		
+		<div class="action-buttons">
+			<a href="/{key}" class="download-button">
+				<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+					<path
+						d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"
+					/>
+					<path
+						d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"
+					/>
+				</svg>
+				Download
+			</a>
+			<button class="copy-button" onclick={copyToClipboard}>
+				<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+					<path
+						d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"
+					/>
+					<path
+						d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"
+					/>
+				</svg>
+				Copy preset to clipboard
+			</button>
+		</div>
+
 		<div class="size-info">
 			{#if sizeKb}
 				<span class="size-badge">~{sizeKb}KB</span>
@@ -194,7 +211,14 @@
 		flex-wrap: wrap;
 	}
 
-	.copy-button {
+	.action-buttons {
+		display: flex;
+		gap: 8px;
+		flex-wrap: wrap;
+	}
+
+	.copy-button,
+	.download-button {
 		background: #f5f5f7;
 		border: 1px solid rgba(0, 0, 0, 0.08);
 		border-radius: 8px;
@@ -207,9 +231,11 @@
 		display: flex;
 		align-items: center;
 		gap: 6px;
+		text-decoration: none;
 	}
 
-	.copy-button:hover {
+	.copy-button:hover,
+	.download-button:hover {
 		background: #007aff;
 		color: white;
 		border-color: #007aff;
@@ -246,7 +272,9 @@
 		border: none;
 		border-radius: 16px;
 		padding: 0;
-		box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 4px 16px rgba(0, 0, 0, 0.08);
+		box-shadow:
+			0 8px 32px rgba(0, 0, 0, 0.12),
+			0 4px 16px rgba(0, 0, 0, 0.08);
 		max-width: 400px;
 		width: 90vw;
 	}
@@ -357,11 +385,17 @@
 		.preset-actions {
 			flex-direction: column;
 			align-items: stretch;
-			gap: 8px;
+			gap: 12px;
 		}
 
-		.copy-button {
+		.action-buttons {
 			justify-content: center;
+		}
+
+		.copy-button,
+		.download-button {
+			justify-content: center;
+			flex: 1;
 		}
 	}
 </style>
