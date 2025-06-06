@@ -51,77 +51,230 @@
 	}
 </script>
 
-<li>
-	<a href="/{key}">{title}</a>
+<div class="preset-item">
+	<div class="preset-header">
+		<a href="/{key}" class="preset-title">{title}</a>
+		{#if description}
+			<button class="info-button" onclick={() => dialog?.showModal()}>
+				<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+					<circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5" fill="none"/>
+					<text x="8" y="12" text-anchor="middle" font-size="10" font-weight="600">?</text>
+				</svg>
+			</button>
+			<dialog bind:this={dialog} class="info-dialog">
+				<form method="dialog">
+					<div class="dialog-content">
+						<h3>About this preset</h3>
+						<p>{description}</p>
+						<!-- svelte-ignore a11y_autofocus -->
+						<button autofocus class="close-button">Close</button>
+					</div>
+				</form>
+			</dialog>
+		{/if}
+	</div>
+
 	{#if description}
-		<button class="info-marker" onclick={() => dialog?.showModal()}>[?]</button>
-		<dialog bind:this={dialog}>
-			<form method="dialog">
-				<p>{description}</p>
-				<!-- svelte-ignore a11y_autofocus -->
-				<button autofocus>Close</button>
-			</form>
-		</dialog>
+		<p class="preset-description">{description}</p>
 	{/if}
-	<a href="#{key}" class="copy-link" onclick={copyToClipboard}>[📋 Copy]</a>
-	{#if sizeKb}
-		&nbsp;(~{sizeKb}KB)
-	{:else if sizeLoading}
-		&nbsp;(Loading size...)
-	{:else if sizeError}
-		&nbsp;(Size unavailable)
-	{/if}
-</li>
+
+	<div class="preset-actions">
+		<button class="copy-button" onclick={copyToClipboard}>
+			<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+				<path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"/>
+				<path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"/>
+			</svg>
+			Copy to clipboard
+		</button>
+		
+		<div class="size-info">
+			{#if sizeKb}
+				<span class="size-badge">~{sizeKb}KB</span>
+			{:else if sizeLoading}
+				<span class="size-badge loading">Loading...</span>
+			{:else if sizeError}
+				<span class="size-badge error">Size unavailable</span>
+			{/if}
+		</div>
+	</div>
+</div>
 
 <style>
-	.info-marker {
-		cursor: help;
-		color: #666;
-		margin-left: 4px;
+	.preset-item {
+		background: white;
+		border-radius: 12px;
+		padding: 20px;
+		box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+		border: 1px solid rgba(0, 0, 0, 0.06);
+		transition: all 0.2s ease;
 	}
 
-	dialog {
-		border-radius: 4px;
-		border: 1px solid #ccc;
-		padding: 1em;
+	.preset-item:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 	}
 
-	dialog::backdrop {
-		background: rgba(0, 0, 0, 0.3);
-	}
-
-	form {
+	.preset-header {
 		display: flex;
-		flex-direction: column;
-		gap: 1em;
-		align-items: flex-start;
+		align-items: center;
+		gap: 8px;
+		margin-bottom: 8px;
 	}
 
-	button {
-		padding: 0.5em 1em;
-		cursor: pointer;
+	.preset-title {
+		color: #007aff;
+		text-decoration: none;
+		font-weight: 600;
+		font-size: 16px;
+		flex: 1;
+		transition: color 0.2s ease;
 	}
 
-	button.info-marker {
-		padding: 0.5em 1em;
-		cursor: pointer;
-		/* remove default button styles */
+	.preset-title:hover {
+		color: #0056b3;
+	}
+
+	.info-button {
 		background: none;
 		border: none;
-		color: inherit;
-		font: inherit;
-		text-align: inherit;
-		margin: 0;
+		color: #6e6e73;
+		cursor: help;
+		padding: 2px;
+		border-radius: 4px;
+		transition: all 0.2s ease;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.info-button:hover {
+		color: #007aff;
+		background: rgba(0, 122, 255, 0.1);
+	}
+
+	.preset-description {
+		color: #6e6e73;
+		font-size: 14px;
+		line-height: 1.4;
+		margin: 0 0 12px 0;
+	}
+
+	.preset-actions {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		flex-wrap: wrap;
+	}
+
+	.copy-button {
+		background: #f5f5f7;
+		border: 1px solid rgba(0, 0, 0, 0.08);
+		border-radius: 8px;
+		padding: 8px 12px;
+		font-size: 12px;
+		font-weight: 500;
+		color: #1d1d1f;
+		cursor: pointer;
+		transition: all 0.2s ease;
+		display: flex;
+		align-items: center;
+		gap: 6px;
+	}
+
+	.copy-button:hover {
+		background: #007aff;
+		color: white;
+		border-color: #007aff;
+		transform: translateY(-1px);
+	}
+
+	.size-info {
+		display: flex;
+		align-items: center;
+	}
+
+	.size-badge {
+		background: #f5f5f7;
+		color: #6e6e73;
+		font-size: 11px;
+		font-weight: 500;
+		padding: 4px 8px;
+		border-radius: 6px;
+		border: 1px solid rgba(0, 0, 0, 0.06);
+	}
+
+	.size-badge.loading {
+		color: #007aff;
+	}
+
+	.size-badge.error {
+		color: #ff3b30;
+		background: #fff5f5;
+		border-color: rgba(255, 59, 48, 0.2);
+	}
+
+	/* Dialog Styles */
+	.info-dialog {
+		border: none;
+		border-radius: 16px;
 		padding: 0;
+		box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 4px 16px rgba(0, 0, 0, 0.08);
+		max-width: 400px;
+		width: 90vw;
 	}
 
-	.copy-link {
-		margin-left: 8px;
-		font-size: 0.85em;
-		text-decoration: none;
+	.info-dialog::backdrop {
+		background: rgba(0, 0, 0, 0.4);
+		backdrop-filter: blur(4px);
 	}
 
-	.copy-link:hover {
-		text-decoration: underline;
+	.dialog-content {
+		padding: 24px;
+	}
+
+	.dialog-content h3 {
+		margin: 0 0 12px 0;
+		font-size: 18px;
+		font-weight: 600;
+		color: #1d1d1f;
+	}
+
+	.dialog-content p {
+		margin: 0 0 20px 0;
+		color: #6e6e73;
+		line-height: 1.5;
+		font-size: 14px;
+	}
+
+	.close-button {
+		background: #007aff;
+		color: white;
+		border: none;
+		border-radius: 8px;
+		padding: 10px 20px;
+		font-size: 14px;
+		font-weight: 500;
+		cursor: pointer;
+		transition: all 0.2s ease;
+		margin-left: auto;
+		display: block;
+	}
+
+	.close-button:hover {
+		background: #0056b3;
+		transform: translateY(-1px);
+	}
+
+	@media (max-width: 768px) {
+		.preset-actions {
+			flex-direction: column;
+			align-items: stretch;
+			gap: 8px;
+		}
+
+		.copy-button {
+			justify-content: center;
+		}
 	}
 </style>
