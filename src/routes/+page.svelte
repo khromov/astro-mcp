@@ -9,6 +9,7 @@
 	} from '$lib/presets'
 	import PresetListItem from '$lib/components/PresetListItem.svelte'
 	import { SITE_URL } from '$lib/constants'
+	import toast from 'svelte-french-toast'
 
 	const combinedPresetsFormatted = transformAndSortPresets(combinedPresets)
 	const sveltePresetsFormatted = transformAndSortPresets(sveltePresets)
@@ -76,6 +77,15 @@
 			loadingVersions = false
 		}
 	})
+
+	async function copyToClipboard(text: string) {
+		try {
+			await navigator.clipboard.writeText(text)
+			toast.success('Copied to clipboard!')
+		} catch (err) {
+			toast.error('Failed to copy to clipboard')
+		}
+	}
 
 	const instructions = [
 		{
@@ -152,7 +162,11 @@
 							</div>
 							<div class="endpoint-url">
 								<code>https://svelte-llm.khromov.se/mcp/sse</code>
-								<button class="copy-btn" on:click={() => navigator.clipboard.writeText('https://svelte-llm.khromov.se/mcp/sse')}>
+								<button class="mcp-copy-btn" on:click={() => copyToClipboard('https://svelte-llm.khromov.se/mcp/sse')}>
+									<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+										<path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"/>
+										<path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"/>
+									</svg>
 									Copy
 								</button>
 							</div>
@@ -163,7 +177,11 @@
 							</div>
 							<div class="endpoint-url">
 								<code>https://svelte-llm.khromov.se/mcp/mcp</code>
-								<button class="copy-btn" on:click={() => navigator.clipboard.writeText('https://svelte-llm.khromov.se/mcp/mcp')}>
+								<button class="mcp-copy-btn" on:click={() => copyToClipboard('https://svelte-llm.khromov.se/mcp/mcp')}>
+									<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+										<path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"/>
+										<path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"/>
+									</svg>
 									Copy
 								</button>
 							</div>
@@ -513,21 +531,26 @@
 		min-width: 200px;
 	}
 
-	.copy-btn {
-		background: #007aff;
-		color: white;
-		border: none;
+	.mcp-copy-btn {
+		background: #f5f5f7;
+		border: 1px solid rgba(0, 0, 0, 0.08);
 		border-radius: 8px;
-		padding: 8px 16px;
+		padding: 8px 12px;
 		font-size: 12px;
 		font-weight: 500;
+		color: #1d1d1f;
 		cursor: pointer;
 		transition: all 0.2s ease;
+		display: flex;
+		align-items: center;
+		gap: 6px;
 		white-space: nowrap;
 	}
 
-	.copy-btn:hover {
-		background: #0056b3;
+	.mcp-copy-btn:hover {
+		background: #007aff;
+		color: white;
+		border-color: #007aff;
 		transform: translateY(-1px);
 	}
 
