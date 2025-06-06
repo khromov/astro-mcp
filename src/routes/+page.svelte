@@ -352,10 +352,10 @@
 	.hero {
 		text-align: center;
 		padding: 80px 0 60px 0;
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		background: linear-gradient(135deg, #ff3e00 0%, #ff6b35 100%);
 		color: white;
 		margin: 0 -24px 60px -24px;
-		border-radius: 0 0 32px 32px;
+		border-radius: 0 0 20px 20px;
 	}
 
 	.hero-content {
