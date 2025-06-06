@@ -164,7 +164,7 @@
 								<code>https://svelte-llm.khromov.se/mcp/sse</code>
 								<button
 									class="mcp-copy-btn"
-									on:click={() => copyToClipboard('https://svelte-llm.khromov.se/mcp/sse')}
+									onclick={() => copyToClipboard('https://svelte-llm.khromov.se/mcp/sse')}
 								>
 									<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
 										<path
@@ -186,7 +186,7 @@
 								<code>https://svelte-llm.khromov.se/mcp/mcp</code>
 								<button
 									class="mcp-copy-btn"
-									on:click={() => copyToClipboard('https://svelte-llm.khromov.se/mcp/mcp')}
+									onclick={() => copyToClipboard('https://svelte-llm.khromov.se/mcp/mcp')}
 								>
 									<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
 										<path
@@ -342,7 +342,7 @@
 		padding: 80px 0 60px 0;
 		background: linear-gradient(135deg, #ff3e00 0%, #ff6b35 100%);
 		color: white;
-		margin: 0 0 60px 0;
+		margin: 0 0 20px 0;
 		border-radius: 0 0 20px 20px;
 	}
 
@@ -397,14 +397,14 @@
 
 	/* Usage Section */
 	.usage-section {
-		margin-bottom: 80px;
+		margin-bottom: 20px;
 	}
 
 	.usage-grid {
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
 		gap: 24px;
-		margin-bottom: 40px;
+		margin-bottom: 20px;
 	}
 
 	.usage-card {
@@ -476,6 +476,7 @@
 			0 4px 24px rgba(0, 0, 0, 0.04),
 			0 2px 8px rgba(0, 0, 0, 0.06);
 		border: 1px solid rgba(0, 0, 0, 0.06);
+		margin-bottom: 20px;
 	}
 
 	.mcp-header {
@@ -585,7 +586,7 @@
 
 	/* Presets Section */
 	.presets-section {
-		margin-bottom: 20px;
+		margin-bottom: 10px;
 	}
 
 	.section-header {
@@ -599,6 +600,19 @@
 		margin: 0 0 12px 0;
 		color: #1d1d1f;
 		letter-spacing: -0.01em;
+		position: relative;
+		padding-bottom: 8px;
+	}
+
+	.section-header h2::after {
+		content: '';
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		width: 60px;
+		height: 3px;
+		background: linear-gradient(90deg, #ff3e00 0%, #ff6b35 100%);
+		border-radius: 2px;
 	}
 
 	.section-description {
@@ -637,11 +651,6 @@
 
 	.preset-item a:hover {
 		color: #0056b3;
-	}
-
-	/* Integration Section */
-	.integration-section {
-		margin-bottom: 80px;
 	}
 
 	.integration-grid {
