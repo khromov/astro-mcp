@@ -113,9 +113,9 @@
 			<div class="logo">svelte-llm</div>
 			<h1>Developer documentation for Svelte in an LLM-ready format</h1>
 			<p class="hero-description">
-				This site provides Svelte 5 and SvelteKit documentation in an LLM-friendly format, also known
-				as <em>llms.txt</em>. Pick a preset and get an AI-ready context text file. Perfect for coding
-				with AI assistants like Cursor or Zed, or uploading to Claude Projects.
+				This site provides Svelte 5 and SvelteKit documentation in an LLM-friendly format, also
+				known as <em>llms.txt</em>. Pick a preset and get an AI-ready context text file. Perfect for
+				coding with AI assistants like Cursor or Zed, or uploading to Claude Projects.
 			</p>
 			<p class="hero-note">
 				Documentation is automatically fetched from the <a
@@ -162,10 +162,17 @@
 							</div>
 							<div class="endpoint-url">
 								<code>https://svelte-llm.khromov.se/mcp/sse</code>
-								<button class="mcp-copy-btn" on:click={() => copyToClipboard('https://svelte-llm.khromov.se/mcp/sse')}>
+								<button
+									class="mcp-copy-btn"
+									on:click={() => copyToClipboard('https://svelte-llm.khromov.se/mcp/sse')}
+								>
 									<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-										<path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"/>
-										<path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"/>
+										<path
+											d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"
+										/>
+										<path
+											d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"
+										/>
 									</svg>
 									Copy
 								</button>
@@ -177,10 +184,17 @@
 							</div>
 							<div class="endpoint-url">
 								<code>https://svelte-llm.khromov.se/mcp/mcp</code>
-								<button class="mcp-copy-btn" on:click={() => copyToClipboard('https://svelte-llm.khromov.se/mcp/mcp')}>
+								<button
+									class="mcp-copy-btn"
+									on:click={() => copyToClipboard('https://svelte-llm.khromov.se/mcp/mcp')}
+								>
 									<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-										<path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"/>
-										<path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"/>
+										<path
+											d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"
+										/>
+										<path
+											d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"
+										/>
 									</svg>
 									Copy
 								</button>
@@ -201,9 +215,11 @@
 			</div>
 			<div class="preset-list">
 				{#each combinedPresetsFormatted as preset}
-					<PresetListItem 
-						{...preset} 
-						distilledVersions={preset.key === 'svelte-complete-distilled' ? distilledVersions['svelte-complete-distilled'] : undefined}
+					<PresetListItem
+						{...preset}
+						distilledVersions={preset.key === 'svelte-complete-distilled'
+							? distilledVersions['svelte-complete-distilled']
+							: undefined}
 						{loadingVersions}
 						{distilledError}
 					/>
@@ -217,8 +233,8 @@
 			</div>
 			<div class="preset-list">
 				<!-- Add the Svelte-only distilled preset at the top of the Svelte section -->
-				<PresetListItem 
-					{...svelteDistilledPreset} 
+				<PresetListItem
+					{...svelteDistilledPreset}
 					distilledVersions={distilledVersions['svelte-distilled']}
 					{loadingVersions}
 					{distilledError}
@@ -236,8 +252,8 @@
 			</div>
 			<div class="preset-list">
 				<!-- Add the SvelteKit-only distilled preset at the top of the SvelteKit section -->
-				<PresetListItem 
-					{...svelteKitDistilledPreset} 
+				<PresetListItem
+					{...svelteKitDistilledPreset}
 					distilledVersions={distilledVersions['sveltekit-distilled']}
 					{loadingVersions}
 					{distilledError}
@@ -266,7 +282,9 @@
 			</div>
 			<div class="preset-list">
 				<div class="preset-item">
-					<a target="_blank" href="https://v4.svelte.dev/content.json">Svelte 4 Legacy + SvelteKit</a>
+					<a target="_blank" href="https://v4.svelte.dev/content.json"
+						>Svelte 4 Legacy + SvelteKit</a
+					>
 				</div>
 			</div>
 		</div>
@@ -275,7 +293,9 @@
 	<section class="integration-section">
 		<div class="section-header">
 			<h2>AI Assistant Integration</h2>
-			<p class="section-description">Multiple ways to use these presets with your favorite AI coding assistants</p>
+			<p class="section-description">
+				Multiple ways to use these presets with your favorite AI coding assistants
+			</p>
 		</div>
 
 		<div class="integration-grid">
@@ -293,15 +313,16 @@
 
 	<footer class="site-footer">
 		<p>
-			Maintained by <a href="https://khromov.se" target="_blank">Stanislav Khromov</a> • 
-			Forked from <a target="_blank" href="https://twitter.com/didiercatz">Didier Catz</a>
+			Maintained by <a href="https://khromov.se" target="_blank">Stanislav Khromov</a> • Forked from
+			<a target="_blank" href="https://twitter.com/didiercatz">Didier Catz</a>
 		</p>
 	</footer>
 </main>
 
 <style>
 	:global(html) {
-		font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+		font-family:
+			-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 		line-height: 1.6;
 		-webkit-font-smoothing: antialiased;
 		-moz-osx-font-smoothing: grayscale;
@@ -390,14 +411,18 @@
 		background: white;
 		border-radius: 16px;
 		padding: 32px;
-		box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.06);
+		box-shadow:
+			0 4px 24px rgba(0, 0, 0, 0.04),
+			0 2px 8px rgba(0, 0, 0, 0.06);
 		border: 1px solid rgba(0, 0, 0, 0.06);
 		transition: all 0.3s ease;
 	}
 
 	.usage-card:hover {
 		transform: translateY(-4px);
-		box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08), 0 4px 16px rgba(0, 0, 0, 0.08);
+		box-shadow:
+			0 8px 32px rgba(0, 0, 0, 0.08),
+			0 4px 16px rgba(0, 0, 0, 0.08);
 	}
 
 	.usage-card h3 {
@@ -411,7 +436,8 @@
 		background: #f5f5f7;
 		border-radius: 12px;
 		padding: 16px;
-		font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+		font-family:
+			'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
 		font-size: 14px;
 		margin: 16px 0;
 		border: 1px solid rgba(0, 0, 0, 0.08);
@@ -446,7 +472,9 @@
 		background: white;
 		border-radius: 16px;
 		padding: 32px;
-		box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.06);
+		box-shadow:
+			0 4px 24px rgba(0, 0, 0, 0.04),
+			0 2px 8px rgba(0, 0, 0, 0.06);
 		border: 1px solid rgba(0, 0, 0, 0.06);
 	}
 
@@ -523,7 +551,8 @@
 	}
 
 	.endpoint-url code {
-		font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+		font-family:
+			'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
 		font-size: 13px;
 		color: #007aff;
 		word-break: break-all;
@@ -556,7 +585,7 @@
 
 	/* Presets Section */
 	.presets-section {
-		margin-bottom: 60px;
+		margin-bottom: 20px;
 	}
 
 	.section-header {
@@ -610,7 +639,6 @@
 		color: #0056b3;
 	}
 
-
 	/* Integration Section */
 	.integration-section {
 		margin-bottom: 80px;
@@ -626,14 +654,18 @@
 		background: white;
 		border-radius: 16px;
 		padding: 32px;
-		box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.06);
+		box-shadow:
+			0 4px 24px rgba(0, 0, 0, 0.04),
+			0 2px 8px rgba(0, 0, 0, 0.06);
 		border: 1px solid rgba(0, 0, 0, 0.06);
 		transition: all 0.3s ease;
 	}
 
 	.integration-card:hover {
 		transform: translateY(-4px);
-		box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08), 0 4px 16px rgba(0, 0, 0, 0.08);
+		box-shadow:
+			0 8px 32px rgba(0, 0, 0, 0.08),
+			0 4px 16px rgba(0, 0, 0, 0.08);
 	}
 
 	.integration-card h3 {
@@ -685,7 +717,7 @@
 	}
 
 	/* Remove rounded corners on smaller screens */
-	@media (max-width: 850px) {
+	@media (max-width: 768px) {
 		.hero {
 			border-radius: 0;
 		}
