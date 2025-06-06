@@ -183,31 +183,12 @@
 			</div>
 			<div class="preset-list">
 				{#each combinedPresetsFormatted as preset}
-					<PresetListItem {...preset} />
-
-					{#if preset.key === 'svelte-complete-distilled'}
-						{#if loadingVersions}
-							<div class="versions-status"><em>Loading previous distilled versions...</em></div>
-						{:else if distilledError}
-							<div class="versions-status error"><em>Error: {distilledError}</em></div>
-						{:else if distilledVersions['svelte-complete-distilled']?.length > 0}
-							<div class="distilled-versions">
-								<details>
-									<summary>Previous distilled versions</summary>
-									<ul>
-										{#each distilledVersions['svelte-complete-distilled'] as version}
-											<li>
-												<a href="/svelte-complete-distilled?version={version.date}">
-													{version.date}
-												</a>
-												<span class="size-badge">({version.sizeKb}KB)</span>
-											</li>
-										{/each}
-									</ul>
-								</details>
-							</div>
-						{/if}
-					{/if}
+					<PresetListItem 
+						{...preset} 
+						distilledVersions={preset.key === 'svelte-complete-distilled' ? distilledVersions['svelte-complete-distilled'] : undefined}
+						{loadingVersions}
+						{distilledError}
+					/>
 				{/each}
 			</div>
 		</div>
@@ -218,28 +199,12 @@
 			</div>
 			<div class="preset-list">
 				<!-- Add the Svelte-only distilled preset at the top of the Svelte section -->
-				<PresetListItem {...svelteDistilledPreset} />
-				{#if loadingVersions}
-					<div class="versions-status"><em>Loading previous distilled versions...</em></div>
-				{:else if distilledError}
-					<div class="versions-status error"><em>Error: {distilledError}</em></div>
-				{:else if distilledVersions['svelte-distilled']?.length > 0}
-					<div class="distilled-versions">
-						<details>
-							<summary>Previous distilled versions</summary>
-							<ul>
-								{#each distilledVersions['svelte-distilled'] as version}
-									<li>
-										<a href="/svelte-distilled?version={version.date}">
-											{version.date}
-										</a>
-										<span class="size-badge">({version.sizeKb}KB)</span>
-									</li>
-								{/each}
-							</ul>
-						</details>
-					</div>
-				{/if}
+				<PresetListItem 
+					{...svelteDistilledPreset} 
+					distilledVersions={distilledVersions['svelte-distilled']}
+					{loadingVersions}
+					{distilledError}
+				/>
 
 				{#each sveltePresetsFormatted as preset}
 					<PresetListItem {...preset} />
@@ -253,28 +218,12 @@
 			</div>
 			<div class="preset-list">
 				<!-- Add the SvelteKit-only distilled preset at the top of the SvelteKit section -->
-				<PresetListItem {...svelteKitDistilledPreset} />
-				{#if loadingVersions}
-					<div class="versions-status"><em>Loading previous distilled versions...</em></div>
-				{:else if distilledError}
-					<div class="versions-status error"><em>Error: {distilledError}</em></div>
-				{:else if distilledVersions['sveltekit-distilled']?.length > 0}
-					<div class="distilled-versions">
-						<details>
-							<summary>Previous distilled versions</summary>
-							<ul>
-								{#each distilledVersions['sveltekit-distilled'] as version}
-									<li>
-										<a href="/sveltekit-distilled?version={version.date}">
-											{version.date}
-										</a>
-										<span class="size-badge">({version.sizeKb}KB)</span>
-									</li>
-								{/each}
-							</ul>
-						</details>
-					</div>
-				{/if}
+				<PresetListItem 
+					{...svelteKitDistilledPreset} 
+					distilledVersions={distilledVersions['sveltekit-distilled']}
+					{loadingVersions}
+					{distilledError}
+				/>
 
 				{#each svelteKitPresetsFormatted as preset}
 					<PresetListItem {...preset} />
@@ -584,12 +533,12 @@
 
 	/* Presets Section */
 	.presets-section {
-		margin-bottom: 80px;
+		margin-bottom: 60px;
 	}
 
 	.section-header {
-		margin-bottom: 24px;
-		padding-top: 20px;
+		margin-bottom: 20px;
+		padding-top: 16px;
 	}
 
 	.section-header h2 {
@@ -638,65 +587,6 @@
 		color: #0056b3;
 	}
 
-	/* Distilled Versions */
-	.distilled-versions {
-		margin: 16px 0 0 32px;
-		font-size: 14px;
-	}
-
-	.distilled-versions details {
-		background: #f5f5f7;
-		border-radius: 8px;
-		padding: 12px;
-		border: 1px solid rgba(0, 0, 0, 0.06);
-	}
-
-	.distilled-versions summary {
-		cursor: pointer;
-		font-weight: 500;
-		color: #6e6e73;
-		padding: 4px 0;
-	}
-
-	.distilled-versions ul {
-		margin: 8px 0 0 0;
-		padding-left: 16px;
-	}
-
-	.distilled-versions li {
-		margin: 4px 0;
-	}
-
-	.distilled-versions a {
-		color: #007aff;
-		text-decoration: none;
-	}
-
-	.distilled-versions a:hover {
-		color: #0056b3;
-	}
-
-	.size-badge {
-		color: #6e6e73;
-		font-size: 12px;
-		margin-left: 8px;
-	}
-
-	.versions-status {
-		margin: 16px 0 0 32px;
-		font-size: 14px;
-		color: #6e6e73;
-		padding: 12px;
-		background: #f5f5f7;
-		border-radius: 8px;
-		border: 1px solid rgba(0, 0, 0, 0.06);
-	}
-
-	.versions-status.error {
-		color: #ff3b30;
-		background: #fff5f5;
-		border-color: rgba(255, 59, 48, 0.2);
-	}
 
 	/* Integration Section */
 	.integration-section {

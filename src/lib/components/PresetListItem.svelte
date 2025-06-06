@@ -2,10 +2,13 @@
 	import { onMount } from 'svelte'
 	import toast from 'svelte-french-toast'
 
-	let { title, key, description } = $props<{
+	let { title, key, description, distilledVersions, loadingVersions, distilledError } = $props<{
 		title: string
 		key: string
 		description?: string
+		distilledVersions?: Array<{filename: string, date: string, path: string, sizeKb: number}>
+		loadingVersions?: boolean
+		distilledError?: string | null
 	}>()
 
 	let sizeKb = $state<number | undefined>(undefined)
@@ -97,6 +100,30 @@
 			{/if}
 		</div>
 	</div>
+
+	{#if distilledVersions !== undefined}
+		{#if loadingVersions}
+			<div class="versions-status"><em>Loading previous distilled versions...</em></div>
+		{:else if distilledError}
+			<div class="versions-status error"><em>Error: {distilledError}</em></div>
+		{:else if distilledVersions?.length > 0}
+			<div class="distilled-versions">
+				<details>
+					<summary>Previous distilled versions</summary>
+					<ul>
+						{#each distilledVersions as version}
+							<li>
+								<a href="/{key}?version={version.date}">
+									{version.date}
+								</a>
+								<span class="version-size-badge">({version.sizeKb}KB)</span>
+							</li>
+						{/each}
+					</ul>
+				</details>
+			</div>
+		{/if}
+	{/if}
 </div>
 
 <style>
@@ -264,6 +291,66 @@
 	.close-button:hover {
 		background: #0056b3;
 		transform: translateY(-1px);
+	}
+
+	/* Distilled Versions */
+	.distilled-versions {
+		margin-top: 16px;
+		font-size: 14px;
+	}
+
+	.distilled-versions details {
+		background: #f5f5f7;
+		border-radius: 8px;
+		padding: 12px;
+		border: 1px solid rgba(0, 0, 0, 0.06);
+	}
+
+	.distilled-versions summary {
+		cursor: pointer;
+		font-weight: 500;
+		color: #6e6e73;
+		padding: 4px 0;
+	}
+
+	.distilled-versions ul {
+		margin: 8px 0 0 0;
+		padding-left: 16px;
+	}
+
+	.distilled-versions li {
+		margin: 4px 0;
+	}
+
+	.distilled-versions a {
+		color: #007aff;
+		text-decoration: none;
+	}
+
+	.distilled-versions a:hover {
+		color: #0056b3;
+	}
+
+	.version-size-badge {
+		color: #6e6e73;
+		font-size: 12px;
+		margin-left: 8px;
+	}
+
+	.versions-status {
+		margin-top: 16px;
+		font-size: 14px;
+		color: #6e6e73;
+		padding: 12px;
+		background: #f5f5f7;
+		border-radius: 8px;
+		border: 1px solid rgba(0, 0, 0, 0.06);
+	}
+
+	.versions-status.error {
+		color: #ff3b30;
+		background: #fff5f5;
+		border-color: rgba(255, 59, 48, 0.2);
 	}
 
 	@media (max-width: 768px) {
