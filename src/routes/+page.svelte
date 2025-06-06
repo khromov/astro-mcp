@@ -584,26 +584,28 @@
 
 	/* Presets Section */
 	.presets-section {
-		margin-bottom: 60px;
+		margin-bottom: 80px;
 	}
 
 	.section-header {
-		margin-bottom: 32px;
+		margin-bottom: 24px;
+		padding-top: 20px;
 	}
 
 	.section-header h2 {
-		font-size: 32px;
+		font-size: 28px;
 		font-weight: 700;
-		margin: 0 0 8px 0;
+		margin: 0 0 12px 0;
 		color: #1d1d1f;
 		letter-spacing: -0.01em;
 	}
 
 	.section-description {
-		font-size: 18px;
+		font-size: 16px;
 		color: #6e6e73;
 		margin: 0;
 		line-height: 1.5;
+		max-width: 600px;
 	}
 
 	.preset-list {
