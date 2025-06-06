@@ -321,7 +321,7 @@
 		padding: 80px 0 60px 0;
 		background: linear-gradient(135deg, #ff3e00 0%, #ff6b35 100%);
 		color: white;
-		margin: 0 -24px 60px -24px;
+		margin: 0 0 60px 0;
 		border-radius: 0 0 20px 20px;
 	}
 
@@ -682,6 +682,13 @@
 	.site-footer a:hover {
 		color: #0056b3;
 		text-decoration: underline;
+	}
+
+	/* Remove rounded corners on smaller screens */
+	@media (max-width: 850px) {
+		.hero {
+			border-radius: 0;
+		}
 	}
 
 	/* Responsive Design */
