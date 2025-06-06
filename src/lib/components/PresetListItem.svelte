@@ -146,8 +146,8 @@
 <style>
 	.preset-item {
 		background: white;
-		border-radius: 12px;
-		padding: 20px;
+		border-radius: 10px;
+		padding: 16px;
 		box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
 		border: 1px solid rgba(0, 0, 0, 0.06);
 		transition: all 0.2s ease;
@@ -162,7 +162,7 @@
 		display: flex;
 		align-items: center;
 		gap: 8px;
-		margin-bottom: 8px;
+		margin-bottom: 6px;
 	}
 
 	.preset-title {
@@ -198,9 +198,9 @@
 
 	.preset-description {
 		color: #6e6e73;
-		font-size: 14px;
+		font-size: 13px;
 		line-height: 1.4;
-		margin: 0 0 12px 0;
+		margin: 0 0 10px 0;
 	}
 
 	.preset-actions {

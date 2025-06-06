@@ -339,10 +339,10 @@
 	/* Hero Section */
 	.hero {
 		text-align: center;
-		padding: 80px 0 60px 0;
+		padding: 60px 0 40px 0;
 		background: linear-gradient(135deg, #ff3e00 0%, #ff6b35 100%);
 		color: white;
-		margin: 0 0 20px 0;
+		margin: 0 0 30px 0;
 		border-radius: 0 0 20px 20px;
 	}
 
@@ -397,20 +397,20 @@
 
 	/* Usage Section */
 	.usage-section {
-		margin-bottom: 20px;
+		margin-bottom: 30px;
 	}
 
 	.usage-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-		gap: 24px;
-		margin-bottom: 20px;
+		grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+		gap: 16px;
+		margin-bottom: 16px;
 	}
 
 	.usage-card {
 		background: white;
-		border-radius: 16px;
-		padding: 32px;
+		border-radius: 12px;
+		padding: 24px;
 		box-shadow:
 			0 4px 24px rgba(0, 0, 0, 0.04),
 			0 2px 8px rgba(0, 0, 0, 0.06);
@@ -426,20 +426,20 @@
 	}
 
 	.usage-card h3 {
-		font-size: 20px;
+		font-size: 18px;
 		font-weight: 600;
-		margin: 0 0 16px 0;
+		margin: 0 0 12px 0;
 		color: #1d1d1f;
 	}
 
 	.code-block {
 		background: #f5f5f7;
-		border-radius: 12px;
-		padding: 16px;
+		border-radius: 8px;
+		padding: 12px;
 		font-family:
 			'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
-		font-size: 14px;
-		margin: 16px 0;
+		font-size: 13px;
+		margin: 12px 0;
 		border: 1px solid rgba(0, 0, 0, 0.08);
 		word-break: break-all;
 	}
@@ -470,13 +470,13 @@
 	/* MCP Section */
 	.mcp-section {
 		background: white;
-		border-radius: 16px;
-		padding: 32px;
+		border-radius: 12px;
+		padding: 24px;
 		box-shadow:
 			0 4px 24px rgba(0, 0, 0, 0.04),
 			0 2px 8px rgba(0, 0, 0, 0.06);
 		border: 1px solid rgba(0, 0, 0, 0.06);
-		margin-bottom: 20px;
+		margin-bottom: 24px;
 	}
 
 	.mcp-header {
@@ -498,7 +498,7 @@
 	}
 
 	.mcp-header h3 {
-		font-size: 20px;
+		font-size: 18px;
 		font-weight: 600;
 		margin: 0;
 		color: #1d1d1f;
@@ -533,8 +533,8 @@
 
 	.endpoint-item {
 		background: #f5f5f7;
-		border-radius: 12px;
-		padding: 20px;
+		border-radius: 8px;
+		padding: 16px;
 		border: 1px solid rgba(0, 0, 0, 0.08);
 	}
 
@@ -586,22 +586,22 @@
 
 	/* Presets Section */
 	.presets-section {
-		margin-bottom: 10px;
+		margin-bottom: 25px;
 	}
 
 	.section-header {
-		margin-bottom: 20px;
-		padding-top: 16px;
+		margin-bottom: 16px;
+		padding-top: 12px;
 	}
 
 	.section-header h2 {
-		font-size: 28px;
+		font-size: 24px;
 		font-weight: 700;
-		margin: 0 0 12px 0;
+		margin: 0 0 8px 0;
 		color: #1d1d1f;
 		letter-spacing: -0.01em;
 		position: relative;
-		padding-bottom: 8px;
+		padding-bottom: 6px;
 	}
 
 	.section-header h2::after {
@@ -655,14 +655,14 @@
 
 	.integration-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-		gap: 24px;
+		grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+		gap: 16px;
 	}
 
 	.integration-card {
 		background: white;
-		border-radius: 16px;
-		padding: 32px;
+		border-radius: 12px;
+		padding: 24px;
 		box-shadow:
 			0 4px 24px rgba(0, 0, 0, 0.04),
 			0 2px 8px rgba(0, 0, 0, 0.06);
@@ -678,9 +678,9 @@
 	}
 
 	.integration-card h3 {
-		font-size: 20px;
+		font-size: 18px;
 		font-weight: 600;
-		margin: 0 0 12px 0;
+		margin: 0 0 10px 0;
 		color: #1d1d1f;
 	}
 

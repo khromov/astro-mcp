@@ -126,7 +126,7 @@ export const GET: RequestHandler = async ({ url }) => {
 		}
 
 		// Initialize Anthropic client
-		const anthropic = new AnthropicProvider()
+		const anthropic = new AnthropicProvider('claude-sonnet-4-20250514')
 
 		// Create debug structure to store inputs and outputs
 		const debugData = {
