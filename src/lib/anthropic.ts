@@ -68,6 +68,8 @@ export class AnthropicProvider implements LLMProvider {
 	private apiKey: string
 	name = 'Anthropic'
 	private readonly availableModels = [
+		'claude-sonnet-4-20250514',
+		'claude-opus-4-20250514',
 		'claude-3-7-sonnet-20250219',
 		'claude-3-5-sonnet-20241022', // 3.5 v2
 		'claude-3-5-sonnet-20240620', // 3.5

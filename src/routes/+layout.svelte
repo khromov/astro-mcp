@@ -43,12 +43,13 @@
 
 <style>
 	:global(body) {
-		line-height: 1.4;
-		font-size: 16px;
-		padding: 0 10px;
-		margin: 50px auto;
-		max-width: 650px;
-		background-color: white;
+		margin: 0;
+		padding: 0;
+		background-color: #fbfbfd;
+		font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+		-webkit-font-smoothing: antialiased;
+		-moz-osx-font-smoothing: grayscale;
+		color: #1d1d1f;
 	}
 
 	.layout {
