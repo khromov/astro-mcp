@@ -66,7 +66,7 @@ function findSectionByTitleOrPath(
 	sections: DocumentSection[],
 	query: string
 ): DocumentSection | null {
-	const lowerQuery = query.toLowerCase()
+	const lowerQuery = query.toLowerCase().replace(/,\s*$/, '')
 
 	// First try exact title match
 	let match = sections.find((section) => section.title.toLowerCase() === lowerQuery)
@@ -105,12 +105,12 @@ export const handler = createMcpHandler(
 
 					if (svelteSections.length > 0) {
 						output += '# Svelte\n'
-						output += svelteSections.map((section) => section.title).join('\n') + '\n\n'
+						output += svelteSections.map((section) => `* title: ${section.title}, path: ${section.filePath}`).join('\n') + '\n\n'
 					}
 
 					if (svelteKitSections.length > 0) {
 						output += '# SvelteKit\n'
-						output += svelteKitSections.map((section) => section.title).join('\n')
+						output += svelteKitSections.map((section) => `* title: ${section.title}, path: ${section.filePath}`).join('\n')
 					}
 
 					return {
