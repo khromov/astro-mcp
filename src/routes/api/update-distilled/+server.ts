@@ -4,11 +4,7 @@ import { dev } from '$app/environment'
 import { presets } from '$lib/presets'
 import { fetchMarkdownFiles, minimizeContent } from '$lib/fetchMarkdown'
 import type { RequestHandler } from './$types'
-import {
-	AnthropicProvider,
-	type AnthropicBatchRequest,
-	type AnthropicBatchResult
-} from '$lib/anthropic'
+import { AnthropicProvider, type AnthropicBatchRequest } from '$lib/anthropic'
 import { writeAtomicFile } from '$lib/fileCache'
 
 const DISTILLATION_PROMPT = `

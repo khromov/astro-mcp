@@ -12,7 +12,7 @@ export interface AnthropicBatchRequest {
 			role: 'user' | 'assistant'
 			content: string | { type: string; text: string }[]
 		}[]
-		[key: string]: any // Other optional parameters
+		[key: string]: unknown // Other optional parameters
 	}
 }
 

@@ -10,9 +10,9 @@ export type PresetConfig = {
 	/** The name of the GitHub repository */
 	repo: string
 	/** List of glob patterns for including files */
-	glob: any[]
+	glob: string[]
 	/** List of glob patterns for excluding files */
-	ignore?: any[]
+	ignore?: string[]
 	/** Optional prompt to provide additional context or instructions to language models */
 	prompt?: string
 	/** Minimization options for the content */

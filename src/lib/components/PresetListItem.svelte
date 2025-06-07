@@ -23,7 +23,7 @@
 			if (!response.ok) throw new Error('Failed to fetch size')
 			const data = await response.json()
 			sizeKb = data.sizeKb
-		} catch (err) {
+		} catch {
 			sizeError = 'Failed to load size'
 		} finally {
 			sizeLoading = false

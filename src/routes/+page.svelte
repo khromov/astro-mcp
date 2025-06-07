@@ -82,7 +82,7 @@
 		try {
 			await navigator.clipboard.writeText(text)
 			toast.success('Copied to clipboard!')
-		} catch (err) {
+		} catch {
 			toast.error('Failed to copy to clipboard')
 		}
 	}
@@ -739,16 +739,6 @@
 		color: #6e6e73;
 		margin: 0 0 16px 0;
 		line-height: 1.5;
-	}
-
-	.integration-card a {
-		color: #007aff;
-		text-decoration: none;
-	}
-
-	.integration-card a:hover {
-		color: #0056b3;
-		text-decoration: underline;
 	}
 
 	/* Footer */
