@@ -89,7 +89,7 @@ export async function fetchMarkdownFiles(
 	}
 
 	// Create a Map to store files for each glob pattern while maintaining order
-	const globResults = new Map<string, any[]>()
+	const globResults = new Map<string, unknown[]>()
 	const filePathsByPattern = new Map<string, string[]>()
 	glob.forEach((pattern) => {
 		globResults.set(pattern, [])
@@ -209,7 +209,7 @@ export async function fetchMarkdownFiles(
 	}
 
 	// Combine results in the order of glob patterns
-	const orderedResults: any[] = []
+	const orderedResults: unknown[] = []
 	for (const pattern of glob) {
 		const filesForPattern = globResults.get(pattern) || []
 		if (includePathInfo) {
@@ -217,7 +217,7 @@ export async function fetchMarkdownFiles(
 			orderedResults.push(...filesForPattern)
 		} else {
 			// For normal mode, sort and add strings
-			orderedResults.push(...sortFilesWithinGroup(filesForPattern))
+			orderedResults.push(...sortFilesWithinGroup(filesForPattern as string[]))
 		}
 	}
 
@@ -274,6 +274,7 @@ function removeDiffMarkersFromContent(content: string): string {
 	const lines = content.split('\n')
 	const processedLines = lines.map((line) => {
 		// Track if we're entering or leaving a code block
+		// eslint-disable-next-line no-useless-escape
 		if (line.trim().startsWith('\`\`\`')) {
 			inCodeBlock = !inCodeBlock
 			return line
@@ -282,16 +283,20 @@ function removeDiffMarkersFromContent(content: string): string {
 		// Only process lines within code blocks
 		if (inCodeBlock) {
 			// Handle lines that end with --- or +++ with possible whitespace after
+			// eslint-disable-next-line no-useless-escape
 			line = line.replace(/(\+{3}|\-{3})[\s]*$/g, '')
 
 			// Handle triple markers at start while preserving indentation
 			// This captures the whitespace before the marker and adds it back
+			// eslint-disable-next-line no-useless-escape
 			line = line.replace(/^(\s*)(\+{3}|\-{3})\s*/g, '$1')
 
 			// Handle single + or - markers at start while preserving indentation
+			// eslint-disable-next-line no-useless-escape
 			line = line.replace(/^(\s*)[\+\-](\s)/g, '$1')
 
 			// Handle multi-line diff blocks where --- or +++ might be in the middle of line
+			// eslint-disable-next-line no-useless-escape
 			line = line.replace(/[\s]*(\+{3}|\-{3})[\s]*/g, '')
 		}
 

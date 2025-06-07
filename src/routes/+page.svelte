@@ -352,6 +352,7 @@
 			{#each instructions as { title, description, command }}
 				<div class="integration-card">
 					<h3>{title}</h3>
+					<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 					<p>{@html description}</p>
 					<div class="code-block">
 						<code>{command}</code>
