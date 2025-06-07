@@ -63,3 +63,5 @@ Please ensure that the documentation source is reliable and actively maintained.
 ```
 NODE_TLS_REJECT_UNAUTHORIZED=0 NODE_OPTIONS="--insecure-http-parser" npx @modelcontextprotocol/inspector
 ```
+
+http://127.0.0.1:6274
