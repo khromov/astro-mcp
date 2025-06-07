@@ -4,6 +4,82 @@ import { env } from '$env/dynamic/private'
 import { presets } from '$lib/presets'
 import { fetchAndProcessMarkdown } from '$lib/fetchMarkdown'
 
+interface DocumentSection {
+	filePath: string
+	title: string
+	content: string
+}
+
+function parseDocumentSections(doc: string): DocumentSection[] {
+	const sections: DocumentSection[] = []
+	const parts = doc.split('\n\n## ')
+	
+	for (let i = 0; i < parts.length; i++) {
+		const part = i === 0 ? parts[i] : '## ' + parts[i]
+		const lines = part.split('\n')
+		const firstLine = lines[0].replace('## ', '').trim()
+		
+		if (firstLine.startsWith('docs/')) {
+			const filePath = firstLine
+			const content = part
+			const title = extractFrontmatterTitle(content) || extractTitleFromPath(filePath)
+			
+			sections.push({
+				filePath,
+				title,
+				content
+			})
+		}
+	}
+	
+	return sections
+}
+
+function extractFrontmatterTitle(content: string): string | null {
+	const lines = content.split('\n')
+	let inFrontmatter = false
+	let foundStart = false
+	
+	for (const line of lines) {
+		if (line.trim() === '---') {
+			if (!foundStart) {
+				foundStart = true
+				inFrontmatter = true
+			} else if (inFrontmatter) {
+				break
+			}
+		} else if (inFrontmatter && line.startsWith('title:')) {
+			const title = line.replace('title:', '').trim()
+			return title || null
+		}
+	}
+	
+	return null
+}
+
+function extractTitleFromPath(filePath: string): string {
+	const filename = filePath.split('/').pop() || filePath
+	return filename.replace('.md', '').replace(/^\d+-/, '')
+}
+
+function findSectionByTitleOrPath(sections: DocumentSection[], query: string): DocumentSection | null {
+	const lowerQuery = query.toLowerCase()
+	
+	// First try exact title match
+	let match = sections.find(section => section.title.toLowerCase() === lowerQuery)
+	if (match) return match
+	
+	// Then try partial title match
+	match = sections.find(section => section.title.toLowerCase().includes(lowerQuery))
+	if (match) return match
+	
+	// Finally try file path match for backward compatibility
+	match = sections.find(section => section.filePath.toLowerCase().includes(lowerQuery))
+	if (match) return match
+	
+	return null
+}
+
 export const handler = createMcpHandler(
 	(server) => {
 		server.tool(
@@ -18,38 +94,21 @@ export const handler = createMcpHandler(
 					const svelteDoc = await fetchAndProcessMarkdown(presets['svelte'], 'svelte')
 					const svelteKitDoc = await fetchAndProcessMarkdown(presets['sveltekit'], 'sveltekit')
 
-					// Helper function to extract file path headings
-					const extractFileHeadings = (doc: string) => {
-						return doc
-							.split('\n\n## ')
-							.map((section) => {
-								const lines = section.split('\n')
-								const firstLine = lines[0].replace('## ', '').trim()
 
-								// Only return file path headings
-								if (firstLine.startsWith('docs/')) {
-									return firstLine
-								}
-
-								return null
-							})
-							.filter(Boolean)
-					}
-
-					const svelteSections = extractFileHeadings(svelteDoc)
-					const svelteKitSections = extractFileHeadings(svelteKitDoc)
+					const svelteSections = parseDocumentSections(svelteDoc)
+					const svelteKitSections = parseDocumentSections(svelteKitDoc)
 
 					// Format with single headers per framework
 					let output = ''
 					
 					if (svelteSections.length > 0) {
 						output += '# Svelte\n'
-						output += svelteSections.join('\n') + '\n\n'
+						output += svelteSections.map(section => section.title).join('\n') + '\n\n'
 					}
 					
 					if (svelteKitSections.length > 0) {
 						output += '# SvelteKit\n'
-						output += svelteKitSections.join('\n')
+						output += svelteKitSections.map(section => section.title).join('\n')
 					}
 
 					return {
@@ -88,56 +147,34 @@ export const handler = createMcpHandler(
 					const svelteDoc = await fetchAndProcessMarkdown(presets['svelte'], 'svelte')
 					const svelteKitDoc = await fetchAndProcessMarkdown(presets['sveltekit'], 'sveltekit')
 
-					// Helper function to find section by file path
-					const findSectionByFilePath = (doc: string, searchPath: string) => {
-						return doc.split('\n\n## ').find((sectionText) => {
-							const lines = sectionText.split('\n')
-							const firstLine = lines[0].replace('## ', '').trim()
 
-							// Look for exact or partial match in file path
-							if (firstLine.startsWith('docs/')) {
-								return firstLine.toLowerCase().includes(searchPath.toLowerCase())
-							}
-
-							return false
-						})
-					}
+					// Parse sections with titles
+					const svelteSections = parseDocumentSections(svelteDoc)
+					const svelteKitSections = parseDocumentSections(svelteKitDoc)
 
 					// Search in Svelte documentation first
-					const svelteMatch = findSectionByFilePath(svelteDoc, section)
+					const svelteMatch = findSectionByTitleOrPath(svelteSections, section)
 
 					if (svelteMatch) {
-						// Return the content with the file path heading
-						let content = svelteMatch
-						if (!svelteMatch.startsWith('## ')) {
-							content = `## ${svelteMatch}`
-						}
-
 						return {
 							content: [
 								{
 									type: 'text',
-									text: `📖 Svelte documentation file (${section}):\n\n${content}`
+									text: `📖 Svelte documentation (${svelteMatch.title}):\n\n${svelteMatch.content}`
 								}
 							]
 						}
 					}
 
 					// Search in SvelteKit documentation if not found in Svelte
-					const svelteKitMatch = findSectionByFilePath(svelteKitDoc, section)
+					const svelteKitMatch = findSectionByTitleOrPath(svelteKitSections, section)
 
 					if (svelteKitMatch) {
-						// Return the content with the file path heading
-						let content = svelteKitMatch
-						if (!svelteKitMatch.startsWith('## ')) {
-							content = `## ${svelteKitMatch}`
-						}
-
 						return {
 							content: [
 								{
 									type: 'text',
-									text: `📖 SvelteKit documentation file (${section}):\n\n${content}`
+									text: `📖 SvelteKit documentation (${svelteKitMatch.title}):\n\n${svelteKitMatch.content}`
 								}
 							]
 						}
