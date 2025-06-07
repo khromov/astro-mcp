@@ -83,56 +83,125 @@ function findSectionByTitleOrPath(
 	return null
 }
 
+export const listSectionsHandler = async () => {
+	console.log('Listing sections from Svelte and SvelteKit full presets')
+
+	try {
+		// Get sections from both full presets
+		const svelteDoc = await fetchAndProcessMarkdown(presets['svelte'], 'svelte')
+		const svelteKitDoc = await fetchAndProcessMarkdown(presets['sveltekit'], 'sveltekit')
+
+		const svelteSections = parseDocumentSections(svelteDoc)
+		const svelteKitSections = parseDocumentSections(svelteKitDoc)
+
+		// Format with single headers per framework
+		let output = ''
+
+		if (svelteSections.length > 0) {
+			output += '# Svelte\n'
+			output +=
+				svelteSections
+					.map((section) => `* title: ${section.title}, path: ${section.filePath}`)
+					.join('\n') + '\n\n'
+		}
+
+		if (svelteKitSections.length > 0) {
+			output += '# SvelteKit\n'
+			output += svelteKitSections
+				.map((section) => `* title: ${section.title}, path: ${section.filePath}`)
+				.join('\n')
+		}
+
+		return {
+			content: [
+				{
+					type: 'text' as const,
+					text: `📋 Available documentation sections:\n\n${output}\n\nUse get_documentation with a section name to retrieve specific content.`
+				}
+			]
+		}
+	} catch (error) {
+		console.error('Error listing sections:', error)
+		return {
+			content: [
+				{
+					type: 'text' as const,
+					text: `❌ Error listing sections: ${error instanceof Error ? error.message : String(error)}`
+				}
+			]
+		}
+	}
+}
+
+export const getDocumentationHandler = async ({ section }: { section: string }) => {
+	console.log({ section })
+
+	try {
+		// Get documentation from both full presets
+		const svelteDoc = await fetchAndProcessMarkdown(presets['svelte'], 'svelte')
+		const svelteKitDoc = await fetchAndProcessMarkdown(presets['sveltekit'], 'sveltekit')
+
+		// Parse sections with titles
+		const svelteSections = parseDocumentSections(svelteDoc)
+		const svelteKitSections = parseDocumentSections(svelteKitDoc)
+
+		// Search in Svelte documentation first
+		const svelteMatch = findSectionByTitleOrPath(svelteSections, section)
+
+		if (svelteMatch) {
+			return {
+				content: [
+					{
+						type: 'text' as const,
+						text: `📖 Svelte documentation (${svelteMatch.title}):\n\n${svelteMatch.content}`
+					}
+				]
+			}
+		}
+
+		// Search in SvelteKit documentation if not found in Svelte
+		const svelteKitMatch = findSectionByTitleOrPath(svelteKitSections, section)
+
+		if (svelteKitMatch) {
+			return {
+				content: [
+					{
+						type: 'text' as const,
+						text: `📖 SvelteKit documentation (${svelteKitMatch.title}):\n\n${svelteKitMatch.content}`
+					}
+				]
+			}
+		}
+
+		// If not found in either
+		return {
+			content: [
+				{
+					type: 'text' as const,
+					text: `❌ Section "${section}" not found in Svelte or SvelteKit documentation. Use list_sections to see all available sections.`
+				}
+			]
+		}
+	} catch (error) {
+		console.error('Error fetching documentation:', error)
+		return {
+			content: [
+				{
+					type: 'text' as const,
+					text: `❌ Error fetching documentation for section "${section}": ${error instanceof Error ? error.message : String(error)}`
+				}
+			]
+		}
+	}
+}
+
 export const handler = createMcpHandler(
 	(server) => {
 		server.tool(
 			'list_sections',
 			'Lists all available documentation sections from Svelte 5 and SvelteKit presets. Start by running this tool to see available sections, then call the get_documentation tool for each relevant section.',
 			{},
-			async () => {
-				console.log('Listing sections from Svelte and SvelteKit full presets')
-
-				try {
-					// Get sections from both full presets
-					const svelteDoc = await fetchAndProcessMarkdown(presets['svelte'], 'svelte')
-					const svelteKitDoc = await fetchAndProcessMarkdown(presets['sveltekit'], 'sveltekit')
-
-					const svelteSections = parseDocumentSections(svelteDoc)
-					const svelteKitSections = parseDocumentSections(svelteKitDoc)
-
-					// Format with single headers per framework
-					let output = ''
-
-					if (svelteSections.length > 0) {
-						output += '# Svelte\n'
-						output += svelteSections.map((section) => `* title: ${section.title}, path: ${section.filePath}`).join('\n') + '\n\n'
-					}
-
-					if (svelteKitSections.length > 0) {
-						output += '# SvelteKit\n'
-						output += svelteKitSections.map((section) => `* title: ${section.title}, path: ${section.filePath}`).join('\n')
-					}
-
-					return {
-						content: [
-							{
-								type: 'text',
-								text: `📋 Available documentation sections:\n\n${output}\n\nUse get_documentation with a section name to retrieve specific content.`
-							}
-						]
-					}
-				} catch (error) {
-					console.error('Error listing sections:', error)
-					return {
-						content: [
-							{
-								type: 'text',
-								text: `❌ Error listing sections: ${error instanceof Error ? error.message : String(error)}`
-							}
-						]
-					}
-				}
-			}
+			async () => listSectionsHandler()
 		)
 
 		server.tool(
@@ -141,67 +210,7 @@ export const handler = createMcpHandler(
 			{
 				section: z.string().describe('The section name to retrieve documentation for')
 			},
-			async ({ section }) => {
-				console.log({ section })
-
-				try {
-					// Get documentation from both full presets
-					const svelteDoc = await fetchAndProcessMarkdown(presets['svelte'], 'svelte')
-					const svelteKitDoc = await fetchAndProcessMarkdown(presets['sveltekit'], 'sveltekit')
-
-					// Parse sections with titles
-					const svelteSections = parseDocumentSections(svelteDoc)
-					const svelteKitSections = parseDocumentSections(svelteKitDoc)
-
-					// Search in Svelte documentation first
-					const svelteMatch = findSectionByTitleOrPath(svelteSections, section)
-
-					if (svelteMatch) {
-						return {
-							content: [
-								{
-									type: 'text',
-									text: `📖 Svelte documentation (${svelteMatch.title}):\n\n${svelteMatch.content}`
-								}
-							]
-						}
-					}
-
-					// Search in SvelteKit documentation if not found in Svelte
-					const svelteKitMatch = findSectionByTitleOrPath(svelteKitSections, section)
-
-					if (svelteKitMatch) {
-						return {
-							content: [
-								{
-									type: 'text',
-									text: `📖 SvelteKit documentation (${svelteKitMatch.title}):\n\n${svelteKitMatch.content}`
-								}
-							]
-						}
-					}
-
-					// If not found in either
-					return {
-						content: [
-							{
-								type: 'text',
-								text: `❌ Section "${section}" not found in Svelte or SvelteKit documentation. Use list_sections to see all available sections.`
-							}
-						]
-					}
-				} catch (error) {
-					console.error('Error fetching documentation:', error)
-					return {
-						content: [
-							{
-								type: 'text',
-								text: `❌ Error fetching documentation for section "${section}": ${error instanceof Error ? error.message : String(error)}`
-							}
-						]
-					}
-				}
-			}
+			async ({ section }) => getDocumentationHandler({ section })
 		)
 	},
 	{},

@@ -32,7 +32,7 @@ export async function fetchAndProcessMarkdown(
 	const cachedContent = await readCachedFile(filePath)
 	if (cachedContent) {
 		if (dev) {
-			console.log(`Using cached content for ${presetKey} from ${filePath}`)
+			// console.log(`Using cached content for ${presetKey} from ${filePath}`)
 		}
 		return cachedContent
 	}
