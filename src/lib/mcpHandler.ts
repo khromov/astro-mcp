@@ -12,24 +12,19 @@ interface DocumentSection {
 
 function parseDocumentSections(doc: string): DocumentSection[] {
 	const sections: DocumentSection[] = []
-	const parts = doc.split('\n\n## ')
+	// Split only on headers that start with "docs/"
+	const parts = doc.split(/\n\n## (docs\/[^\n]+)/g)
 
-	for (let i = 0; i < parts.length; i++) {
-		const part = i === 0 ? parts[i] : '## ' + parts[i]
-		const lines = part.split('\n')
-		const firstLine = lines[0].replace('## ', '').trim()
+	for (let i = 1; i < parts.length; i += 2) {
+		const filePath = parts[i] // The captured group (docs/...)
+		const content = '## ' + filePath + '\n' + (parts[i + 1] || '') // The content after the header
+		const title = extractFrontmatterTitle(content) || extractTitleFromPath(filePath)
 
-		if (firstLine.startsWith('docs/')) {
-			const filePath = firstLine
-			const content = part
-			const title = extractFrontmatterTitle(content) || extractTitleFromPath(filePath)
-
-			sections.push({
-				filePath,
-				title,
-				content
-			})
-		}
+		sections.push({
+			filePath,
+			title,
+			content
+		})
 	}
 
 	return sections
@@ -94,20 +89,41 @@ export const listSectionsHandler = async () => {
 		const svelteSections = parseDocumentSections(svelteDoc)
 		const svelteKitSections = parseDocumentSections(svelteKitDoc)
 
+		// Filter out sections with less than 100 characters
+		const filteredSvelteSections = svelteSections.filter((section) => {
+			const isValid = section.content.length >= 100
+			if (!isValid) {
+				console.log(
+					`Filtered out Svelte section: "${section.title}" (${section.content.length} chars)`
+				)
+			}
+			return isValid
+		})
+
+		const filteredSvelteKitSections = svelteKitSections.filter((section) => {
+			const isValid = section.content.length >= 100
+			if (!isValid) {
+				console.log(
+					`Filtered out SvelteKit section: "${section.title}" (${section.content.length} chars)`
+				)
+			}
+			return isValid
+		})
+
 		// Format with single headers per framework
 		let output = ''
 
-		if (svelteSections.length > 0) {
+		if (filteredSvelteSections.length > 0) {
 			output += '# Svelte\n'
 			output +=
-				svelteSections
+				filteredSvelteSections
 					.map((section) => `* title: ${section.title}, path: ${section.filePath}`)
 					.join('\n') + '\n\n'
 		}
 
-		if (svelteKitSections.length > 0) {
+		if (filteredSvelteKitSections.length > 0) {
 			output += '# SvelteKit\n'
-			output += svelteKitSections
+			output += filteredSvelteKitSections
 				.map((section) => `* title: ${section.title}, path: ${section.filePath}`)
 				.join('\n')
 		}
