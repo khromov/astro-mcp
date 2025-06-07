@@ -19,7 +19,7 @@ export const handler = createMcpHandler(
 					const svelteKitDoc = await fetchAndProcessMarkdown(presets['sveltekit'], 'sveltekit')
 
 					// Helper function to extract file path headings
-					const extractFileHeadings = (doc: string, framework: string) => {
+					const extractFileHeadings = (doc: string) => {
 						return doc
 							.split('\n\n## ')
 							.map((section) => {
@@ -28,7 +28,7 @@ export const handler = createMcpHandler(
 
 								// Only return file path headings
 								if (firstLine.startsWith('docs/')) {
-									return `**${framework}**: ${firstLine}`
+									return firstLine
 								}
 
 								return null
@@ -36,16 +36,27 @@ export const handler = createMcpHandler(
 							.filter(Boolean)
 					}
 
-					const svelteSections = extractFileHeadings(svelteDoc, 'Svelte')
-					const svelteKitSections = extractFileHeadings(svelteKitDoc, 'SvelteKit')
+					const svelteSections = extractFileHeadings(svelteDoc)
+					const svelteKitSections = extractFileHeadings(svelteKitDoc)
 
-					const allSections = [...svelteSections, ...svelteKitSections]
+					// Format with single headers per framework
+					let output = ''
+					
+					if (svelteSections.length > 0) {
+						output += '# Svelte\n'
+						output += svelteSections.join('\n') + '\n\n'
+					}
+					
+					if (svelteKitSections.length > 0) {
+						output += '# SvelteKit\n'
+						output += svelteKitSections.join('\n')
+					}
 
 					return {
 						content: [
 							{
 								type: 'text',
-								text: `📋 Available documentation sections:\n\n${allSections.join('\n')}\n\nUse get_documentation with a section name to retrieve specific content.`
+								text: `📋 Available documentation sections:\n\n${output}\n\nUse get_documentation with a section name to retrieve specific content.`
 							}
 						]
 					}
