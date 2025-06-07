@@ -159,8 +159,21 @@ export const getDocumentationHandler = async ({ section }: { section: string | s
 		const svelteSections = parseDocumentSections(svelteDoc)
 		const svelteKitSections = parseDocumentSections(svelteKitDoc)
 
-		// Handle array of sections
-		const sections = Array.isArray(section) ? section : [section]
+		// Handle array of sections - including JSON string arrays
+		let sections: string[]
+		if (Array.isArray(section)) {
+			sections = section
+		} else if (typeof section === 'string' && section.trim().startsWith('[') && section.trim().endsWith(']')) {
+			// Try to parse JSON string array
+			try {
+				const parsed = JSON.parse(section)
+				sections = Array.isArray(parsed) ? parsed : [section]
+			} catch {
+				sections = [section]
+			}
+		} else {
+			sections = [section]
+		}
 		const results: string[] = []
 		const notFound: string[] = []
 

@@ -122,4 +122,18 @@ describe('MCP Handler Integration', () => {
 		expect(result.content[0].text).toContain('not found')
 		expect(result.content[0].text).toContain('non-existent-section')
 	}, 15000)
+
+	it('should handle JSON string arrays from Claude', async () => {
+		// Test with JSON string array (like Claude sends)
+		const result = await getDocumentationHandler({ 
+			section: '["$state", "$derived"]'
+		})
+		
+		expect(result.content).toBeDefined()
+		expect(result.content[0].type).toBe('text')
+		expect(result.content[0].text).toContain('$state')
+		expect(result.content[0].text).toContain('$derived')
+		expect(result.content[0].text).toContain('---') // Should have separators
+		expect(result.content[0].text).not.toContain('❌')
+	}, 15000)
 })
