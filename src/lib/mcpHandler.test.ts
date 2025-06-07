@@ -19,23 +19,31 @@ describe('MCP Handler Integration', () => {
 		expect(listResult.content[0].type).toBe('text')
 		expect(listResult.content[0].text).toContain('Available documentation sections')
 
-		// Extract section titles from the output
+		// Extract section titles and paths from the output
 		const outputText = listResult.content[0].text
-		const sectionMatches = outputText.match(/\* title: ([^,]+),/g)
+		const sectionMatches = outputText.match(/\* title: ([^,]+), path: ([^\n]+)/g)
 		expect(sectionMatches).not.toBeNull()
 		expect(sectionMatches!.length).toBeGreaterThan(0)
 
-		// Test ALL sections from the list
+		// Test ALL sections from the list - both by title and by path
 		for (const match of sectionMatches!) {
-			const title = match.match(/\* title: ([^,]+),/)![1]
+			const titleMatch = match.match(/\* title: ([^,]+), path: ([^\n]+)/)!
+			const title = titleMatch[1]
+			const path = titleMatch[2]
 
-			// Call the real getDocumentationHandler
-			const docResult = await getDocumentationHandler({ section: title })
+			// Test searching by title
+			const docResultByTitle = await getDocumentationHandler({ section: title })
+			expect(docResultByTitle.content).toBeDefined()
+			expect(docResultByTitle.content[0].type).toBe('text')
+			expect(docResultByTitle.content[0].text).toContain('documentation')
+			expect(docResultByTitle.content[0].text).not.toContain('not found')
 
-			expect(docResult.content).toBeDefined()
-			expect(docResult.content[0].type).toBe('text')
-			expect(docResult.content[0].text).toContain('documentation')
-			expect(docResult.content[0].text).not.toContain('not found')
+			// Test searching by path
+			const docResultByPath = await getDocumentationHandler({ section: path })
+			expect(docResultByPath.content).toBeDefined()
+			expect(docResultByPath.content[0].type).toBe('text')
+			expect(docResultByPath.content[0].text).toContain('documentation')
+			expect(docResultByPath.content[0].text).not.toContain('not found')
 		}
 	}, 30000)
 
