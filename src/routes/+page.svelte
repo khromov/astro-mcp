@@ -180,10 +180,15 @@
 							</div>
 							<div class="endpoint-url">
 								<strong>Claude Code:</strong>
-								<code>claude mcp add --transport sse svelte-llm https://svelte-llm.khromov.se/mcp/sse</code>
+								<code
+									>claude mcp add --transport sse svelte-llm https://svelte-llm.khromov.se/mcp/sse</code
+								>
 								<button
 									class="mcp-copy-btn"
-									onclick={() => copyToClipboard('claude mcp add --transport sse svelte-llm https://svelte-llm.khromov.se/mcp/sse')}
+									onclick={() =>
+										copyToClipboard(
+											'claude mcp add --transport sse svelte-llm https://svelte-llm.khromov.se/mcp/sse'
+										)}
 								>
 									<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
 										<path

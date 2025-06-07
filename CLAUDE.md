@@ -5,12 +5,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Common Commands
 
 ### Development
+
 - `npm run dev` - Start development server
 - `npm run build` - Build production bundle
 - `npm run build:node` - Build for Node.js deployment
 - `npm run preview` - Preview production build
 
 ### Testing and Quality
+
 - `npm run test` - Run all tests (unit tests via vitest)
 - `npm run test:unit` - Run unit tests only
 - `npm run check` - Type check with svelte-check
@@ -19,6 +21,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run format` - Auto-format code with prettier
 
 ### MCP Development
+
 - Debug MCP endpoint: `NODE_TLS_REJECT_UNAUTHORIZED=0 NODE_OPTIONS="--insecure-http-parser" npx @modelcontextprotocol/inspector`
 
 ## Architecture Overview
@@ -26,35 +29,42 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 This is a SvelteKit application that provides Svelte 5 and SvelteKit documentation in LLM-friendly formats. Key architectural components:
 
 ### Core Functionality
+
 - **Documentation Transformation**: Fetches markdown files from GitHub repositories and processes them into LLM-optimized formats
 - **Preset System**: Configurable documentation bundles defined in `src/lib/presets.ts` with different sizes and content filters
 - **File Caching**: Implements file-based caching with background updates for performance (`src/lib/fileCache.ts`)
 - **Distilled Content**: AI-processed versions of documentation stored in `outputs/` directory
 
 ### Key Routes
+
 - `/[preset]` - Main documentation endpoint that serves processed markdown
 - `/mcp/[...rest]` - MCP (Model Context Protocol) server for AI assistant integration
 - `/api/distilled-versions` - API for managing distilled documentation versions
 - `/api/update-distilled` - API for updating distilled content
 
 ### Important Files
+
 - `src/lib/presets.ts` - Defines all available documentation presets and their configurations
 - `src/lib/fetchMarkdown.ts` - Core logic for fetching and processing GitHub markdown content
 - `src/lib/fileCache.ts` - File caching system with staleness detection
 - `src/routes/[preset]/+server.ts` - Main documentation serving endpoint
 
 ### Environment Setup
+
 - Requires `GITHUB_TOKEN` in `.env` file with `public_repo` permissions for GitHub API access
 - Uses Svelte 5 with runes syntax throughout the codebase
 - Built with TypeScript and uses Vitest for testing
 
 ### MCP Integration
+
 The application provides MCP endpoints for AI assistants:
+
 - SSE endpoint: `/mcp/sse` (for Claude Desktop)
 - HTTP endpoint: `/mcp/mcp` (for other clients)
 - Tools: `list_sections` and `get_documentation` for querying Svelte/SvelteKit docs
 
 ### Deployment Notes
+
 - Uses Node.js adapter for production deployment
 - Supports Docker deployment via included Dockerfile
 - File caching operates on the filesystem in production

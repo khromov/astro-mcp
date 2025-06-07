@@ -13,17 +13,17 @@ interface DocumentSection {
 function parseDocumentSections(doc: string): DocumentSection[] {
 	const sections: DocumentSection[] = []
 	const parts = doc.split('\n\n## ')
-	
+
 	for (let i = 0; i < parts.length; i++) {
 		const part = i === 0 ? parts[i] : '## ' + parts[i]
 		const lines = part.split('\n')
 		const firstLine = lines[0].replace('## ', '').trim()
-		
+
 		if (firstLine.startsWith('docs/')) {
 			const filePath = firstLine
 			const content = part
 			const title = extractFrontmatterTitle(content) || extractTitleFromPath(filePath)
-			
+
 			sections.push({
 				filePath,
 				title,
@@ -31,7 +31,7 @@ function parseDocumentSections(doc: string): DocumentSection[] {
 			})
 		}
 	}
-	
+
 	return sections
 }
 
@@ -39,7 +39,7 @@ function extractFrontmatterTitle(content: string): string | null {
 	const lines = content.split('\n')
 	let inFrontmatter = false
 	let foundStart = false
-	
+
 	for (const line of lines) {
 		if (line.trim() === '---') {
 			if (!foundStart) {
@@ -53,7 +53,7 @@ function extractFrontmatterTitle(content: string): string | null {
 			return title || null
 		}
 	}
-	
+
 	return null
 }
 
@@ -62,21 +62,24 @@ function extractTitleFromPath(filePath: string): string {
 	return filename.replace('.md', '').replace(/^\d+-/, '')
 }
 
-function findSectionByTitleOrPath(sections: DocumentSection[], query: string): DocumentSection | null {
+function findSectionByTitleOrPath(
+	sections: DocumentSection[],
+	query: string
+): DocumentSection | null {
 	const lowerQuery = query.toLowerCase()
-	
+
 	// First try exact title match
-	let match = sections.find(section => section.title.toLowerCase() === lowerQuery)
+	let match = sections.find((section) => section.title.toLowerCase() === lowerQuery)
 	if (match) return match
-	
+
 	// Then try partial title match
-	match = sections.find(section => section.title.toLowerCase().includes(lowerQuery))
+	match = sections.find((section) => section.title.toLowerCase().includes(lowerQuery))
 	if (match) return match
-	
+
 	// Finally try file path match for backward compatibility
-	match = sections.find(section => section.filePath.toLowerCase().includes(lowerQuery))
+	match = sections.find((section) => section.filePath.toLowerCase().includes(lowerQuery))
 	if (match) return match
-	
+
 	return null
 }
 
@@ -94,21 +97,20 @@ export const handler = createMcpHandler(
 					const svelteDoc = await fetchAndProcessMarkdown(presets['svelte'], 'svelte')
 					const svelteKitDoc = await fetchAndProcessMarkdown(presets['sveltekit'], 'sveltekit')
 
-
 					const svelteSections = parseDocumentSections(svelteDoc)
 					const svelteKitSections = parseDocumentSections(svelteKitDoc)
 
 					// Format with single headers per framework
 					let output = ''
-					
+
 					if (svelteSections.length > 0) {
 						output += '# Svelte\n'
-						output += svelteSections.map(section => section.title).join('\n') + '\n\n'
+						output += svelteSections.map((section) => section.title).join('\n') + '\n\n'
 					}
-					
+
 					if (svelteKitSections.length > 0) {
 						output += '# SvelteKit\n'
-						output += svelteKitSections.map(section => section.title).join('\n')
+						output += svelteKitSections.map((section) => section.title).join('\n')
 					}
 
 					return {
@@ -146,7 +148,6 @@ export const handler = createMcpHandler(
 					// Get documentation from both full presets
 					const svelteDoc = await fetchAndProcessMarkdown(presets['svelte'], 'svelte')
 					const svelteKitDoc = await fetchAndProcessMarkdown(presets['sveltekit'], 'sveltekit')
-
 
 					// Parse sections with titles
 					const svelteSections = parseDocumentSections(svelteDoc)
