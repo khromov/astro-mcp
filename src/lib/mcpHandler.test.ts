@@ -36,14 +36,14 @@ describe('MCP Handler Integration', () => {
 			expect(docResultByTitle.content).toBeDefined()
 			expect(docResultByTitle.content[0].type).toBe('text')
 			expect(docResultByTitle.content[0].text).toContain('documentation')
-			expect(docResultByTitle.content[0].text).not.toContain('not found')
+			expect(docResultByTitle.content[0].text).not.toContain('❌')
 
 			// Test searching by path
 			const docResultByPath = await getDocumentationHandler({ section: path })
 			expect(docResultByPath.content).toBeDefined()
 			expect(docResultByPath.content[0].type).toBe('text')
 			expect(docResultByPath.content[0].text).toContain('documentation')
-			expect(docResultByPath.content[0].text).not.toContain('not found')
+			expect(docResultByPath.content[0].text).not.toContain('❌')
 		}
 	}, 30000)
 
@@ -59,12 +59,12 @@ describe('MCP Handler Integration', () => {
 			// Test with trailing comma
 			const resultWithComma = await getDocumentationHandler({ section: title + ',' })
 			expect(resultWithComma.content[0].text).toContain('documentation')
-			expect(resultWithComma.content[0].text).not.toContain('not found')
+			expect(resultWithComma.content[0].text).not.toContain('❌')
 
 			// Test with trailing comma and whitespace
 			const resultWithCommaSpace = await getDocumentationHandler({ section: title + ', ' })
 			expect(resultWithCommaSpace.content[0].text).toContain('documentation')
-			expect(resultWithCommaSpace.content[0].text).not.toContain('not found')
+			expect(resultWithCommaSpace.content[0].text).not.toContain('❌')
 		}
 	}, 15000)
 
@@ -81,17 +81,45 @@ describe('MCP Handler Integration', () => {
 			// Search by title
 			const resultByTitle = await getDocumentationHandler({ section: title })
 			expect(resultByTitle.content[0].text).toContain('documentation')
-			expect(resultByTitle.content[0].text).not.toContain('not found')
+			expect(resultByTitle.content[0].text).not.toContain('❌')
 
 			// Search by path
 			const resultByPath = await getDocumentationHandler({ section: path })
 			expect(resultByPath.content[0].text).toContain('documentation')
-			expect(resultByPath.content[0].text).not.toContain('not found')
+			expect(resultByPath.content[0].text).not.toContain('❌')
 		}
 	}, 15000)
 
 	it('should return error for non-existent sections using real MCP functions', async () => {
 		const result = await getDocumentationHandler({ section: 'non-existent-section-12345' })
 		expect(result.content[0].text).toContain('not found')
+	}, 15000)
+
+	it('should handle array of section names', async () => {
+		// Test with multiple valid sections
+		const result = await getDocumentationHandler({ 
+			section: ['$state', '$derived', '$effect'] 
+		})
+		
+		expect(result.content).toBeDefined()
+		expect(result.content[0].type).toBe('text')
+		expect(result.content[0].text).toContain('$state')
+		expect(result.content[0].text).toContain('$derived')
+		expect(result.content[0].text).toContain('$effect')
+		expect(result.content[0].text).toContain('---') // Should have separators
+	}, 15000)
+
+	it('should handle mixed valid and invalid sections in array', async () => {
+		// Test with mix of valid and invalid sections
+		const result = await getDocumentationHandler({ 
+			section: ['$state', 'non-existent-section', '$derived'] 
+		})
+		
+		expect(result.content).toBeDefined()
+		expect(result.content[0].type).toBe('text')
+		expect(result.content[0].text).toContain('$state')
+		expect(result.content[0].text).toContain('$derived')
+		expect(result.content[0].text).toContain('not found')
+		expect(result.content[0].text).toContain('non-existent-section')
 	}, 15000)
 })

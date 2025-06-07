@@ -149,7 +149,7 @@ export const listSectionsHandler = async () => {
 	}
 }
 
-export const getDocumentationHandler = async ({ section }: { section: string }) => {
+export const getDocumentationHandler = async ({ section }: { section: string | string[] }) => {
 	try {
 		// Get documentation from both full presets
 		const svelteDoc = await fetchAndProcessMarkdown(presets['svelte'], 'svelte')
@@ -159,50 +159,70 @@ export const getDocumentationHandler = async ({ section }: { section: string }) 
 		const svelteSections = parseDocumentSections(svelteDoc)
 		const svelteKitSections = parseDocumentSections(svelteKitDoc)
 
-		// Search in Svelte documentation first
-		const svelteMatch = findSectionByTitleOrPath(svelteSections, section)
+		// Handle array of sections
+		const sections = Array.isArray(section) ? section : [section]
+		const results: string[] = []
+		const notFound: string[] = []
 
-		if (svelteMatch) {
+		for (const sectionName of sections) {
+			console.log({ section: sectionName })
+
+			// Search in Svelte documentation first
+			const svelteMatch = findSectionByTitleOrPath(svelteSections, sectionName)
+
+			if (svelteMatch) {
+				results.push(`📖 Svelte documentation (${svelteMatch.title}):\n\n${svelteMatch.content}`)
+				continue
+			}
+
+			// Search in SvelteKit documentation if not found in Svelte
+			const svelteKitMatch = findSectionByTitleOrPath(svelteKitSections, sectionName)
+
+			if (svelteKitMatch) {
+				results.push(`📖 SvelteKit documentation (${svelteKitMatch.title}):\n\n${svelteKitMatch.content}`)
+				continue
+			}
+
+			// If not found in either
+			notFound.push(sectionName)
+		}
+
+		if (results.length === 0) {
+			// No sections found
+			const sectionList = Array.isArray(section) ? section.join(', ') : section
 			return {
 				content: [
 					{
 						type: 'text' as const,
-						text: `📖 Svelte documentation (${svelteMatch.title}):\n\n${svelteMatch.content}`
+						text: `❌ Section(s) "${sectionList}" not found in Svelte or SvelteKit documentation. Use list_sections to see all available sections.`
 					}
 				]
 			}
 		}
 
-		// Search in SvelteKit documentation if not found in Svelte
-		const svelteKitMatch = findSectionByTitleOrPath(svelteKitSections, section)
-
-		if (svelteKitMatch) {
-			return {
-				content: [
-					{
-						type: 'text' as const,
-						text: `📖 SvelteKit documentation (${svelteKitMatch.title}):\n\n${svelteKitMatch.content}`
-					}
-				]
-			}
+		// Build response text
+		let responseText = results.join('\n\n---\n\n')
+		
+		if (notFound.length > 0) {
+			responseText += `\n\n---\n\n❌ The following sections were not found: ${notFound.join(', ')}`
 		}
 
-		// If not found in either
 		return {
 			content: [
 				{
 					type: 'text' as const,
-					text: `❌ Section "${section}" not found in Svelte or SvelteKit documentation. Use list_sections to see all available sections.`
+					text: responseText
 				}
 			]
 		}
 	} catch (error) {
 		console.error('Error fetching documentation:', error)
+		const sectionList = Array.isArray(section) ? section.join(', ') : section
 		return {
 			content: [
 				{
 					type: 'text' as const,
-					text: `❌ Error fetching documentation for section "${section}": ${error instanceof Error ? error.message : String(error)}`
+					text: `❌ Error fetching documentation for section(s) "${sectionList}": ${error instanceof Error ? error.message : String(error)}`
 				}
 			]
 		}
@@ -220,9 +240,12 @@ export const handler = createMcpHandler(
 
 		server.tool(
 			'get_documentation',
-			'Retrieves documentation for a specific section from Svelte or SvelteKit full presets. Feel free to call this multiple times if you need documentation for multiple sections.',
+			'Retrieves documentation for one or more sections from Svelte or SvelteKit full presets. You can pass a single section name or an array of section names to get multiple sections at once.',
 			{
-				section: z.string().describe('The section name to retrieve documentation for')
+				section: z.union([
+					z.string(),
+					z.array(z.string())
+				]).describe('The section name(s) to retrieve documentation for. Can be a single string or an array of strings.')
 			},
 			async ({ section }) => getDocumentationHandler({ section })
 		)
