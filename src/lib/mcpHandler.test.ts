@@ -1,0 +1,89 @@
+import { describe, it, expect, vi } from 'vitest'
+import { listSectionsHandler, getDocumentationHandler } from './mcpHandler'
+
+// Mock environment variables
+vi.mock('$env/dynamic/private', () => ({
+	env: {
+		GITHUB_TOKEN: 'test-token',
+		REDIS_URL: undefined
+	}
+}))
+
+describe('MCP Handler Integration', () => {
+	it('should list sections and successfully fetch each one using real MCP functions', async () => {
+		// Call the real listSectionsHandler
+		const listResult = await listSectionsHandler()
+
+		console.log('List result:', listResult)
+		expect(listResult.content).toBeDefined()
+		expect(listResult.content[0].type).toBe('text')
+		expect(listResult.content[0].text).toContain('Available documentation sections')
+
+		// Extract section titles from the output
+		const outputText = listResult.content[0].text
+		const sectionMatches = outputText.match(/\* title: ([^,]+),/g)
+		expect(sectionMatches).not.toBeNull()
+		expect(sectionMatches!.length).toBeGreaterThan(0)
+
+		// Test ALL sections from the list
+		for (const match of sectionMatches!) {
+			const title = match.match(/\* title: ([^,]+),/)![1]
+
+			// Call the real getDocumentationHandler
+			const docResult = await getDocumentationHandler({ section: title })
+
+			expect(docResult.content).toBeDefined()
+			expect(docResult.content[0].type).toBe('text')
+			expect(docResult.content[0].text).toContain('documentation')
+			expect(docResult.content[0].text).not.toContain('not found')
+		}
+	}, 30000)
+
+	it('should handle trailing commas in search queries using real MCP functions', async () => {
+		// Get a section title first
+		const listResult = await listSectionsHandler()
+		const outputText = listResult.content[0].text
+		const firstMatch = outputText.match(/\* title: ([^,]+),/)
+
+		if (firstMatch) {
+			const title = firstMatch[1]
+
+			// Test with trailing comma
+			const resultWithComma = await getDocumentationHandler({ section: title + ',' })
+			expect(resultWithComma.content[0].text).toContain('documentation')
+			expect(resultWithComma.content[0].text).not.toContain('not found')
+
+			// Test with trailing comma and whitespace
+			const resultWithCommaSpace = await getDocumentationHandler({ section: title + ', ' })
+			expect(resultWithCommaSpace.content[0].text).toContain('documentation')
+			expect(resultWithCommaSpace.content[0].text).not.toContain('not found')
+		}
+	}, 15000)
+
+	it('should search by both title and path using real MCP functions', async () => {
+		// Get a section with path
+		const listResult = await listSectionsHandler()
+		const outputText = listResult.content[0].text
+		const match = outputText.match(/\* title: ([^,]+), path: ([^\n]+)/)
+
+		if (match) {
+			const title = match[1]
+			const path = match[2]
+
+			// Search by title
+			const resultByTitle = await getDocumentationHandler({ section: title })
+			expect(resultByTitle.content[0].text).toContain('documentation')
+			expect(resultByTitle.content[0].text).not.toContain('not found')
+
+			// Search by path
+			const resultByPath = await getDocumentationHandler({ section: path })
+			expect(resultByPath.content[0].text).toContain('documentation')
+			expect(resultByPath.content[0].text).not.toContain('not found')
+		}
+	}, 15000)
+
+	it('should return error for non-existent sections using real MCP functions', async () => {
+		const result = await getDocumentationHandler({ section: 'non-existent-section-12345' })
+		expect(result.content[0].text).toContain('not found')
+	}, 15000)
+})

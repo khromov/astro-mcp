@@ -116,7 +116,7 @@ export const listSectionsHandler = async () => {
 			content: [
 				{
 					type: 'text' as const,
-					text: `📋 Available documentation sections:\n\n${output}\n\nUse get_documentation with a section name to retrieve specific content.`
+					text: `📋 Available documentation sections:\n\n${output}\n\nUse get_documentation with a section name to retrieve specific content for a section.`
 				}
 			]
 		}
@@ -134,8 +134,6 @@ export const listSectionsHandler = async () => {
 }
 
 export const getDocumentationHandler = async ({ section }: { section: string }) => {
-	console.log({ section })
-
 	try {
 		// Get documentation from both full presets
 		const svelteDoc = await fetchAndProcessMarkdown(presets['svelte'], 'svelte')
