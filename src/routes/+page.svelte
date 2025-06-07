@@ -161,6 +161,7 @@
 								<strong>SSE (Claude Desktop)</strong>
 							</div>
 							<div class="endpoint-url">
+								<strong>URL:</strong>
 								<code>https://svelte-llm.khromov.se/mcp/sse</code>
 								<button
 									class="mcp-copy-btn"
@@ -201,6 +202,7 @@
 								<strong>Streamable HTTP (most other clients)</strong>
 							</div>
 							<div class="endpoint-url">
+								<strong>URL:</strong>
 								<code>https://svelte-llm.khromov.se/mcp/mcp</code>
 								<button
 									class="mcp-copy-btn"
