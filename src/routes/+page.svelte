@@ -49,29 +49,39 @@
 
 	const mcpClients = [
 		{
-			id: 'cline',
-			name: 'Cline',
-			icon: '🧑‍💻',
-			endpoint: 'sse',
-			url: 'https://svelte-llm.khromov.se/mcp/sse',
-			description: 'Popular VS Code extension for AI coding',
-			instruction: 'Add this URL to your Cline MCP settings'
-		},
-		{
 			id: 'claude-code',
 			name: 'Claude Code',
 			icon: '🔧',
-			endpoint: 'sse',
-			url: 'https://svelte-llm.khromov.se/mcp/sse',
-			description: 'Official Anthropic command-line tool',
-			instruction: 'claude mcp add --transport sse --scope user svelte-llm https://svelte-llm.khromov.se/mcp/sse',
+			description: 'The official Anthropic command-line tool. Run this command to add the MCP server:',
+			instruction:
+				'claude mcp add --transport sse --scope user svelte-llm https://svelte-llm.khromov.se/mcp/sse',
 			isCommand: true
+		},
+		{
+			id: 'github-copilot',
+			name: 'GitHub Copilot',
+			icon: '🐙',
+			description: 'GitHub Copilot extension for VS Code - put this in .vscode/mcp.json inside a "servers" object.',
+			instruction: `{
+  "svelte-llm": {
+    "command": "npx",
+    "args": ["mcp-remote", "https://svelte-llm.khromov.se/mcp/mcp"]
+  }
+}`,
+			isConfig: true
+		},
+		{
+			id: 'cline',
+			name: 'Cline',
+			icon: '🧑‍💻',
+			url: 'https://svelte-llm.khromov.se/mcp/sse',
+			description: 'Add this URL to your Cline MCP settings. Name the MCP svelte-llm or whatever you like.',
 		},
 		{
 			id: 'others',
 			name: 'Other Clients',
 			icon: '🔗',
-			endpoint: 'http',
+
 			url: 'https://svelte-llm.khromov.se/mcp/mcp',
 			description: 'Most modern MCP-compatible clients',
 			instruction: 'Use this streamable HTTP endpoint in your MCP client configuration'
@@ -80,25 +90,10 @@
 			id: 'local',
 			name: 'Local Development',
 			icon: '💻',
-			endpoint: 'http',
-			url: 'http://localhost:5173/mcp/mcp',
+			url: 'https://svelte-llm.khromov.se/mcp/mcp',
 			description: 'For local development and testing',
-			instruction: 'npx mcp-remote http://localhost:5173/mcp/mcp',
+			instruction: 'npx mcp-remote https://svelte-llm.khromov.se/mcp/mcp',
 			isCommand: true
-		},
-		{
-			id: 'github-copilot',
-			name: 'GitHub Copilot',
-			icon: '🐙',
-			endpoint: 'config',
-			description: 'GitHub Copilot Workspace integration',
-			instruction: `{
-  "svelte-llm": {
-    "command": "npx",
-    "args": ["mcp-remote", "http://localhost:5173/mcp/mcp"]
-  }
-}`,
-			isConfig: true
 		}
 	]
 
@@ -171,9 +166,10 @@
 			<div class="logo">svelte-llm</div>
 			<h1>Svelte 5 & SvelteKit documentation for AI assistants</h1>
 			<p class="hero-description">
-				Connect your AI coding assistant directly to up-to-date Svelte 5 and SvelteKit documentation 
-				via our <strong>Model Context Protocol (MCP) server</strong>, or download preset documentation 
-				bundles in LLM-friendly formats. Perfect for Cursor, Cline, Claude Code, and other AI tools.
+				Connect your AI coding assistant directly to up-to-date Svelte 5 and SvelteKit documentation
+				via our <strong>Model Context Protocol (MCP) server</strong>, or download preset
+				documentation bundles in LLM-friendly formats. Perfect for Cursor, Cline, Claude Code, and
+				other AI tools.
 			</p>
 			<p class="hero-note">
 				Documentation is automatically fetched from the <a
@@ -192,18 +188,18 @@
 				<h2>MCP Server Integration</h2>
 			</div>
 			<p class="section-description">
-				Connect your AI assistant directly to live Svelte documentation using the Model Context Protocol. 
-				Choose your client below for setup instructions.
+				Connect your AI assistant directly to live Svelte documentation using the Model Context
+				Protocol. Choose your client below for setup instructions.
 			</p>
 		</div>
-		
+
 		<div class="mcp-clients">
 			<div class="client-selector">
 				{#each mcpClients as client}
-					<button 
-						class="client-button" 
+					<button
+						class="client-button"
 						class:active={selectedClient === client.id}
-						onclick={() => selectedClient = selectedClient === client.id ? null : client.id}
+						onclick={() => (selectedClient = selectedClient === client.id ? null : client.id)}
 					>
 						<span class="client-icon">{client.icon}</span>
 						<span class="client-name">{client.name}</span>
@@ -212,7 +208,7 @@
 			</div>
 
 			{#if selectedClient}
-				{@const client = mcpClients.find(c => c.id === selectedClient)}
+				{@const client = mcpClients.find((c) => c.id === selectedClient)}
 				{#if client}
 					<div class="client-instructions">
 						<div class="instruction-header">
@@ -222,17 +218,12 @@
 								<p>{client.description}</p>
 							</div>
 						</div>
-						
+
 						<div class="instruction-content">
-							<p><strong>Instructions:</strong> {client.instruction}</p>
-							
 							{#if client.isCommand}
 								<div class="code-block">
 									<code>{client.instruction}</code>
-									<button
-										class="copy-btn"
-										onclick={() => copyToClipboard(client.instruction)}
-									>
+									<button class="copy-btn" onclick={() => copyToClipboard(client.instruction)}>
 										<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
 											<path
 												d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"
@@ -247,10 +238,7 @@
 							{:else if client.isConfig}
 								<div class="config-block">
 									<pre><code>{client.instruction}</code></pre>
-									<button
-										class="copy-btn"
-										onclick={() => copyToClipboard(client.instruction)}
-									>
+									<button class="copy-btn" onclick={() => copyToClipboard(client.instruction)}>
 										<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
 											<path
 												d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"
@@ -266,10 +254,7 @@
 								<div class="url-block">
 									<strong>URL:</strong>
 									<code>{client.url}</code>
-									<button
-										class="copy-btn"
-										onclick={() => copyToClipboard(client.url)}
-									>
+									<button class="copy-btn" onclick={() => copyToClipboard(client.url)}>
 										<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
 											<path
 												d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"
@@ -293,10 +278,11 @@
 		<div class="section-header">
 			<h2>Direct URL Access</h2>
 			<p class="section-description">
-				Alternative method: Access documentation presets directly via URL for manual download or integration.
+				Alternative method: Access documentation presets directly via URL for manual download or
+				integration.
 			</p>
 		</div>
-		
+
 		<div class="usage-grid">
 			<div class="usage-card">
 				<h3>Single preset</h3>
@@ -393,9 +379,7 @@
 		</div>
 		<div class="preset-list">
 			<div class="preset-item">
-				<a target="_blank" href="https://v4.svelte.dev/content.json"
-					>Svelte 4 Legacy + SvelteKit</a
-				>
+				<a target="_blank" href="https://v4.svelte.dev/content.json">Svelte 4 Legacy + SvelteKit</a>
 			</div>
 		</div>
 	</section>
@@ -604,8 +588,14 @@
 	}
 
 	@keyframes fadeIn {
-		from { opacity: 0; transform: translateY(10px); }
-		to { opacity: 1; transform: translateY(0); }
+		from {
+			opacity: 0;
+			transform: translateY(10px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
 	}
 
 	.instruction-header {
@@ -639,7 +629,9 @@
 		font-size: 14px;
 	}
 
-	.code-block, .config-block, .url-block {
+	.code-block,
+	.config-block,
+	.url-block {
 		background: #1e1e1e;
 		border-radius: 8px;
 		padding: 16px;
@@ -650,7 +642,8 @@
 		border: 1px solid rgba(0, 0, 0, 0.1);
 	}
 
-	.code-block code, .config-block code {
+	.code-block code,
+	.config-block code {
 		color: #e5e7eb;
 		display: block;
 		word-break: break-all;
