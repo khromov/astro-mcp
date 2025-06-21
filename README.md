@@ -65,3 +65,5 @@ NODE_TLS_REJECT_UNAUTHORIZED=0 NODE_OPTIONS="--insecure-http-parser" npx @modelc
 ```
 
 http://127.0.0.1:6274
+
+You can also use GitHub Copilot in Agent mode to try the agent locally, see `.vscode/mcp.json` for info on how that works.
