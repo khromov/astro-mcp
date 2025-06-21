@@ -88,7 +88,7 @@
 			isOthers: true,
 			endpoints: [
 				{
-					type: 'SSE',
+					type: 'Server-Sent Events (SSE)',
 					description: 'For clients supporting Server-Sent Events',
 					value: SSE_ENDPOINT
 				},
@@ -98,8 +98,8 @@
 					value: STREAMABLE_ENDPOINT
 				},
 				{
-					type: 'Local Development',
-					description: 'For local testing and development',
+					type: 'Local npx command',
+					description: 'For older clients that only support local MCP servers',
 					value: NPX_COMMAND,
 					isCommand: true
 				}
@@ -174,12 +174,11 @@
 	<header class="hero">
 		<div class="hero-content">
 			<div class="logo">svelte-llm</div>
-			<h1>Svelte 5 & SvelteKit documentation for AI assistants</h1>
+			<h1>Svelte & SvelteKit documentation for AI assistants</h1>
 			<p class="hero-description">
 				Connect your AI coding assistant directly to up-to-date Svelte 5 and SvelteKit documentation
-				via our <strong>Model Context Protocol (MCP) server</strong>, or download preset
-				documentation bundles in LLM-friendly formats. Perfect for Cursor, Cline, Claude Code, and
-				other AI tools.
+				via this <strong>Model Context Protocol (MCP) server</strong>, or download preset
+				documentation in llms.txt format and add the docs	 to your context.
 			</p>
 			<p class="hero-note">
 				Documentation is automatically fetched from the <a
@@ -680,7 +679,7 @@
 	.endpoint-header {
 		display: flex;
 		align-items: baseline;
-		gap: 12px;
+		gap: 8px;
 		margin-bottom: 8px;
 	}
 
@@ -688,6 +687,7 @@
 		font-size: 14px;
 		color: #1d1d1f;
 		min-width: 120px;
+		flex-shrink: 0;
 	}
 
 	.endpoint-description {
@@ -811,10 +811,20 @@
 
 	.usage-card .code-block {
 		background: #f5f5f7;
-		color: #1d1d1f;
 		border: 1px solid rgba(0, 0, 0, 0.08);
 		margin: 12px 0;
 		position: static;
+		padding: 12px;
+		font-family:
+			'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+		font-size: 13px;
+		border-radius: 8px;
+	}
+
+	.usage-card .code-block code {
+		color: #1d1d1f;
+		display: inline;
+		word-break: break-all;
 	}
 
 	.usage-card .code-block .highlight {
@@ -943,6 +953,24 @@
 		line-height: 1.5;
 	}
 
+	.integration-card .code-block {
+		background: #f5f5f7;
+		color: #1d1d1f;
+		border: 1px solid rgba(0, 0, 0, 0.08);
+		position: static;
+		padding: 12px;
+		font-family:
+			'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+		font-size: 13px;
+		border-radius: 8px;
+	}
+
+	.integration-card .code-block code {
+		color: #1d1d1f;
+		display: block;
+		word-break: break-all;
+	}
+
 	/* Footer */
 	.site-footer {
 		text-align: center;
@@ -1001,8 +1029,26 @@
 			padding: 24px;
 		}
 
+		.mcp-badge-header {
+			flex-direction: column;
+			align-items: flex-start;
+			gap: 8px;
+		}
+
 		.client-selector {
 			grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+		}
+
+		.client-instructions .code-block,
+		.client-instructions .config-block {
+			padding-bottom: 10px;
+		}
+
+		.client-instructions .copy-btn {
+			position: static;
+			margin-top: 12px;
+			width: 100%;
+			justify-content: center;
 		}
 
 		.usage-grid,
@@ -1032,6 +1078,10 @@
 		.url-block code {
 			min-width: unset;
 			width: 100%;
+		}
+
+		.endpoint-header {
+			gap: 4px;
 		}
 	}
 </style>
