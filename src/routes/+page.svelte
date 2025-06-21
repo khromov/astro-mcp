@@ -635,12 +635,6 @@
 		font-size: 14px;
 	}
 
-	.instruction-content p {
-		margin: 0 0 16px 0;
-		color: #1d1d1f;
-		font-size: 14px;
-	}
-
 	.others-endpoints {
 		display: flex;
 		flex-direction: column;
