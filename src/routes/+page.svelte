@@ -10,6 +10,10 @@
 	import PresetListItem from '$lib/components/PresetListItem.svelte'
 	import { SITE_URL } from '$lib/constants'
 	import toast from 'svelte-french-toast'
+	
+	const SSE_ENDPOINT = 'https://svelte-llm.khromov.se/mcp/sse'
+	const STREAMABLE_ENDPOINT = 'https://svelte-llm.khromov.se/mcp/mcp'
+	const NPX_COMMAND = `npx mcp-remote ${STREAMABLE_ENDPOINT}`
 
 	const combinedPresetsFormatted = transformAndSortPresets(combinedPresets)
 	const sveltePresetsFormatted = transformAndSortPresets(sveltePresets)
@@ -53,8 +57,7 @@
 			name: 'Claude Code',
 			icon: '🔧',
 			description: 'The official Anthropic command-line tool. Run this command to add the MCP server:',
-			instruction:
-				'claude mcp add --transport sse --scope user svelte-llm https://svelte-llm.khromov.se/mcp/sse',
+			instruction: `claude mcp add --transport sse --scope user svelte-llm ${SSE_ENDPOINT}`,
 			isCommand: true
 		},
 		{
@@ -65,7 +68,7 @@
 			instruction: `{
   "svelte-llm": {
     "command": "npx",
-    "args": ["mcp-remote", "https://svelte-llm.khromov.se/mcp/mcp"]
+    "args": ["mcp-remote", "${STREAMABLE_ENDPOINT}"]
   }
 }`,
 			isConfig: true
@@ -74,26 +77,33 @@
 			id: 'cline',
 			name: 'Cline',
 			icon: '🧑‍💻',
-			url: 'https://svelte-llm.khromov.se/mcp/sse',
+			url: SSE_ENDPOINT,
 			description: 'Add this URL to your Cline MCP settings. Name the MCP svelte-llm or whatever you like.',
 		},
 		{
 			id: 'others',
 			name: 'Other Clients',
 			icon: '🔗',
-
-			url: 'https://svelte-llm.khromov.se/mcp/mcp',
-			description: 'Most modern MCP-compatible clients',
-			instruction: 'Use this streamable HTTP endpoint in your MCP client configuration'
-		},
-		{
-			id: 'local',
-			name: 'Local Development',
-			icon: '💻',
-			url: 'https://svelte-llm.khromov.se/mcp/mcp',
-			description: 'For local development and testing',
-			instruction: 'npx mcp-remote https://svelte-llm.khromov.se/mcp/mcp',
-			isCommand: true
+			description: 'Choose the appropriate endpoint for your MCP client:',
+			isOthers: true,
+			endpoints: [
+				{
+					type: 'SSE',
+					description: 'For clients supporting Server-Sent Events',
+					value: SSE_ENDPOINT
+				},
+				{
+					type: 'Streamable HTTP',
+					description: 'For most modern MCP-compatible clients',
+					value: STREAMABLE_ENDPOINT
+				},
+				{
+					type: 'Local Development',
+					description: 'For local testing and development',
+					value: NPX_COMMAND,
+					isCommand: true
+				}
+			]
 		}
 	]
 
@@ -249,6 +259,31 @@
 										</svg>
 										Copy
 									</button>
+								</div>
+							{:else if client.isOthers}
+								<div class="others-endpoints">
+									{#each client.endpoints as endpoint}
+										<div class="endpoint-item">
+											<div class="endpoint-header">
+												<strong>{endpoint.type}</strong>
+												<span class="endpoint-description">{endpoint.description}</span>
+											</div>
+											<div class={endpoint.isCommand ? 'code-block' : 'url-block'}>
+												<code>{endpoint.value}</code>
+												<button class="copy-btn" onclick={() => copyToClipboard(endpoint.value)}>
+													<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+														<path
+															d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"
+														/>
+														<path
+															d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"
+														/>
+													</svg>
+													Copy
+												</button>
+											</div>
+										</div>
+									{/each}
 								</div>
 							{:else if client.url}
 								<div class="url-block">
@@ -627,6 +662,37 @@
 		margin: 0 0 16px 0;
 		color: #1d1d1f;
 		font-size: 14px;
+	}
+
+	.others-endpoints {
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+	}
+
+	.endpoint-item {
+		background: white;
+		border-radius: 8px;
+		padding: 16px;
+		border: 1px solid rgba(0, 0, 0, 0.08);
+	}
+
+	.endpoint-header {
+		display: flex;
+		align-items: baseline;
+		gap: 12px;
+		margin-bottom: 8px;
+	}
+
+	.endpoint-header strong {
+		font-size: 14px;
+		color: #1d1d1f;
+		min-width: 120px;
+	}
+
+	.endpoint-description {
+		font-size: 13px;
+		color: #6e6e73;
 	}
 
 	.code-block,
