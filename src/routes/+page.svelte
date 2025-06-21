@@ -67,6 +67,21 @@
 			isCommand: true
 		},
 		{
+			id: 'claude-desktop',
+			name: 'Claude Desktop',
+			icon: '🖥️',
+			description: 'The official Claude Desktop application with MCP integration support.',
+			url: SSE_ENDPOINT,
+			isDesktop: true,
+			steps: [
+				'Navigate to Settings > Integrations',
+				'Locate the "Integrations" section',
+				'Click "Add custom integration" at the bottom of the section',
+				'Add your integration\'s remote MCP server URL and name it "svelte-llm"',
+				'Finish configuring your integration by clicking "Add"'
+			]
+		},
+		{
 			id: 'github-copilot',
 			name: 'GitHub Copilot',
 			icon: '🐙',
@@ -235,7 +250,26 @@
 						</div>
 
 						<div class="instruction-content">
-							{#if client.isCommand}
+							{#if client.isDesktop}
+								<div class="desktop-instructions">
+									<div class="url-block">
+										<strong>MCP Server URL:</strong>
+										<code>{client.url}</code>
+										<button class="copy-btn" onclick={() => copyToClipboard(client.url)}>
+											{@html COPY_ICON}
+											Copy
+										</button>
+									</div>
+									<div class="steps-block">
+										<strong>Setup Steps:</strong>
+										<ol class="setup-steps">
+											{#each client.steps as step}
+												<li>{step}</li>
+											{/each}
+										</ol>
+									</div>
+								</div>
+							{:else if client.isCommand}
 								<div class="code-block">
 									<code>{client.instruction}</code>
 									<button class="copy-btn" onclick={() => copyToClipboard(client.instruction)}>
@@ -633,6 +667,37 @@
 		margin: 0;
 		color: #6e6e73;
 		font-size: 14px;
+	}
+
+	.desktop-instructions {
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+	}
+
+	.steps-block {
+		background: white;
+		border-radius: 8px;
+		padding: 16px;
+		border: 1px solid rgba(0, 0, 0, 0.08);
+	}
+
+	.steps-block strong {
+		font-size: 14px;
+		color: #1d1d1f;
+		margin-bottom: 8px;
+		display: block;
+	}
+
+	.setup-steps {
+		margin: 0;
+		padding-left: 20px;
+		color: #6e6e73;
+	}
+
+	.setup-steps li {
+		margin: 8px 0;
+		line-height: 1.4;
 	}
 
 	.others-endpoints {
@@ -1054,6 +1119,14 @@
 
 		.endpoint-header {
 			gap: 4px;
+		}
+
+		.desktop-instructions {
+			gap: 12px;
+		}
+
+		.setup-steps {
+			padding-left: 16px;
 		}
 	}
 </style>
