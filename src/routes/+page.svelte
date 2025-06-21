@@ -15,6 +15,12 @@
 	const STREAMABLE_ENDPOINT = 'https://svelte-llm.khromov.se/mcp/mcp'
 	const NPX_COMMAND = `npx mcp-remote ${STREAMABLE_ENDPOINT}`
 
+	// SVG icon strings to avoid duplication
+	const COPY_ICON = `<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+		<path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"/>
+		<path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"/>
+	</svg>`
+
 	const combinedPresetsFormatted = transformAndSortPresets(combinedPresets)
 	const sveltePresetsFormatted = transformAndSortPresets(sveltePresets)
 	const svelteKitPresetsFormatted = transformAndSortPresets(svelteKitPresets)
@@ -233,14 +239,7 @@
 								<div class="code-block">
 									<code>{client.instruction}</code>
 									<button class="copy-btn" onclick={() => copyToClipboard(client.instruction)}>
-										<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-											<path
-												d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"
-											/>
-											<path
-												d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"
-											/>
-										</svg>
+										{@html COPY_ICON}
 										Copy
 									</button>
 								</div>
@@ -248,14 +247,7 @@
 								<div class="config-block">
 									<pre><code>{client.instruction}</code></pre>
 									<button class="copy-btn" onclick={() => copyToClipboard(client.instruction)}>
-										<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-											<path
-												d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"
-											/>
-											<path
-												d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"
-											/>
-										</svg>
+										{@html COPY_ICON}
 										Copy
 									</button>
 								</div>
@@ -270,14 +262,7 @@
 											<div class={endpoint.isCommand ? 'code-block' : 'url-block'}>
 												<code>{endpoint.value}</code>
 												<button class="copy-btn" onclick={() => copyToClipboard(endpoint.value)}>
-													<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-														<path
-															d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"
-														/>
-														<path
-															d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"
-														/>
-													</svg>
+													{@html COPY_ICON}
 													Copy
 												</button>
 											</div>
@@ -289,14 +274,7 @@
 									<strong>URL:</strong>
 									<code>{client.url}</code>
 									<button class="copy-btn" onclick={() => copyToClipboard(client.url)}>
-										<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-											<path
-												d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"
-											/>
-											<path
-												d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"
-											/>
-										</svg>
+										{@html COPY_ICON}
 										Copy
 									</button>
 								</div>
