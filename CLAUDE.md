@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Development
 
+Note: Never run "npm run dev", test changes with "npm run build".
+
 - `npm run dev` - Start development server
 - `npm run build` - Build production bundle
 - `npm run build:node` - Build for Node.js deployment
