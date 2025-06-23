@@ -12,7 +12,6 @@ export function maybeInitializePool(): Pool {
 	if (!pool) {
 		logAlways('🐘 Initializing Postgres connection!')
 		pool = new PG.Pool({
-			// TODO!: Migrate to SvelteKit secrets
 			connectionString: env.DB_URL || 'postgres://admin:admin@localhost:5432/db',
 			max: parseInt(process.env.DB_CLIENTS || '10')
 		})
