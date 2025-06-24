@@ -122,7 +122,7 @@ export class PresetDbService {
 	static async deletePreset(presetName: string): Promise<boolean> {
 		try {
 			const result = await query('DELETE FROM presets WHERE preset_name = $1', [presetName])
-			return result.rowCount > 0
+			return (result.rowCount ?? 0) > 0
 		} catch (error) {
 			console.error(`Failed to delete preset ${presetName}:`, error)
 			throw new Error(

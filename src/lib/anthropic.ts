@@ -67,15 +67,7 @@ export class AnthropicProvider implements LLMProvider {
 	private baseUrl: string
 	private apiKey: string
 	name = 'Anthropic'
-	private readonly availableModels = [
-		'claude-sonnet-4-20250514',
-		'claude-opus-4-20250514',
-		'claude-3-7-sonnet-20250219',
-		'claude-3-5-sonnet-20241022', // 3.5 v2
-		'claude-3-5-sonnet-20240620', // 3.5
-		'claude-3-5-haiku-20241022',
-		'claude-3-opus-20240229'
-	]
+	private readonly availableModels = ['claude-sonnet-4-20250514', 'claude-opus-4-20250514']
 
 	constructor(modelId?: string) {
 		const apiKey = env.ANTHROPIC_API_KEY
@@ -112,7 +104,8 @@ export class AnthropicProvider implements LLMProvider {
 				temperature: temperature || 0.7
 			})
 
-			return completion.content[0]?.text || ''
+			const firstContent = completion.content[0]
+			return firstContent?.type === 'text' ? firstContent.text : ''
 		} catch (error) {
 			console.error('Error generating code with Anthropic:', error)
 			throw new Error(
