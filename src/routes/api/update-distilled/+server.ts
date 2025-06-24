@@ -217,14 +217,16 @@ export const GET: RequestHandler = async ({ url }) => {
 					// Store failed result in database
 					const filePath = typeof fileObj === 'string' ? 'unknown' : fileObj.path
 					const originalContent = typeof fileObj === 'string' ? fileObj : fileObj.content
-					PresetDbService.createDistillationResult({
-						job_id: distillationJob.id,
-						file_path: filePath,
-						original_content: originalContent,
-						prompt_used: DISTILLATION_PROMPT,
-						success: false,
-						error_message: result.result.error?.message || 'Failed or no message'
-					}).catch((e) => console.error('Failed to store distillation result:', e))
+					if (distillationJob) {
+						PresetDbService.createDistillationResult({
+							job_id: distillationJob.id,
+							file_path: filePath,
+							original_content: originalContent,
+							prompt_used: DISTILLATION_PROMPT,
+							success: false,
+							error_message: result.result.error?.message || 'Failed or no message'
+						}).catch((e) => console.error('Failed to store distillation result:', e))
+					}
 
 					return {
 						index,
@@ -239,16 +241,18 @@ export const GET: RequestHandler = async ({ url }) => {
 				// Store successful result in database
 				const filePath = typeof fileObj === 'string' ? 'unknown' : fileObj.path
 				const originalContent = typeof fileObj === 'string' ? fileObj : fileObj.content
-				PresetDbService.createDistillationResult({
-					job_id: distillationJob.id,
-					file_path: filePath,
-					original_content: originalContent,
-					distilled_content: outputContent,
-					prompt_used: DISTILLATION_PROMPT,
-					success: true,
-					input_tokens: result.result.message.usage?.input_tokens,
-					output_tokens: result.result.message.usage?.output_tokens
-				}).catch((e) => console.error('Failed to store distillation result:', e))
+				if (distillationJob) {
+					PresetDbService.createDistillationResult({
+						job_id: distillationJob.id,
+						file_path: filePath,
+						original_content: originalContent,
+						distilled_content: outputContent,
+						prompt_used: DISTILLATION_PROMPT,
+						success: true,
+						input_tokens: result.result.message.usage?.input_tokens,
+						output_tokens: result.result.message.usage?.output_tokens
+					}).catch((e) => console.error('Failed to store distillation result:', e))
+				}
 
 				return {
 					index,
@@ -308,7 +312,7 @@ export const GET: RequestHandler = async ({ url }) => {
 				content_hash: PresetDbService.generateHash(finalContent),
 				size_kb: Math.floor(new TextEncoder().encode(finalContent).length / 1024),
 				document_count: successfulResults.length,
-				distillation_job_id: distillationJob.id
+				distillation_job_id: distillationJob?.id
 			})
 
 			await PresetDbService.createDistillation({
@@ -318,7 +322,7 @@ export const GET: RequestHandler = async ({ url }) => {
 				content_hash: PresetDbService.generateHash(finalContent),
 				size_kb: Math.floor(new TextEncoder().encode(finalContent).length / 1024),
 				document_count: successfulResults.length,
-				distillation_job_id: distillationJob.id
+				distillation_job_id: distillationJob?.id
 			})
 
 			// Store Svelte-only version
@@ -329,7 +333,7 @@ export const GET: RequestHandler = async ({ url }) => {
 				content_hash: PresetDbService.generateHash(finalSvelteContent),
 				size_kb: Math.floor(new TextEncoder().encode(finalSvelteContent).length / 1024),
 				document_count: svelteResults.length,
-				distillation_job_id: distillationJob.id
+				distillation_job_id: distillationJob?.id
 			})
 
 			await PresetDbService.createDistillation({
@@ -339,7 +343,7 @@ export const GET: RequestHandler = async ({ url }) => {
 				content_hash: PresetDbService.generateHash(finalSvelteContent),
 				size_kb: Math.floor(new TextEncoder().encode(finalSvelteContent).length / 1024),
 				document_count: svelteResults.length,
-				distillation_job_id: distillationJob.id
+				distillation_job_id: distillationJob?.id
 			})
 
 			// Store SvelteKit-only version
@@ -350,7 +354,7 @@ export const GET: RequestHandler = async ({ url }) => {
 				content_hash: PresetDbService.generateHash(finalSvelteKitContent),
 				size_kb: Math.floor(new TextEncoder().encode(finalSvelteKitContent).length / 1024),
 				document_count: svelteKitResults.length,
-				distillation_job_id: distillationJob.id
+				distillation_job_id: distillationJob?.id
 			})
 
 			await PresetDbService.createDistillation({
@@ -360,7 +364,7 @@ export const GET: RequestHandler = async ({ url }) => {
 				content_hash: PresetDbService.generateHash(finalSvelteKitContent),
 				size_kb: Math.floor(new TextEncoder().encode(finalSvelteKitContent).length / 1024),
 				document_count: svelteKitResults.length,
-				distillation_job_id: distillationJob.id
+				distillation_job_id: distillationJob?.id
 			})
 
 			// Update distillation job as completed
