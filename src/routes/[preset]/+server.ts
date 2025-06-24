@@ -38,7 +38,6 @@ export const GET: RequestHandler = async ({ params, url }) => {
 
 	if (dev) {
 		console.log(`Received request for presets: ${presetNames.join(', ')}`)
-		console.log(`Database-only mode`)
 	}
 
 	// Validate all preset names first

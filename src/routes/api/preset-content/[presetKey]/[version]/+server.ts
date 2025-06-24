@@ -10,10 +10,8 @@ const VALID_DISTILLED_BASENAMES = [
 	'sveltekit-distilled'
 ]
 
-
 export const GET: RequestHandler = async ({ params }) => {
 	const { presetKey, version } = params
-
 
 	// Validate the preset key
 	if (!VALID_DISTILLED_BASENAMES.includes(presetKey)) {
@@ -27,9 +25,9 @@ export const GET: RequestHandler = async ({ params }) => {
 	}
 
 	try {
-		// Get content from database (database-only)
+		// Get content from database
 		const dbVersion = await PresetDbService.getPresetVersion(presetKey, version)
-		
+
 		if (!dbVersion || !dbVersion.content) {
 			throw error(404, 'Content not found in database')
 		}

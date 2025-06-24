@@ -76,8 +76,6 @@ export const GET: RequestHandler = async ({ url }) => {
 		throw error(500, 'No distilled preset found')
 	}
 
-	// Database-only mode
-
 	let dbPreset: DbPreset | null = null
 	let distillationJob: DbDistillationJob | null = null
 
@@ -380,8 +378,6 @@ export const GET: RequestHandler = async ({ url }) => {
 
 		// Debug file path
 		const debugFilename = `outputs/${distilledPreset.distilledFilenameBase}-debug.json`
-
-		// Database-only: no file writing
 
 		// Store versions in database
 		try {

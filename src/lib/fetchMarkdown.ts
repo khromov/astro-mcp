@@ -50,9 +50,6 @@ function presetConfigToDbInput(config: PresetConfig, key: string): CreatePresetI
 	}
 }
 
-/**
- * Main function to fetch and process markdown files - DATABASE ONLY
- */
 export async function fetchAndProcessMarkdownWithDb(
 	preset: PresetConfig,
 	presetKey: string
@@ -94,7 +91,6 @@ export async function fetchAndProcessMarkdownWithDb(
 		const sortedFiles = sortFilesWithinGroup(files)
 		const content = sortedFiles.join('\n\n')
 
-		// Store ONLY to database (no file writing)
 		try {
 			// Sync documents
 			await PresetDbService.syncDocuments(dbPreset.id, filesWithPaths)
@@ -140,7 +136,7 @@ export async function fetchAndProcessMarkdownWithDb(
 			}
 		} catch (dbError) {
 			console.error(`Failed to store data in database for preset ${presetKey}:`, dbError)
-			throw dbError // Fail hard - no fallback to files
+			throw dbError
 		}
 
 		return content
@@ -458,12 +454,4 @@ export function minimizeContent(content: string, options?: Partial<MinimizeOptio
 	}
 
 	return minimized
-}
-
-/**
- * Backward compatibility alias for fetchAndProcessMarkdownWithDb
- * @deprecated Use fetchAndProcessMarkdownWithDb instead
- */
-export function fetchAndProcessMarkdown(preset: PresetConfig, presetKey: string): Promise<string> {
-	return fetchAndProcessMarkdownWithDb(preset, presetKey)
 }

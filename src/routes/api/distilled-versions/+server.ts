@@ -10,19 +10,19 @@ const VALID_DISTILLED_BASENAMES = [
 	'sveltekit-distilled'
 ]
 
-
 /**
  * Transform database preset version to distilled version format
  */
 function transformDbVersionToDistilledVersion(dbVersion: any, presetKey: string) {
 	// Handle date format - version could be 'latest' or '2024-01-15'
-	const date = dbVersion.version === 'latest' 
-		? new Date(dbVersion.generated_at).toISOString().split('T')[0]
-		: dbVersion.version
-	
+	const date =
+		dbVersion.version === 'latest'
+			? new Date(dbVersion.generated_at).toISOString().split('T')[0]
+			: dbVersion.version
+
 	// Generate filename from preset key and date
 	const filename = `${presetKey}-${date}.md`
-	
+
 	return {
 		filename,
 		date,
@@ -31,9 +31,7 @@ function transformDbVersionToDistilledVersion(dbVersion: any, presetKey: string)
 	}
 }
 
-
 export const GET: RequestHandler = async ({ url }) => {
-
 	try {
 		// Get the preset key from the URL query parameter
 		const presetKey = url.searchParams.get('preset') || 'svelte-complete-distilled'
@@ -43,19 +41,19 @@ export const GET: RequestHandler = async ({ url }) => {
 			return json([])
 		}
 
-		// Get all versions from database (database-only)
+		// Get all versions from database
 		const dbVersions = await PresetDbService.getAllVersionsForPreset(presetKey)
-		
+
 		if (dbVersions.length === 0) {
 			return json([])
 		}
 
 		// Transform database versions to distilled version format
 		const versions = dbVersions
-			.filter(v => v.version !== 'latest') // Exclude 'latest' version
-			.map(dbVersion => transformDbVersionToDistilledVersion(dbVersion, presetKey))
+			.filter((v) => v.version !== 'latest') // Exclude 'latest' version
+			.map((dbVersion) => transformDbVersionToDistilledVersion(dbVersion, presetKey))
 			.sort((a, b) => b.date.localeCompare(a.date)) // Sort newest first
-		
+
 		return json(versions)
 	} catch (e) {
 		console.error('Database error reading distilled versions:', e)

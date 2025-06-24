@@ -9,7 +9,6 @@ import { env } from '$env/dynamic/private'
 // Virtual distilled presets that aren't in the presets object
 const VIRTUAL_DISTILLED_PRESETS = ['svelte-distilled', 'sveltekit-distilled']
 
-
 /**
  * Trigger a background update for a preset without awaiting the result
  */
@@ -33,7 +32,6 @@ function triggerBackgroundUpdate(presetKey: string): void {
 export const GET: RequestHandler = async ({ params }) => {
 	const presetKey = params.preset
 
-
 	// Handle both regular presets and virtual distilled presets
 	const isVirtualPreset = VIRTUAL_DISTILLED_PRESETS.includes(presetKey)
 	const isRegularPreset = presetKey in presets
@@ -44,7 +42,7 @@ export const GET: RequestHandler = async ({ params }) => {
 	}
 
 	try {
-		// Get size from database (database-only)
+		// Get size from database
 		const sizeKb = await getPresetSizeKb(presetKey)
 
 		if (sizeKb !== null) {
