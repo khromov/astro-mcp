@@ -253,6 +253,44 @@ export class PresetDbService {
 	}
 
 	/**
+	 * Get all versions for a preset by preset ID
+	 */
+	static async getVersionsForPreset(presetId: number): Promise<DbPresetVersion[]> {
+		const result = await query(
+			'SELECT * FROM preset_versions WHERE preset_id = $1 ORDER BY created_at DESC',
+			[presetId]
+		)
+		return result ? (result.rows as DbPresetVersion[]) : []
+	}
+
+	/**
+	 * Get all versions for a preset by preset key
+	 */
+	static async getAllVersionsForPreset(presetKey: string): Promise<DbPresetVersion[]> {
+		const result = await query(
+			`SELECT pv.* FROM preset_versions pv
+			 JOIN presets p ON p.id = pv.preset_id
+			 WHERE p.key = $1
+			 ORDER BY pv.created_at DESC`,
+			[presetKey]
+		)
+		return result ? (result.rows as DbPresetVersion[]) : []
+	}
+
+	/**
+	 * Get specific version for a preset by key and version
+	 */
+	static async getPresetVersion(presetKey: string, version: string): Promise<DbPresetVersion | null> {
+		const result = await query(
+			`SELECT pv.* FROM preset_versions pv
+			 JOIN presets p ON p.id = pv.preset_id
+			 WHERE p.key = $1 AND pv.version = $2`,
+			[presetKey, version]
+		)
+		return result && result.rows.length > 0 ? (result.rows[0] as DbPresetVersion) : null
+	}
+
+	/**
 	 * Update cache statistics
 	 */
 	static async updateCacheStats(

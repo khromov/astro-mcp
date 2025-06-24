@@ -3,7 +3,7 @@ import { error } from '@sveltejs/kit'
 import { presets } from '$lib/presets'
 import { getPresetFilePath, getFileSizeKb, isFileStale } from '$lib/fileCache'
 import { dev } from '$app/environment'
-import { fetchAndProcessMarkdown } from '$lib/fetchMarkdown'
+import { fetchAndProcessMarkdownWithDb } from '$lib/fetchMarkdown'
 import { existsSync } from 'fs'
 import { readFile } from 'fs/promises'
 
@@ -21,7 +21,7 @@ function triggerBackgroundUpdate(presetKey: string): void {
 	if (preset.distilled) return
 
 	// Fire and forget - don't await this promise
-	fetchAndProcessMarkdown(preset, presetKey)
+	fetchAndProcessMarkdownWithDb(preset, presetKey)
 		.then(() => {
 			if (dev) console.log(`Background update completed for ${presetKey}`)
 		})

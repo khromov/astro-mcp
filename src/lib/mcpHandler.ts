@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { createMcpHandler } from '@vercel/mcp-adapter'
 import { env } from '$env/dynamic/private'
 import { presets } from '$lib/presets'
-import { fetchAndProcessMarkdown } from '$lib/fetchMarkdown'
+import { fetchAndProcessMarkdownWithDb } from '$lib/fetchMarkdown'
 
 interface DocumentSection {
 	filePath: string
@@ -83,8 +83,8 @@ export const listSectionsHandler = async () => {
 
 	try {
 		// Get sections from both full presets
-		const svelteDoc = await fetchAndProcessMarkdown(presets['svelte'], 'svelte')
-		const svelteKitDoc = await fetchAndProcessMarkdown(presets['sveltekit'], 'sveltekit')
+		const svelteDoc = await fetchAndProcessMarkdownWithDb(presets['svelte'], 'svelte')
+		const svelteKitDoc = await fetchAndProcessMarkdownWithDb(presets['sveltekit'], 'sveltekit')
 
 		const svelteSections = parseDocumentSections(svelteDoc)
 		const svelteKitSections = parseDocumentSections(svelteKitDoc)
@@ -152,8 +152,8 @@ export const listSectionsHandler = async () => {
 export const getDocumentationHandler = async ({ section }: { section: string | string[] }) => {
 	try {
 		// Get documentation from both full presets
-		const svelteDoc = await fetchAndProcessMarkdown(presets['svelte'], 'svelte')
-		const svelteKitDoc = await fetchAndProcessMarkdown(presets['sveltekit'], 'sveltekit')
+		const svelteDoc = await fetchAndProcessMarkdownWithDb(presets['svelte'], 'svelte')
+		const svelteKitDoc = await fetchAndProcessMarkdownWithDb(presets['sveltekit'], 'sveltekit')
 
 		// Parse sections with titles
 		const svelteSections = parseDocumentSections(svelteDoc)

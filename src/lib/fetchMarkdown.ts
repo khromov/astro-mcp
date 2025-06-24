@@ -341,7 +341,7 @@ export async function fetchMarkdownFiles(
 		}
 	}
 
-	return orderedResults
+	return orderedResults as string[] | { path: string; content: string }[]
 }
 
 export interface MinimizeOptions {
@@ -481,3 +481,9 @@ export function minimizeContent(content: string, options?: Partial<MinimizeOptio
 
 	return minimized
 }
+
+/**
+ * Backward compatibility alias for fetchAndProcessMarkdownWithDb
+ * @deprecated Use fetchAndProcessMarkdownWithDb instead
+ */
+export const fetchAndProcessMarkdown = fetchAndProcessMarkdownWithDb
