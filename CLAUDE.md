@@ -8,6 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Note: Never run "npm run dev", test changes with "npm run build".
 Note: Run "npm run format" after making code changes to fix formatting.
+Note: Run "npm run check" after changes to check for TypeScript errors
 
 - `npm run dev` - Start development server
 - `npm run build` - Build production bundle
