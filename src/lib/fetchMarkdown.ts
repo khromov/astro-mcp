@@ -6,6 +6,9 @@ import { Readable } from 'stream'
 import { createGunzip } from 'zlib'
 import { minimatch } from 'minimatch'
 import { getPresetFilePath, readCachedFile, writeAtomicFile } from './fileCache'
+import { PresetDbService } from '$lib/server/presetDb'
+import type { CreatePresetInput } from '$lib/types/db'
+import { createHash } from 'crypto'
 
 function sortFilesWithinGroup(files: string[]): string[] {
 	return files.sort((a, b) => {
@@ -21,35 +24,152 @@ function sortFilesWithinGroup(files: string[]): string[] {
 	})
 }
 
-// Main function to fetch and process markdown files
-export async function fetchAndProcessMarkdown(
+/**
+ * Generate SHA256 hash of content
+ */
+function generateHash(content: string): string {
+	return createHash('sha256').update(content).digest('hex')
+}
+
+/**
+ * Convert PresetConfig to CreatePresetInput for database
+ */
+function presetConfigToDbInput(config: PresetConfig, key: string): CreatePresetInput {
+	return {
+		key,
+		title: config.title,
+		description: config.description,
+		owner: config.owner,
+		repo: config.repo,
+		glob: config.glob,
+		ignore_patterns: config.ignore,
+		prompt: config.prompt,
+		minimize_options: config.minimize,
+		is_distilled: config.distilled,
+		distilled_filename_base: config.distilledFilenameBase
+	}
+}
+
+/**
+ * Main function to fetch and process markdown files with database support
+ */
+export async function fetchAndProcessMarkdownWithDb(
 	preset: PresetConfig,
-	presetKey: string
+	presetKey: string,
+	useDatabase: boolean = true
 ): Promise<string> {
-	const filePath = getPresetFilePath(presetKey)
+	try {
+		// If database is enabled, sync preset configuration
+		let dbPreset = null
+		if (useDatabase) {
+			try {
+				const presetInput = presetConfigToDbInput(preset, presetKey)
+				dbPreset = await PresetDbService.syncPreset(presetInput)
 
-	// Check if we already have the file cached on disk
-	const cachedContent = await readCachedFile(filePath)
-	if (cachedContent) {
-		if (dev) {
-			// console.log(`Using cached content for ${presetKey} from ${filePath}`)
+				if (dev) {
+					console.log(`Synced preset ${presetKey} to database (ID: ${dbPreset.id})`)
+				}
+			} catch (dbError) {
+				console.error(`Failed to sync preset ${presetKey} to database:`, dbError)
+				// Continue with file-based approach if database fails
+			}
 		}
-		return cachedContent
+
+		// Check file cache first
+		const filePath = getPresetFilePath(presetKey)
+		const cachedContent = await readCachedFile(filePath)
+
+		if (cachedContent) {
+			if (dev) {
+				console.log(`Using cached content for ${presetKey} from ${filePath}`)
+			}
+
+			// Update cache stats if database is enabled
+			if (useDatabase && dbPreset) {
+				try {
+					await PresetDbService.updateCacheStats(dbPreset.id, true)
+				} catch (error) {
+					console.error('Failed to update cache stats:', error)
+				}
+			}
+
+			return cachedContent
+		}
+
+		// If no cached content, fetch and process the files
+		const filesWithPaths = (await fetchMarkdownFiles(preset, true)) as Array<{
+			path: string
+			content: string
+		}>
+		const files = filesWithPaths.map((f) => `## ${f.path}\n\n${f.content}`)
+
+		if (dev) {
+			console.log(`Fetched ${files.length} files for ${presetKey}`)
+		}
+
+		// Sort files
+		const sortedFiles = sortFilesWithinGroup(files)
+		const content = sortedFiles.join('\n\n')
+
+		// Write to file cache
+		await writeAtomicFile(filePath, content)
+
+		// If database is enabled, store documents and create version
+		if (useDatabase && dbPreset) {
+			try {
+				// Sync documents
+				await PresetDbService.syncDocuments(dbPreset.id, filesWithPaths)
+
+				// Create preset version
+				const contentHash = generateHash(content)
+				const sizeKb = Math.floor(new TextEncoder().encode(content).length / 1024)
+				const today = new Date()
+				const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(
+					today.getDate()
+				).padStart(2, '0')}`
+
+				// Create both latest and dated versions
+				await PresetDbService.createPresetVersion({
+					preset_id: dbPreset.id,
+					version: 'latest',
+					content,
+					content_hash: contentHash,
+					size_kb: sizeKb,
+					is_latest: true,
+					document_count: filesWithPaths.length,
+					generated_at: new Date()
+				})
+
+				await PresetDbService.createPresetVersion({
+					preset_id: dbPreset.id,
+					version: dateStr,
+					content,
+					content_hash: contentHash,
+					size_kb: sizeKb,
+					is_latest: false,
+					document_count: filesWithPaths.length,
+					generated_at: new Date()
+				})
+
+				// Update cache stats (cache miss)
+				await PresetDbService.updateCacheStats(dbPreset.id, false)
+
+				if (dev) {
+					console.log(
+						`Stored ${filesWithPaths.length} documents and created version for preset ${presetKey}`
+					)
+				}
+			} catch (dbError) {
+				console.error(`Failed to store data in database for preset ${presetKey}:`, dbError)
+				// Continue even if database operations fail
+			}
+		}
+
+		return content
+	} catch (error) {
+		console.error(`Error processing preset ${presetKey}:`, error)
+		throw error
 	}
-
-	// If no cached content, fetch and process the files
-	const files = await fetchMarkdownFiles(preset)
-
-	if (dev) {
-		console.log(`Fetched ${files.length} files for ${presetKey}`)
-	}
-
-	const content = files.join('\n\n')
-
-	// Write to cache file (atomic write)
-	await writeAtomicFile(filePath, content)
-
-	return content
 }
 
 function shouldIncludeFile(filename: string, glob: string, ignore: string[] = []): boolean {

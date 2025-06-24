@@ -5,12 +5,21 @@ import type { RequestHandler } from './$types'
 import { error } from '@sveltejs/kit'
 import { presets } from '$lib/presets'
 import { dev } from '$app/environment'
-import { fetchAndProcessMarkdown } from '$lib/fetchMarkdown'
+import { fetchAndProcessMarkdownWithDb } from '$lib/fetchMarkdown'
 import { readFile } from 'fs/promises'
 import { getPresetFilePath, readCachedFile, isFileStale } from '$lib/fileCache'
+import { env } from '$env/dynamic/private'
 
 // Valid virtual presets that aren't in the presets object
 const VIRTUAL_DISTILLED_PRESETS = ['svelte-distilled', 'sveltekit-distilled']
+
+/**
+ * Check if database features are enabled
+ */
+function isDatabaseEnabled(): boolean {
+	// Database is enabled if DB_URL is set
+	return !!env.DB_URL
+}
 
 /**
  * Trigger a background update for a preset without awaiting the result
@@ -22,8 +31,10 @@ function triggerBackgroundUpdate(presetKey: string): void {
 	// Don't update distilled presets, they have their own update mechanism
 	if (preset.distilled) return
 
+	const useDatabase = isDatabaseEnabled()
+
 	// Fire and forget - don't await this promise
-	fetchAndProcessMarkdown(preset, presetKey)
+	fetchAndProcessMarkdownWithDb(preset, presetKey, useDatabase)
 		.then(() => {
 			if (dev) console.log(`Background update completed for ${presetKey}`)
 		})
@@ -37,6 +48,7 @@ export const GET: RequestHandler = async ({ params, url }) => {
 
 	if (dev) {
 		console.log(`Received request for presets: ${presetNames.join(', ')}`)
+		console.log(`Database enabled: ${isDatabaseEnabled()}`)
 	}
 
 	// Validate all preset names first
@@ -51,6 +63,7 @@ export const GET: RequestHandler = async ({ params, url }) => {
 	try {
 		// Determine which version of the distilled doc to use
 		const version = url.searchParams.get('version')
+		const useDatabase = isDatabaseEnabled()
 
 		// Fetch all contents in parallel
 		const contentPromises = presetNames.map(async (presetKey) => {
@@ -94,8 +107,8 @@ export const GET: RequestHandler = async ({ params, url }) => {
 						triggerBackgroundUpdate(presetKey)
 					}
 				} else {
-					// If not in cache, fetch and process markdown (this will also save to disk)
-					content = await fetchAndProcessMarkdown(presets[presetKey], presetKey)
+					// If not in cache, fetch and process markdown (this will also save to disk and optionally to database)
+					content = await fetchAndProcessMarkdownWithDb(presets[presetKey], presetKey, useDatabase)
 				}
 			}
 

@@ -6,6 +6,9 @@ import { fetchMarkdownFiles, minimizeContent } from '$lib/fetchMarkdown'
 import type { RequestHandler } from './$types'
 import { AnthropicProvider, type AnthropicBatchRequest } from '$lib/anthropic'
 import { writeAtomicFile } from '$lib/fileCache'
+import { PresetDbService } from '$lib/server/presetDb'
+import { createHash } from 'crypto'
+import type { DbPreset, DbDistillationJob } from '$lib/types/db'
 
 const DISTILLATION_PROMPT = `
 You are an expert in web development, specifically Svelte 5 and SvelteKit. Your task is to condense and distill the Svelte documentation into a concise format while preserving the most important information.
@@ -48,6 +51,10 @@ Here is the documentation you must condense:
 const SVELTE_DISTILLED_BASENAME = 'svelte-distilled'
 const SVELTEKIT_DISTILLED_BASENAME = 'sveltekit-distilled'
 
+function generateHash(content: string): string {
+	return createHash('sha256').update(content).digest('hex')
+}
+
 export const GET: RequestHandler = async ({ url }) => {
 	// Check secret key
 	const secretKey = url.searchParams.get('secret_key')
@@ -70,7 +77,40 @@ export const GET: RequestHandler = async ({ url }) => {
 		throw error(500, 'No distilled preset found')
 	}
 
+	// Check if database is enabled
+	const useDatabase = url.searchParams.get('use_database') !== 'false'
+
+	let dbPreset: DbPreset | null = null
+	let distillationJob: DbDistillationJob | null = null
+
 	try {
+		// If database is enabled, get the preset from database
+		if (useDatabase) {
+			try {
+				dbPreset = await PresetDbService.getPresetByKey('svelte-complete-distilled')
+				if (!dbPreset) {
+					// Sync preset if it doesn't exist
+					const presetInput = {
+						key: 'svelte-complete-distilled',
+						title: distilledPreset.title,
+						description: distilledPreset.description,
+						owner: distilledPreset.owner,
+						repo: distilledPreset.repo,
+						glob: distilledPreset.glob,
+						ignore_patterns: distilledPreset.ignore,
+						prompt: distilledPreset.prompt,
+						minimize_options: distilledPreset.minimize,
+						is_distilled: true,
+						distilled_filename_base: distilledPreset.distilledFilenameBase
+					}
+					dbPreset = await PresetDbService.syncPreset(presetInput)
+				}
+			} catch (dbError) {
+				console.error('Failed to sync preset to database:', dbError)
+				// Continue without database if it fails
+			}
+		}
+
 		// Fetch all markdown files for the preset with their file paths
 		const filesWithPaths = await fetchMarkdownFiles(distilledPreset, true)
 
@@ -124,6 +164,25 @@ export const GET: RequestHandler = async ({ url }) => {
 		// Initialize Anthropic client
 		const anthropic = new AnthropicProvider('claude-sonnet-4-20250514')
 
+		// Create distillation job in database if enabled
+		if (useDatabase && dbPreset) {
+			try {
+				distillationJob = await PresetDbService.createDistillationJob({
+					preset_id: dbPreset.id,
+					status: 'pending',
+					model_used: anthropic.getModelIdentifier(),
+					total_files: filesToProcess.length,
+					minimize_applied: !!distilledPreset.minimize,
+					metadata: {
+						originalFileCount,
+						filteredFiles: originalFileCount - filesToProcess.length
+					}
+				})
+			} catch (dbError) {
+				console.error('Failed to create distillation job:', dbError)
+			}
+		}
+
 		// Create debug structure to store inputs and outputs
 		const debugData = {
 			timestamp: new Date().toISOString(),
@@ -132,6 +191,7 @@ export const GET: RequestHandler = async ({ url }) => {
 			processedFiles: filesToProcess.length,
 			shortFilesRemoved: originalFileCount - filesToProcess.length,
 			minimizeApplied: !!distilledPreset.minimize,
+			distillationJobId: distillationJob?.id,
 			requests: [] as Array<{
 				index: number
 				path: string
@@ -174,6 +234,18 @@ export const GET: RequestHandler = async ({ url }) => {
 		// Create batch
 		const batchResponse = await anthropic.createBatch(batchRequests)
 
+		// Update job status to processing
+		if (distillationJob) {
+			try {
+				distillationJob = await PresetDbService.updateDistillationJob(distillationJob.id, {
+					status: 'processing',
+					batch_id: batchResponse.id
+				})
+			} catch (dbError) {
+				console.error('Failed to update distillation job:', dbError)
+			}
+		}
+
 		// Poll for completion
 		let batchStatus = await anthropic.getBatchStatus(batchResponse.id)
 
@@ -185,6 +257,19 @@ export const GET: RequestHandler = async ({ url }) => {
 				console.log(
 					`Batch status: ${batchStatus.processing_status}, Succeeded: ${batchStatus.request_counts.succeeded}, Processing: ${batchStatus.request_counts.processing}`
 				)
+			}
+
+			// Update job progress
+			if (distillationJob) {
+				try {
+					await PresetDbService.updateDistillationJob(distillationJob.id, {
+						processed_files:
+							batchStatus.request_counts.succeeded + batchStatus.request_counts.errored,
+						successful_files: batchStatus.request_counts.succeeded
+					})
+				} catch (dbError) {
+					console.error('Failed to update job progress:', dbError)
+				}
 			}
 		}
 
@@ -209,6 +294,20 @@ export const GET: RequestHandler = async ({ url }) => {
 						debugEntry.error = result.result.error?.message || 'Failed or no message'
 					}
 
+					// Store failed result in database
+					if (distillationJob) {
+						const filePath = typeof fileObj === 'string' ? 'unknown' : fileObj.path
+						const originalContent = typeof fileObj === 'string' ? fileObj : fileObj.content
+						PresetDbService.createDistillationResult({
+							job_id: distillationJob.id,
+							file_path: filePath,
+							original_content: originalContent,
+							prompt_used: DISTILLATION_PROMPT,
+							success: false,
+							error_message: result.result.error?.message || 'Failed or no message'
+						}).catch((e) => console.error('Failed to store distillation result:', e))
+					}
+
 					return {
 						index,
 						path: typeof fileObj === 'string' ? 'unknown' : fileObj.path,
@@ -223,6 +322,22 @@ export const GET: RequestHandler = async ({ url }) => {
 				const debugEntry = debugData.requests.find((r) => r.index === index)
 				if (debugEntry) {
 					debugEntry.response = outputContent
+				}
+
+				// Store successful result in database
+				if (distillationJob) {
+					const filePath = typeof fileObj === 'string' ? 'unknown' : fileObj.path
+					const originalContent = typeof fileObj === 'string' ? fileObj : fileObj.content
+					PresetDbService.createDistillationResult({
+						job_id: distillationJob.id,
+						file_path: filePath,
+						original_content: originalContent,
+						distilled_content: outputContent,
+						prompt_used: DISTILLATION_PROMPT,
+						success: true,
+						input_tokens: result.result.message.usage?.input_tokens,
+						output_tokens: result.result.message.usage?.output_tokens
+					}).catch((e) => console.error('Failed to store distillation result:', e))
 				}
 
 				return {
@@ -301,6 +416,54 @@ export const GET: RequestHandler = async ({ url }) => {
 
 		await writeAtomicFile(debugFilename, JSON.stringify(debugData, null, 2))
 
+		// Store versions in database if enabled
+		if (useDatabase && dbPreset) {
+			try {
+				// Store combined version
+				await PresetDbService.createPresetVersion({
+					preset_id: dbPreset.id,
+					version: 'latest',
+					content: finalContent,
+					content_hash: generateHash(finalContent),
+					size_kb: Math.floor(new TextEncoder().encode(finalContent).length / 1024),
+					is_latest: true,
+					document_count: successfulResults.length,
+					metadata: {
+						svelteResults: svelteResults.length,
+						svelteKitResults: svelteKitResults.length
+					},
+					generated_at: new Date()
+				})
+
+				await PresetDbService.createPresetVersion({
+					preset_id: dbPreset.id,
+					version: dateStr,
+					content: finalContent,
+					content_hash: generateHash(finalContent),
+					size_kb: Math.floor(new TextEncoder().encode(finalContent).length / 1024),
+					is_latest: false,
+					document_count: successfulResults.length,
+					metadata: {
+						svelteResults: svelteResults.length,
+						svelteKitResults: svelteKitResults.length
+					},
+					generated_at: new Date()
+				})
+
+				// Update distillation job as completed
+				if (distillationJob) {
+					await PresetDbService.updateDistillationJob(distillationJob.id, {
+						status: 'completed',
+						processed_files: filesToProcess.length,
+						successful_files: successfulResults.length,
+						completed_at: new Date()
+					})
+				}
+			} catch (dbError) {
+				console.error('Failed to store versions in database:', dbError)
+			}
+		}
+
 		return json({
 			success: true,
 			totalFiles: originalFileCount,
@@ -311,6 +474,7 @@ export const GET: RequestHandler = async ({ url }) => {
 			successfulResults: successfulResults.length,
 			svelteResults: svelteResults.length,
 			svelteKitResults: svelteKitResults.length,
+			distillationJobId: distillationJob?.id,
 			bytes: {
 				combined: finalContent.length,
 				svelte: finalSvelteContent.length,
@@ -333,6 +497,19 @@ export const GET: RequestHandler = async ({ url }) => {
 			}
 		})
 	} catch (e) {
+		// Update job as failed if database is enabled
+		if (distillationJob) {
+			try {
+				await PresetDbService.updateDistillationJob(distillationJob.id, {
+					status: 'failed',
+					completed_at: new Date(),
+					error_message: e instanceof Error ? e.message : String(e)
+				})
+			} catch (dbError) {
+				console.error('Failed to update job as failed:', dbError)
+			}
+		}
+
 		console.error('Error in distillation process:', e)
 		throw error(500, `Distillation failed: ${e instanceof Error ? e.message : String(e)}`)
 	}
