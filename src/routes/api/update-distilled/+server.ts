@@ -82,6 +82,7 @@ export const GET: RequestHandler = async ({ url }) => {
 		let filesToProcess = filesWithPaths.filter((file) =>
 			typeof file === 'string' ? false : file.content.length >= 200
 		)
+		const shortFilesRemoved = originalFileCount - filesToProcess.length
 
 		if (dev) {
 			console.log(`Total files: ${originalFileCount}`)
@@ -381,7 +382,7 @@ export const GET: RequestHandler = async ({ url }) => {
 		return json({
 			success: true,
 			totalFiles: originalFileCount,
-			shortFilesRemoved: originalFileCount - filesToProcess.length,
+			shortFilesRemoved,
 			filesProcessed: filesToProcess.length,
 			minimizeApplied: !!distilledPreset.minimize,
 			resultsReceived: results.length,
