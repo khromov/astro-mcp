@@ -13,7 +13,7 @@ export function maybeInitializePool(): Pool {
 		logAlways('🐘 Initializing Postgres connection!')
 		pool = new PG.Pool({
 			connectionString: env.DB_URL || 'postgres://admin:admin@localhost:5432/db',
-			max: parseInt(process.env.DB_CLIENTS || '10')
+			max: parseInt(env.DB_CLIENTS || '10')
 		})
 	}
 	return pool
