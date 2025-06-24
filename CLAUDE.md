@@ -35,8 +35,8 @@ This is a SvelteKit application that provides Svelte 5 and SvelteKit documentati
 
 - **Documentation Transformation**: Fetches markdown files from GitHub repositories and processes them into LLM-optimized formats
 - **Preset System**: Configurable documentation bundles defined in `src/lib/presets.ts` with different sizes and content filters
-- **File Caching**: Implements file-based caching with background updates for performance (`src/lib/fileCache.ts`)
-- **Distilled Content**: AI-processed versions of documentation stored in `outputs/` directory
+- **Database Storage**: PostgreSQL database for storing processed documentation, versions, and caching metadata
+- **Distilled Content**: AI-processed versions of documentation stored in the database
 
 ### Key Routes
 
@@ -44,17 +44,32 @@ This is a SvelteKit application that provides Svelte 5 and SvelteKit documentati
 - `/mcp/[...rest]` - MCP (Model Context Protocol) server for AI assistant integration
 - `/api/distilled-versions` - API for managing distilled documentation versions
 - `/api/update-distilled` - API for updating distilled content
+- `/api/preset-content/[presetKey]/[version]` - API for retrieving specific versions of preset content
 
 ### Important Files
 
 - `src/lib/presets.ts` - Defines all available documentation presets and their configurations
 - `src/lib/fetchMarkdown.ts` - Core logic for fetching and processing GitHub markdown content
-- `src/lib/fileCache.ts` - File caching system with staleness detection
+- `src/lib/presetCache.ts` - Database caching system with staleness detection
+- `src/lib/server/presetDb.ts` - Database service layer for preset operations
 - `src/routes/[preset]/+server.ts` - Main documentation serving endpoint
+
+### Database Schema
+
+The application uses PostgreSQL with the following main tables:
+
+- `presets` - Stores preset configurations
+- `documents` - Individual documentation files
+- `preset_versions` - Different versions of processed documentation
+- `distillation_jobs` - Tracks AI distillation processes
+- `distillation_results` - Results from AI processing
+- `cache_stats` - Cache performance metrics
 
 ### Environment Setup
 
 - Requires `GITHUB_TOKEN` in `.env` file with `public_repo` permissions for GitHub API access
+- Requires `DB_URL` for PostgreSQL connection
+- Optional `DISTILL_SECRET_KEY` for protected distillation endpoint
 - Uses Svelte 5 with runes syntax throughout the codebase
 - Built with TypeScript and uses Vitest for testing
 
@@ -70,4 +85,5 @@ The application provides MCP endpoints for AI assistants:
 
 - Uses Node.js adapter for production deployment
 - Supports Docker deployment via included Dockerfile
-- File caching operates on the filesystem in production
+- Database migrations are handled via `/api/migrate` endpoint
+- All content is served from the database in production

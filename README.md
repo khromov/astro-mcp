@@ -13,9 +13,15 @@ OG image from https://dynamic-og-image-generator.vercel.app/
 
 # Setup
 
-- Create a `.env` file with the content `GITHUB_TOKEN=`
+- Create a `.env` file with the content:
+  ```
+  GITHUB_TOKEN=
+  DB_URL=postgres://admin:admin@localhost:5432/db
+  ```
 - Create [a Classic GitHub token](https://github.com/settings/tokens). It must have `public_repo` permissions.
 - Enter this in the .env file.
+- Set up PostgreSQL (you can use the included docker-compose.yml)
+- Run database migrations: visit `/api/migrate` in your browser after starting the dev server
 
 # llmctx
 
@@ -23,6 +29,8 @@ llmctx transforms technical documentation into AI-ready formats. It provides a s
 
 - Preset URLs for quick access to LLM-optimized documentation
 - Regularly updated content from official documentation
+- Database-powered caching for fast response times
+- AI-distilled versions for more concise documentation
 
 ## Supported presets
 
