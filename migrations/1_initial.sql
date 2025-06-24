@@ -5,7 +5,6 @@ CREATE TABLE IF NOT EXISTS presets (
   id SERIAL PRIMARY KEY,
   preset_name VARCHAR(100) UNIQUE NOT NULL,
   content TEXT NOT NULL,
-  content_hash VARCHAR(64) NOT NULL,
   size_kb INTEGER NOT NULL,
   document_count INTEGER DEFAULT 0,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -86,7 +85,6 @@ CREATE TABLE IF NOT EXISTS distillations (
   preset_name VARCHAR(100) NOT NULL CHECK (preset_name IN ('svelte-distilled', 'sveltekit-distilled', 'svelte-complete-distilled')),
   version VARCHAR(50) NOT NULL, -- 'latest' or date like '2024-01-15'
   content TEXT NOT NULL,
-  content_hash VARCHAR(64) NOT NULL,
   size_kb INTEGER NOT NULL,
   document_count INTEGER DEFAULT 0,
   distillation_job_id INTEGER REFERENCES distillation_jobs(id),
