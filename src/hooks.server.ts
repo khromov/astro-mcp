@@ -1,6 +1,7 @@
 import { sequence } from '@sveltejs/kit/hooks'
-import { type Handle } from '@sveltejs/kit'
+import { type Handle, type ServerInit } from '@sveltejs/kit'
 import { building } from '$app/environment'
+import { schedulerService } from '$lib/server/schedulerService'
 
 const headers: Handle = async ({ event, resolve }) => {
 	const response = await resolve(event)
@@ -40,3 +41,15 @@ const logger: Handle = async ({ event, resolve }) => {
 }
 
 export const handle: Handle = sequence(logger, headers)
+
+export const init: ServerInit = async () => {
+	console.log('Server initializing...')
+
+	// Initialize the background scheduler
+	try {
+		await schedulerService.init()
+		console.log('Background scheduler initialized successfully')
+	} catch (error) {
+		console.error('Failed to initialize background scheduler:', error)
+	}
+}

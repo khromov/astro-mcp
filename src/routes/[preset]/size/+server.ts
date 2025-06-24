@@ -1,33 +1,15 @@
 import type { RequestHandler } from './$types'
 import { error } from '@sveltejs/kit'
 import { presets } from '$lib/presets'
-import { getPresetSizeKb, isPresetStale } from '$lib/presetCache'
+import { getPresetSizeKb } from '$lib/presetCache'
 import { dev } from '$app/environment'
-import { fetchAndProcessMarkdownWithDb } from '$lib/fetchMarkdown'
 import { PresetDbService } from '$lib/server/presetDb'
 
 // Virtual distilled presets that aren't in the presets object
 const VIRTUAL_DISTILLED_PRESETS = ['svelte-distilled', 'sveltekit-distilled']
 
-/**
- * Trigger a background update for a preset without awaiting the result
- */
-function triggerBackgroundUpdate(presetKey: string): void {
-	const preset = presets[presetKey]
-	if (!preset) return
-
-	// Don't update distilled presets, they have their own update mechanism
-	if (preset.distilled) return
-
-	// Fire and forget - don't await this promise
-	fetchAndProcessMarkdownWithDb(preset, presetKey)
-		.then(() => {
-			if (dev) console.log(`Background update completed for ${presetKey}`)
-		})
-		.catch((err) => {
-			console.error(`Background update failed for ${presetKey}:`, err)
-		})
-}
+// Background updates are now handled by the scheduler service
+// This function is no longer used
 
 export const GET: RequestHandler = async ({ params }) => {
 	const presetKey = params.preset
@@ -54,15 +36,7 @@ export const GET: RequestHandler = async ({ params }) => {
 		} else {
 			// Get size from presets table
 			sizeKb = await getPresetSizeKb(presetKey)
-
-			if (sizeKb !== null) {
-				// Check if content is stale and trigger background update if needed
-				const isStale = await isPresetStale(presetKey)
-				if (isStale) {
-					if (dev) console.log(`Preset ${presetKey} is stale, triggering background update`)
-					triggerBackgroundUpdate(presetKey)
-				}
-			}
+			// Note: Staleness checks and background updates are now handled by the scheduler service
 		}
 
 		if (sizeKb !== null) {

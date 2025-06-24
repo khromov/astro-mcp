@@ -6,31 +6,14 @@ import { error } from '@sveltejs/kit'
 import { presets } from '$lib/presets'
 import { dev } from '$app/environment'
 import { fetchAndProcessMarkdownWithDb } from '$lib/fetchMarkdown'
-import { getPresetContent, isPresetStale } from '$lib/presetCache'
+import { getPresetContent } from '$lib/presetCache'
 import { PresetDbService } from '$lib/server/presetDb'
 
 // Valid virtual presets that aren't in the presets object
 const VIRTUAL_DISTILLED_PRESETS = ['svelte-distilled', 'sveltekit-distilled']
 
-/**
- * Trigger a background update for a preset without awaiting the result
- */
-function triggerBackgroundUpdate(presetKey: string): void {
-	const preset = presets[presetKey]
-	if (!preset) return
-
-	// Don't update distilled presets, they have their own update mechanism
-	if (preset.distilled) return
-
-	// Fire and forget - don't await this promise
-	fetchAndProcessMarkdownWithDb(preset, presetKey)
-		.then(() => {
-			if (dev) console.log(`Background update completed for ${presetKey}`)
-		})
-		.catch((err) => {
-			console.error(`Background update failed for ${presetKey}:`, err)
-		})
-}
+// Background updates are now handled by the scheduler service
+// This function is kept for backwards compatibility but is no longer used
 
 export const GET: RequestHandler = async ({ params, url }) => {
 	const presetNames = params.preset.split(',').map((p) => p.trim())
@@ -76,17 +59,11 @@ export const GET: RequestHandler = async ({ params, url }) => {
 				// Regular preset processing with database caching
 				content = await getPresetContent(presetKey)
 
-				if (content) {
-					// Check if the content is stale and needs a background update
-					const isStale = await isPresetStale(presetKey)
-					if (isStale) {
-						if (dev) console.log(`Content for ${presetKey} is stale, triggering background update`)
-						triggerBackgroundUpdate(presetKey)
-					}
-				} else {
+				if (!content) {
 					// If not in database cache, fetch and process markdown
 					content = await fetchAndProcessMarkdownWithDb(presets[presetKey], presetKey)
 				}
+				// Note: Staleness checks and background updates are now handled by the scheduler service
 			}
 
 			if (dev) {
