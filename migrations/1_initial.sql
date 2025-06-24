@@ -1,13 +1,5 @@
 -- Initialize complete database structure
 
--- Create migrations table first (if it doesn't exist)
-CREATE TABLE IF NOT EXISTS migrations (
-  id integer PRIMARY KEY,
-  name varchar(100) UNIQUE NOT NULL,
-  hash varchar(40) NOT NULL,
-  executed_at timestamp DEFAULT current_timestamp
-);
-
 -- Create simplified presets table
 CREATE TABLE IF NOT EXISTS presets (
   id SERIAL PRIMARY KEY,
