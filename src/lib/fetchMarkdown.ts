@@ -5,7 +5,7 @@ import tarStream from 'tar-stream'
 import { Readable } from 'stream'
 import { createGunzip } from 'zlib'
 import { minimatch } from 'minimatch'
-import { getPresetFilePath, readCachedFile, writeAtomicFile } from './fileCache'
+import { getPresetContent } from './presetCache'
 import { PresetDbService } from '$lib/server/presetDb'
 import type { CreatePresetInput } from '$lib/types/db'
 import { createHash } from 'crypto'
@@ -51,48 +51,31 @@ function presetConfigToDbInput(config: PresetConfig, key: string): CreatePresetI
 }
 
 /**
- * Main function to fetch and process markdown files with database support
+ * Main function to fetch and process markdown files - DATABASE ONLY
  */
 export async function fetchAndProcessMarkdownWithDb(
 	preset: PresetConfig,
-	presetKey: string,
-	useDatabase: boolean = true
+	presetKey: string
 ): Promise<string> {
 	try {
-		// If database is enabled, sync preset configuration
-		let dbPreset = null
-		if (useDatabase) {
-			try {
-				const presetInput = presetConfigToDbInput(preset, presetKey)
-				dbPreset = await PresetDbService.syncPreset(presetInput)
+		// Sync preset configuration to database
+		const presetInput = presetConfigToDbInput(preset, presetKey)
+		const dbPreset = await PresetDbService.syncPreset(presetInput)
 
-				if (dev) {
-					console.log(`Synced preset ${presetKey} to database (ID: ${dbPreset.id})`)
-				}
-			} catch (dbError) {
-				console.error(`Failed to sync preset ${presetKey} to database:`, dbError)
-				// Continue with file-based approach if database fails
-			}
+		if (dev) {
+			console.log(`Synced preset ${presetKey} to database (ID: ${dbPreset.id})`)
 		}
 
-		// Check file cache first
-		const filePath = getPresetFilePath(presetKey)
-		const cachedContent = await readCachedFile(filePath)
+		// Check database cache first
+		const cachedContent = await getPresetContent(presetKey)
 
 		if (cachedContent) {
 			if (dev) {
-				console.log(`Using cached content for ${presetKey} from ${filePath}`)
+				console.log(`Using cached content for ${presetKey} from database`)
 			}
 
-			// Update cache stats if database is enabled
-			if (useDatabase && dbPreset) {
-				try {
-					await PresetDbService.updateCacheStats(dbPreset.id, true)
-				} catch (error) {
-					console.error('Failed to update cache stats:', error)
-				}
-			}
-
+			// Update cache stats (cache hit)
+			await PresetDbService.updateCacheStats(dbPreset.id, true)
 			return cachedContent
 		}
 
@@ -111,58 +94,53 @@ export async function fetchAndProcessMarkdownWithDb(
 		const sortedFiles = sortFilesWithinGroup(files)
 		const content = sortedFiles.join('\n\n')
 
-		// Write to file cache
-		await writeAtomicFile(filePath, content)
+		// Store ONLY to database (no file writing)
+		try {
+			// Sync documents
+			await PresetDbService.syncDocuments(dbPreset.id, filesWithPaths)
 
-		// If database is enabled, store documents and create version
-		if (useDatabase && dbPreset) {
-			try {
-				// Sync documents
-				await PresetDbService.syncDocuments(dbPreset.id, filesWithPaths)
+			// Create preset version
+			const contentHash = generateHash(content)
+			const sizeKb = Math.floor(new TextEncoder().encode(content).length / 1024)
+			const today = new Date()
+			const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(
+				today.getDate()
+			).padStart(2, '0')}`
 
-				// Create preset version
-				const contentHash = generateHash(content)
-				const sizeKb = Math.floor(new TextEncoder().encode(content).length / 1024)
-				const today = new Date()
-				const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(
-					today.getDate()
-				).padStart(2, '0')}`
+			// Create both latest and dated versions
+			await PresetDbService.createPresetVersion({
+				preset_id: dbPreset.id,
+				version: 'latest',
+				content,
+				content_hash: contentHash,
+				size_kb: sizeKb,
+				is_latest: true,
+				document_count: filesWithPaths.length,
+				generated_at: new Date()
+			})
 
-				// Create both latest and dated versions
-				await PresetDbService.createPresetVersion({
-					preset_id: dbPreset.id,
-					version: 'latest',
-					content,
-					content_hash: contentHash,
-					size_kb: sizeKb,
-					is_latest: true,
-					document_count: filesWithPaths.length,
-					generated_at: new Date()
-				})
+			await PresetDbService.createPresetVersion({
+				preset_id: dbPreset.id,
+				version: dateStr,
+				content,
+				content_hash: contentHash,
+				size_kb: sizeKb,
+				is_latest: false,
+				document_count: filesWithPaths.length,
+				generated_at: new Date()
+			})
 
-				await PresetDbService.createPresetVersion({
-					preset_id: dbPreset.id,
-					version: dateStr,
-					content,
-					content_hash: contentHash,
-					size_kb: sizeKb,
-					is_latest: false,
-					document_count: filesWithPaths.length,
-					generated_at: new Date()
-				})
+			// Update cache stats (cache miss)
+			await PresetDbService.updateCacheStats(dbPreset.id, false)
 
-				// Update cache stats (cache miss)
-				await PresetDbService.updateCacheStats(dbPreset.id, false)
-
-				if (dev) {
-					console.log(
-						`Stored ${filesWithPaths.length} documents and created version for preset ${presetKey}`
-					)
-				}
-			} catch (dbError) {
-				console.error(`Failed to store data in database for preset ${presetKey}:`, dbError)
-				// Continue even if database operations fail
+			if (dev) {
+				console.log(
+					`Stored ${filesWithPaths.length} documents and created version for preset ${presetKey}`
+				)
 			}
+		} catch (dbError) {
+			console.error(`Failed to store data in database for preset ${presetKey}:`, dbError)
+			throw dbError // Fail hard - no fallback to files
 		}
 
 		return content
@@ -486,4 +464,6 @@ export function minimizeContent(content: string, options?: Partial<MinimizeOptio
  * Backward compatibility alias for fetchAndProcessMarkdownWithDb
  * @deprecated Use fetchAndProcessMarkdownWithDb instead
  */
-export const fetchAndProcessMarkdown = fetchAndProcessMarkdownWithDb
+export function fetchAndProcessMarkdown(preset: PresetConfig, presetKey: string): Promise<string> {
+	return fetchAndProcessMarkdownWithDb(preset, presetKey)
+}
