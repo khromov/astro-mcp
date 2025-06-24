@@ -35,14 +35,10 @@ export class SchedulerService {
 		// Regular presets: update every 12 hours (at 2:00 AM and 2:00 PM)
 		const regularPresetSchedule = process.env.REGULAR_PRESET_SCHEDULE || '0 2,14 * * *'
 
-		// Distilled presets: update every 24 hours (at 3:00 AM)
-		const distilledPresetSchedule = process.env.DISTILLED_PRESET_SCHEDULE || '0 3 * * *'
-
 		// In development, run every 30 minutes for testing
 		const devSchedule = '*/30 * * * *'
 
 		this.scheduleRegularPresetUpdates(dev ? devSchedule : regularPresetSchedule)
-		this.scheduleDistilledPresetUpdates(dev ? devSchedule : distilledPresetSchedule)
 
 		this.isInitialized = true
 		console.log(`SchedulerService initialized with ${this.jobs.size} jobs`)
@@ -71,28 +67,6 @@ export class SchedulerService {
 	}
 
 	/**
-	 * Schedule updates for distilled presets (these are updated via API, not here)
-	 */
-	private scheduleDistilledPresetUpdates(schedule: string): void {
-		const job = new Cron(
-			schedule,
-			{
-				name: 'distilled-preset-check',
-				timezone: 'UTC',
-				catch: (err) => {
-					console.error('Error in distilled preset check job:', err)
-				}
-			},
-			() => {
-				this.checkDistilledPresets()
-			}
-		)
-
-		this.jobs.set('distilled-presets', job)
-		console.log(`Scheduled distilled preset checks: ${schedule}`)
-	}
-
-	/**
 	 * Update all regular presets that are stale
 	 */
 	private async updateRegularPresets(): Promise<void> {
@@ -117,34 +91,6 @@ export class SchedulerService {
 		}
 
 		console.log('Regular preset update job completed')
-	}
-
-	/**
-	 * Check distilled presets and log their status
-	 * (Distilled presets are updated via the /api/update-distilled endpoint)
-	 */
-	private async checkDistilledPresets(): Promise<void> {
-		console.log('Checking distilled presets...')
-
-		const distilledPresets = Object.entries(presets).filter(([_, preset]) => preset.distilled)
-
-		for (const [presetKey] of distilledPresets) {
-			try {
-				const isStale = await isPresetStale(presetKey)
-
-				if (isStale) {
-					console.log(
-						`Distilled preset ${presetKey} is stale - consider running distillation process`
-					)
-				} else {
-					if (dev) console.log(`Distilled preset ${presetKey} is fresh`)
-				}
-			} catch (error) {
-				console.error(`Failed to check distilled preset ${presetKey}:`, error)
-			}
-		}
-
-		console.log('Distilled preset check completed')
 	}
 
 	/**
