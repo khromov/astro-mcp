@@ -1,6 +1,7 @@
 import type { RequestHandler } from './$types'
 import { json } from '@sveltejs/kit'
 import { schedulerService } from '$lib/server/schedulerService'
+import { logError } from '$lib/log'
 
 /**
  * API endpoint to get the status of the background scheduler
@@ -27,7 +28,7 @@ export const GET: RequestHandler = async ({ url }) => {
 			timestamp: new Date().toISOString()
 		})
 	} catch (error) {
-		console.error('Error getting scheduler status:', error)
+		logError('Error getting scheduler status:', error)
 		return json(
 			{
 				success: false,
@@ -37,4 +38,3 @@ export const GET: RequestHandler = async ({ url }) => {
 		)
 	}
 }
-

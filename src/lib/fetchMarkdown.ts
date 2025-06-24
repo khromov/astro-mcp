@@ -1,12 +1,12 @@
 import type { PresetConfig } from '$lib/presets'
 import { env } from '$env/dynamic/private'
-import { dev } from '$app/environment'
 import tarStream from 'tar-stream'
 import { Readable } from 'stream'
 import { createGunzip } from 'zlib'
 import { minimatch } from 'minimatch'
 import { getPresetContent } from './presetCache'
 import { PresetDbService } from '$lib/server/presetDb'
+import { log, logError } from '$lib/log'
 
 function sortFilesWithinGroup(files: string[]): string[] {
 	return files.sort((a, b) => {
@@ -31,9 +31,7 @@ export async function fetchAndProcessMarkdownWithDb(
 		const cachedContent = await getPresetContent(presetKey)
 
 		if (cachedContent) {
-			if (dev) {
-				console.log(`Using cached content for ${presetKey} from database`)
-			}
+			log(`Using cached content for ${presetKey} from database`)
 			return cachedContent
 		}
 
@@ -44,9 +42,7 @@ export async function fetchAndProcessMarkdownWithDb(
 		}>
 		const files = filesWithPaths.map((f) => `## ${f.path}\n\n${f.content}`)
 
-		if (dev) {
-			console.log(`Fetched ${files.length} files for ${presetKey}`)
-		}
+		log(`Fetched ${files.length} files for ${presetKey}`)
 
 		// Sort files
 		const sortedFiles = sortFilesWithinGroup(files)
@@ -63,19 +59,15 @@ export async function fetchAndProcessMarkdownWithDb(
 				document_count: filesWithPaths.length
 			})
 
-			if (dev) {
-				console.log(
-					`Stored content for preset ${presetKey} (${sizeKb}KB, ${filesWithPaths.length} files)`
-				)
-			}
+			log(`Stored content for preset ${presetKey} (${sizeKb}KB, ${filesWithPaths.length} files)`)
 		} catch (dbError) {
-			console.error(`Failed to store data in database for preset ${presetKey}:`, dbError)
+			logError(`Failed to store data in database for preset ${presetKey}:`, dbError)
 			// Don't throw the error - return the content even if DB storage fails
 		}
 
 		return content
 	} catch (error) {
-		console.error(`Error processing preset ${presetKey}:`, error)
+		logError(`Error processing preset ${presetKey}:`, error)
 		throw error
 	}
 }
@@ -84,7 +76,7 @@ function shouldIncludeFile(filename: string, glob: string, ignore: string[] = []
 	// First check if the file should be ignored
 	const shouldIgnore = ignore.some((pattern) => minimatch(filename, pattern))
 	if (shouldIgnore) {
-		console.log(`❌ Ignored by pattern: ${filename}`)
+		log(`❌ Ignored by pattern: ${filename}`)
 		return false
 	}
 
@@ -100,9 +92,7 @@ export async function fetchMarkdownFiles(
 	// Construct the tarball URL
 	const url = `https://api.github.com/repos/${owner}/${repo}/tarball`
 
-	if (dev) {
-		console.log(`Fetching tarball from: ${url}`)
-	}
+	log(`Fetching tarball from: ${url}`)
 
 	// Fetch the tarball
 	const response = await fetch(url, {
@@ -215,26 +205,24 @@ export async function fetchMarkdownFiles(
 	// Wait for the extraction to complete
 	await new Promise<void>((resolve) => extractStream.on('finish', resolve))
 
-	if (dev) {
-		console.log(`Total files processed: ${processedFiles}`)
-		console.log(`Files matching glob: ${matchedFiles}`)
-		console.log('\nFinal file order:')
+	log(`Total files processed: ${processedFiles}`)
+	log(`Files matching glob: ${matchedFiles}`)
+	log('\nFinal file order:')
 
-		// Log files in their final order
-		glob.forEach((pattern, index) => {
-			const paths = filePathsByPattern.get(pattern) || []
-			const sortedPaths = includePathInfo
-				? paths
-				: sortFilesWithinGroup(paths.map((p) => `## ${p}`)).map((p) => p.replace('## ', ''))
+	// Log files in their final order
+	glob.forEach((pattern, index) => {
+		const paths = filePathsByPattern.get(pattern) || []
+		const sortedPaths = includePathInfo
+			? paths
+			: sortFilesWithinGroup(paths.map((p) => `## ${p}`)).map((p) => p.replace('## ', ''))
 
-			if (sortedPaths.length > 0) {
-				console.log(`\nGlob pattern ${index + 1}: ${pattern}`)
-				sortedPaths.forEach((path, i) => {
-					console.log(`  ${i + 1}. ${path}`)
-				})
-			}
-		})
-	}
+		if (sortedPaths.length > 0) {
+			log(`\nGlob pattern ${index + 1}: ${pattern}`)
+			sortedPaths.forEach((path, i) => {
+				log(`  ${i + 1}. ${path}`)
+			})
+		}
+	})
 
 	// Combine results in the order of glob patterns
 	const orderedResults: unknown[] = []
@@ -381,11 +369,9 @@ export function minimizeContent(content: string, options?: Partial<MinimizeOptio
 
 	minimized = minimized.trim()
 
-	if (dev) {
-		//console.log(`Original content length: ${content.length}`)
-		//console.log(`Minimized content length: ${minimized.length}`)
-		//console.log('Applied minimizations:', Object.keys(settings).join(', '))
-	}
+	//log(`Original content length: ${content.length}`)
+	//log(`Minimized content length: ${minimized.length}`)
+	//log('Applied minimizations:', Object.keys(settings).join(', '))
 
 	return minimized
 }

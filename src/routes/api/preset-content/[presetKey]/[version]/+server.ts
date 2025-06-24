@@ -1,6 +1,7 @@
 import { error } from '@sveltejs/kit'
 import type { RequestHandler } from './$types'
 import { PresetDbService } from '$lib/server/presetDb'
+import { logError } from '$lib/log'
 
 // Valid basenames for distilled content
 const VALID_DISTILLED_BASENAMES = [
@@ -39,7 +40,7 @@ export const GET: RequestHandler = async ({ params }) => {
 			}
 		})
 	} catch (e) {
-		console.error(`Database error serving preset content for ${presetKey}/${version}:`, e)
+		logError(`Database error serving preset content for ${presetKey}/${version}:`, e)
 		if (e instanceof Error && 'status' in e) {
 			throw e // Re-throw SvelteKit errors
 		}

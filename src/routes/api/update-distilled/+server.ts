@@ -7,6 +7,7 @@ import type { RequestHandler } from './$types'
 import { AnthropicProvider, type AnthropicBatchRequest } from '$lib/anthropic'
 import { PresetDbService } from '$lib/server/presetDb'
 import type { DbDistillationJob } from '$lib/types/db'
+import { log, logAlways, logError } from '$lib/log'
 
 const DISTILLATION_PROMPT = `
 You are an expert in web development, specifically Svelte 5 and SvelteKit. Your task is to condense and distill the Svelte documentation into a concise format while preserving the most important information.
@@ -84,27 +85,19 @@ export const GET: RequestHandler = async ({ url }) => {
 		)
 		const shortFilesRemoved = originalFileCount - filesToProcess.length
 
-		if (dev) {
-			console.log(`Total files: ${originalFileCount}`)
-			console.log(
-				`Filtered out ${originalFileCount - filesToProcess.length} short files (< 200 chars)`
-			)
-			console.log(`Processing ${filesToProcess.length} normal files`)
-		}
+		log(`Total files: ${originalFileCount}`)
+		log(`Filtered out ${originalFileCount - filesToProcess.length} short files (< 200 chars)`)
+		log(`Processing ${filesToProcess.length} normal files`)
 
 		if (dev) {
 			// DEBUG: Limit to first 10 normal files for debugging
 			filesToProcess = filesToProcess.slice(0, 10)
-			console.log(
-				`Using ${filesToProcess.length} files for LLM distillation (limited to 10 for debugging)`
-			)
+			log(`Using ${filesToProcess.length} files for LLM distillation (limited to 10 for debugging)`)
 		}
 
 		// Apply the minimize config to each file's content if the preset has a minimize configuration
 		if (distilledPreset.minimize) {
-			if (dev) {
-				console.log(`Applying minimize configuration before LLM processing`)
-			}
+			log(`Applying minimize configuration before LLM processing`)
 
 			filesToProcess = filesToProcess.map((fileObj) => {
 				if (typeof fileObj === 'string') {
@@ -120,9 +113,7 @@ export const GET: RequestHandler = async ({ url }) => {
 				}
 			})
 
-			if (dev) {
-				console.log(`Content minimized according to preset configuration`)
-			}
+			log(`Content minimized according to preset configuration`)
 		}
 
 		// Initialize Anthropic client
@@ -172,7 +163,7 @@ export const GET: RequestHandler = async ({ url }) => {
 				batch_id: batchResponse.id
 			})
 		} catch (dbError) {
-			console.error('Failed to update distillation job:', dbError)
+			logError('Failed to update distillation job:', dbError)
 		}
 
 		// Poll for completion
@@ -182,11 +173,9 @@ export const GET: RequestHandler = async ({ url }) => {
 			await new Promise((resolve) => setTimeout(resolve, 5000)) // Wait 5 seconds before polling again
 			batchStatus = await anthropic.getBatchStatus(batchResponse.id)
 
-			if (dev) {
-				console.log(
-					`Batch status: ${batchStatus.processing_status}, Succeeded: ${batchStatus.request_counts.succeeded}, Processing: ${batchStatus.request_counts.processing}`
-				)
-			}
+			logAlways(
+				`Batch status: ${batchStatus.processing_status}, Succeeded: ${batchStatus.request_counts.succeeded}, Processing: ${batchStatus.request_counts.processing}`
+			)
 
 			// Update job progress
 			try {
@@ -196,7 +185,7 @@ export const GET: RequestHandler = async ({ url }) => {
 					successful_files: batchStatus.request_counts.succeeded
 				})
 			} catch (dbError) {
-				console.error('Failed to update job progress:', dbError)
+				logError('Failed to update job progress:', dbError)
 			}
 		}
 
@@ -226,7 +215,7 @@ export const GET: RequestHandler = async ({ url }) => {
 							prompt_used: DISTILLATION_PROMPT,
 							success: false,
 							error_message: result.result.error?.message || 'Failed or no message'
-						}).catch((e) => console.error('Failed to store distillation result:', e))
+						}).catch((e) => logError('Failed to store distillation result:', e))
 					}
 
 					return {
@@ -252,7 +241,7 @@ export const GET: RequestHandler = async ({ url }) => {
 						success: true,
 						input_tokens: result.result.message.usage?.input_tokens,
 						output_tokens: result.result.message.usage?.output_tokens
-					}).catch((e) => console.error('Failed to store distillation result:', e))
+					}).catch((e) => logError('Failed to store distillation result:', e))
 				}
 
 				return {
@@ -370,7 +359,7 @@ export const GET: RequestHandler = async ({ url }) => {
 				completed_at: new Date()
 			})
 		} catch (dbError) {
-			console.error('Failed to store distillations in database:', dbError)
+			logError('Failed to store distillations in database:', dbError)
 		}
 
 		return json({
@@ -400,11 +389,11 @@ export const GET: RequestHandler = async ({ url }) => {
 					error_message: e instanceof Error ? e.message : String(e)
 				})
 			} catch (dbError) {
-				console.error('Failed to update job as failed:', dbError)
+				logError('Failed to update job as failed:', dbError)
 			}
 		}
 
-		console.error('Error in distillation process:', e)
+		logError('Error in distillation process:', e)
 		throw error(500, `Distillation failed: ${e instanceof Error ? e.message : String(e)}`)
 	}
 }

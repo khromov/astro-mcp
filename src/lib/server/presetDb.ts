@@ -10,7 +10,7 @@ import type {
 	CreateDistillationJobInput,
 	CreateDistillationResultInput
 } from '$lib/types/db'
-import { dev } from '$app/environment'
+import { log, logError } from '$lib/log'
 
 export class PresetDbService {
 	/**
@@ -36,9 +36,7 @@ export class PresetDbService {
 					[input.preset_name, input.content, input.size_kb, input.document_count]
 				)
 
-				if (dev) {
-					console.log(`Updated preset ${input.preset_name} in database`)
-				}
+				log(`Updated preset ${input.preset_name} in database`)
 
 				return updateResult.rows[0] as DbPreset
 			} else {
@@ -51,14 +49,12 @@ export class PresetDbService {
 					[input.preset_name, input.content, input.size_kb, input.document_count]
 				)
 
-				if (dev) {
-					console.log(`Created new preset ${input.preset_name} in database`)
-				}
+				log(`Created new preset ${input.preset_name} in database`)
 
 				return insertResult.rows[0] as DbPreset
 			}
 		} catch (error) {
-			console.error(`Failed to upsert preset ${input.preset_name}:`, error)
+			logError(`Failed to upsert preset ${input.preset_name}:`, error)
 			throw new Error(
 				`Failed to upsert preset: ${error instanceof Error ? error.message : String(error)}`
 			)
@@ -73,7 +69,7 @@ export class PresetDbService {
 			const result = await query('SELECT * FROM presets WHERE preset_name = $1', [presetName])
 			return result.rows.length > 0 ? (result.rows[0] as DbPreset) : null
 		} catch (error) {
-			console.error(`Failed to get preset ${presetName}:`, error)
+			logError(`Failed to get preset ${presetName}:`, error)
 			throw new Error(
 				`Failed to get preset: ${error instanceof Error ? error.message : String(error)}`
 			)
@@ -88,7 +84,7 @@ export class PresetDbService {
 			const result = await query('SELECT * FROM presets ORDER BY preset_name')
 			return result.rows as DbPreset[]
 		} catch (error) {
-			console.error('Failed to get all presets:', error)
+			logError('Failed to get all presets:', error)
 			throw new Error(
 				`Failed to get all presets: ${error instanceof Error ? error.message : String(error)}`
 			)
@@ -103,7 +99,7 @@ export class PresetDbService {
 			const result = await query('DELETE FROM presets WHERE preset_name = $1', [presetName])
 			return (result.rowCount ?? 0) > 0
 		} catch (error) {
-			console.error(`Failed to delete preset ${presetName}:`, error)
+			logError(`Failed to delete preset ${presetName}:`, error)
 			throw new Error(
 				`Failed to delete preset: ${error instanceof Error ? error.message : String(error)}`
 			)
@@ -143,9 +139,7 @@ export class PresetDbService {
 					]
 				)
 
-				if (dev) {
-					console.log(`Updated distillation ${input.preset_name} version ${input.version}`)
-				}
+				console.log(`Updated distillation ${input.preset_name} version ${input.version}`)
 
 				return updateResult.rows[0] as DbDistillation
 			} else {
@@ -165,14 +159,12 @@ export class PresetDbService {
 					]
 				)
 
-				if (dev) {
-					console.log(`Created distillation ${input.preset_name} version ${input.version}`)
-				}
+				console.log(`Created distillation ${input.preset_name} version ${input.version}`)
 
 				return insertResult.rows[0] as DbDistillation
 			}
 		} catch (error) {
-			console.error(`Failed to create distillation for ${input.preset_name}:`, error)
+			logError(`Failed to create distillation for ${input.preset_name}:`, error)
 			throw new Error(
 				`Failed to create distillation: ${error instanceof Error ? error.message : String(error)}`
 			)
@@ -193,7 +185,7 @@ export class PresetDbService {
 			)
 			return result.rows.length > 0 ? (result.rows[0] as DbDistillation) : null
 		} catch (error) {
-			console.error(`Failed to get distillation ${presetName} version ${version}:`, error)
+			logError(`Failed to get distillation ${presetName} version ${version}:`, error)
 			throw new Error(
 				`Failed to get distillation: ${error instanceof Error ? error.message : String(error)}`
 			)
@@ -211,7 +203,7 @@ export class PresetDbService {
 			)
 			return result.rows.length > 0 ? (result.rows[0] as DbDistillation) : null
 		} catch (error) {
-			console.error(`Failed to get latest distillation for ${presetName}:`, error)
+			logError(`Failed to get latest distillation for ${presetName}:`, error)
 			throw new Error(
 				`Failed to get latest distillation: ${error instanceof Error ? error.message : String(error)}`
 			)
@@ -229,7 +221,7 @@ export class PresetDbService {
 			)
 			return result.rows as DbDistillation[]
 		} catch (error) {
-			console.error(`Failed to get all distillations for ${presetName}:`, error)
+			logError(`Failed to get all distillations for ${presetName}:`, error)
 			throw new Error(
 				`Failed to get all distillations: ${error instanceof Error ? error.message : String(error)}`
 			)
@@ -263,7 +255,7 @@ export class PresetDbService {
 
 			return result.rows[0] as DbDistillationJob
 		} catch (error) {
-			console.error('Failed to create distillation job:', error)
+			logError('Failed to create distillation job:', error)
 			throw new Error(
 				`Failed to create distillation job: ${error instanceof Error ? error.message : String(error)}`
 			)
@@ -322,7 +314,7 @@ export class PresetDbService {
 
 			return result.rows[0] as DbDistillationJob
 		} catch (error) {
-			console.error(`Failed to update distillation job ${jobId}:`, error)
+			logError(`Failed to update distillation job ${jobId}:`, error)
 			throw new Error(
 				`Failed to update distillation job: ${error instanceof Error ? error.message : String(error)}`
 			)
@@ -352,7 +344,7 @@ export class PresetDbService {
 				]
 			)
 		} catch (error) {
-			console.error('Failed to create distillation result:', error)
+			logError('Failed to create distillation result:', error)
 			throw new Error(
 				`Failed to create distillation result: ${error instanceof Error ? error.message : String(error)}`
 			)
@@ -370,7 +362,7 @@ export class PresetDbService {
 			)
 			return result.rows as DbDistillationJob[]
 		} catch (error) {
-			console.error(`Failed to get distillation jobs for ${presetName}:`, error)
+			logError(`Failed to get distillation jobs for ${presetName}:`, error)
 			throw new Error(
 				`Failed to get distillation jobs: ${error instanceof Error ? error.message : String(error)}`
 			)

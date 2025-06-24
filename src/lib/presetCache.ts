@@ -1,5 +1,5 @@
 import { PresetDbService } from '$lib/server/presetDb'
-import { dev } from '$app/environment'
+import { log, logError } from '$lib/log'
 
 // Maximum age of cached content in milliseconds (24 hours)
 export const MAX_CACHE_AGE_MS = 24 * 60 * 60 * 1000
@@ -11,19 +11,15 @@ export async function getPresetContent(presetKey: string): Promise<string | null
 	try {
 		const preset = await PresetDbService.getPresetByName(presetKey)
 		if (!preset || !preset.content) {
-			if (dev) {
-				console.log(`Preset not found in database: ${presetKey}`)
-			}
+			log(`Preset not found in database: ${presetKey}`)
 			return null
 		}
 
-		if (dev) {
-			console.log(`Retrieved content for ${presetKey} from database (${preset.size_kb}KB)`)
-		}
+		log(`Retrieved content for ${presetKey} from database (${preset.size_kb}KB)`)
 
 		return preset.content
 	} catch (error) {
-		console.error(`Error getting preset content for ${presetKey}:`, error)
+		logError(`Error getting preset content for ${presetKey}:`, error)
 		return null
 	}
 }
@@ -40,7 +36,7 @@ export async function getPresetSizeKb(presetKey: string): Promise<number | null>
 
 		return preset.size_kb
 	} catch (error) {
-		console.error(`Error getting preset size for ${presetKey}:`, error)
+		logError(`Error getting preset size for ${presetKey}:`, error)
 		return null
 	}
 }
@@ -59,15 +55,13 @@ export async function isPresetStale(presetKey: string): Promise<boolean> {
 		const contentAge = Date.now() - new Date(preset.updated_at).getTime()
 		const isStale = contentAge > MAX_CACHE_AGE_MS
 
-		if (dev && isStale) {
-			console.log(
-				`Preset ${presetKey} is stale (age: ${Math.floor(contentAge / 1000 / 60)} minutes)`
-			)
+		if (isStale) {
+			log(`Preset ${presetKey} is stale (age: ${Math.floor(contentAge / 1000 / 60)} minutes)`)
 		}
 
 		return isStale
 	} catch (error) {
-		console.error(`Error checking preset staleness for ${presetKey}:`, error)
+		logError(`Error checking preset staleness for ${presetKey}:`, error)
 		return true // On error, assume stale
 	}
 }
@@ -80,7 +74,7 @@ export async function presetExists(presetKey: string): Promise<boolean> {
 		const preset = await PresetDbService.getPresetByName(presetKey)
 		return preset !== null
 	} catch (error) {
-		console.error(`Error checking preset existence for ${presetKey}:`, error)
+		logError(`Error checking preset existence for ${presetKey}:`, error)
 		return false
 	}
 }
@@ -109,7 +103,7 @@ export async function getPresetMetadata(presetKey: string): Promise<{
 			is_stale: isStale
 		}
 	} catch (error) {
-		console.error(`Error getting preset metadata for ${presetKey}:`, error)
+		logError(`Error getting preset metadata for ${presetKey}:`, error)
 		return null
 	}
 }

@@ -4,7 +4,7 @@ import type { QueryResult } from 'pg'
 import type { QueryConfig } from '$lib/types/db'
 
 import { env } from '$env/dynamic/private'
-import { logAlways } from '$lib/log'
+import { logAlways, log, logError } from '$lib/log'
 
 let pool: Pool | null = null
 
@@ -33,26 +33,23 @@ export async function query(
 	const timingStart = new Date()
 
 	if (config.debug === true || env?.DB_DEBUG === 'true') {
-		console.info('----')
-		console.info(`🔰 Query: ${incomingQuery}`)
-		console.info('📊 Data: ', params)
+		log('----')
+		log(`🔰 Query: ${incomingQuery}`)
+		log('📊 Data: ', params)
 	}
 
 	try {
 		const results = await pool.query(incomingQuery, params)
 
 		if (config.debug === true || env?.DB_DEBUG === 'true') {
-			console.info(
-				'⏰ Postgres query execution time: %dms',
-				new Date().getTime() - timingStart.getTime()
-			)
-			console.info('----')
+			log('⏰ Postgres query execution time: %dms', new Date().getTime() - timingStart.getTime())
+			log('----')
 		}
 
 		return results
 	} catch (error) {
 		// Log the error for debugging
-		console.error('Database query error:', {
+		logError('Database query error:', {
 			query: incomingQuery,
 			params,
 			error: error instanceof Error ? error.message : String(error)

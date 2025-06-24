@@ -3,6 +3,7 @@ import { createMcpHandler } from '@vercel/mcp-adapter'
 import { env } from '$env/dynamic/private'
 import { presets } from '$lib/presets'
 import { fetchAndProcessMarkdownWithDb } from '$lib/fetchMarkdown'
+import { log, logError } from '$lib/log'
 
 interface DocumentSection {
 	filePath: string
@@ -79,7 +80,7 @@ function findSectionByTitleOrPath(
 }
 
 export const listSectionsHandler = async () => {
-	console.log('Listing sections from Svelte and SvelteKit full presets')
+	log('Listing sections from Svelte and SvelteKit full presets')
 
 	try {
 		// Get sections from both full presets
@@ -93,9 +94,7 @@ export const listSectionsHandler = async () => {
 		const filteredSvelteSections = svelteSections.filter((section) => {
 			const isValid = section.content.length >= 100
 			if (!isValid) {
-				console.log(
-					`Filtered out Svelte section: "${section.title}" (${section.content.length} chars)`
-				)
+				log(`Filtered out Svelte section: "${section.title}" (${section.content.length} chars)`)
 			}
 			return isValid
 		})
@@ -103,9 +102,7 @@ export const listSectionsHandler = async () => {
 		const filteredSvelteKitSections = svelteKitSections.filter((section) => {
 			const isValid = section.content.length >= 100
 			if (!isValid) {
-				console.log(
-					`Filtered out SvelteKit section: "${section.title}" (${section.content.length} chars)`
-				)
+				log(`Filtered out SvelteKit section: "${section.title}" (${section.content.length} chars)`)
 			}
 			return isValid
 		})
@@ -137,7 +134,7 @@ export const listSectionsHandler = async () => {
 			]
 		}
 	} catch (error) {
-		console.error('Error listing sections:', error)
+		logError('Error listing sections:', error)
 		return {
 			content: [
 				{
@@ -182,7 +179,7 @@ export const getDocumentationHandler = async ({ section }: { section: string | s
 		const notFound: string[] = []
 
 		for (const sectionName of sections) {
-			console.log({ section: sectionName })
+			log({ section: sectionName })
 
 			// Search in Svelte documentation first
 			const svelteMatch = findSectionByTitleOrPath(svelteSections, sectionName)
@@ -235,7 +232,7 @@ export const getDocumentationHandler = async ({ section }: { section: string | s
 			]
 		}
 	} catch (error) {
-		console.error('Error fetching documentation:', error)
+		logError('Error fetching documentation:', error)
 		const sectionList = Array.isArray(section) ? section.join(', ') : section
 		return {
 			content: [

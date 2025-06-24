@@ -83,7 +83,7 @@ export class SchedulerService {
 					await fetchAndProcessMarkdownWithDb(preset, presetKey)
 					console.log(`Successfully updated preset: ${presetKey}`)
 				} else {
-					if (dev) console.log(`Preset ${presetKey} is still fresh, skipping`)
+					console.log(`Preset ${presetKey} is still fresh, skipping`)
 				}
 			} catch (error) {
 				console.error(`Failed to update preset ${presetKey}:`, error)
