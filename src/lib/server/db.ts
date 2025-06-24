@@ -4,7 +4,7 @@ import type { QueryResult } from 'pg'
 import type { QueryConfig } from '$lib/types/db'
 
 import { env } from '$env/dynamic/private'
-import { logAlways, log, logError } from '$lib/log'
+import { logAlways, log, logErrorAlways } from '$lib/log'
 
 let pool: Pool | null = null
 
@@ -49,7 +49,7 @@ export async function query(
 		return results
 	} catch (error) {
 		// Log the error for debugging
-		logError('Database query error:', {
+		logErrorAlways('Database query error:', {
 			query: incomingQuery,
 			params,
 			error: error instanceof Error ? error.message : String(error)

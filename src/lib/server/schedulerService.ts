@@ -3,6 +3,7 @@ import { dev } from '$app/environment'
 import { presets } from '$lib/presets'
 import { fetchAndProcessMarkdownWithDb } from '$lib/fetchMarkdown'
 import { isPresetStale } from '$lib/presetCache'
+import { logAlways, logErrorAlways } from '$lib/log'
 
 /**
  * Background scheduler service using Croner for preset updates
@@ -26,11 +27,11 @@ export class SchedulerService {
 	 */
 	async init(): Promise<void> {
 		if (this.isInitialized) {
-			console.log('SchedulerService already initialized')
+			logAlways('SchedulerService already initialized')
 			return
 		}
 
-		console.log('Initializing SchedulerService...')
+		logAlways('Initializing SchedulerService...')
 
 		// Regular presets: update every 12 hours (at 2:00 AM and 2:00 PM)
 		const regularPresetSchedule = process.env.REGULAR_PRESET_SCHEDULE || '0 2,14 * * *'
@@ -41,7 +42,7 @@ export class SchedulerService {
 		this.scheduleRegularPresetUpdates(dev ? devSchedule : regularPresetSchedule)
 
 		this.isInitialized = true
-		console.log(`SchedulerService initialized with ${this.jobs.size} jobs`)
+		logAlways(`SchedulerService initialized with ${this.jobs.size} jobs`)
 	}
 
 	/**
@@ -54,7 +55,7 @@ export class SchedulerService {
 				name: 'regular-preset-updates',
 				timezone: 'UTC',
 				catch: (err) => {
-					console.error('Error in regular preset update job:', err)
+					logErrorAlways('Error in regular preset update job:', err)
 				}
 			},
 			() => {
@@ -63,14 +64,14 @@ export class SchedulerService {
 		)
 
 		this.jobs.set('regular-presets', job)
-		console.log(`Scheduled regular preset updates: ${schedule}`)
+		logAlways(`Scheduled regular preset updates: ${schedule}`)
 	}
 
 	/**
 	 * Update all regular presets that are stale
 	 */
 	private async updateRegularPresets(): Promise<void> {
-		console.log('Starting regular preset update job...')
+		logAlways('Starting regular preset update job...')
 
 		const regularPresets = Object.entries(presets).filter(([_, preset]) => !preset.distilled)
 
@@ -79,18 +80,18 @@ export class SchedulerService {
 				const isStale = await isPresetStale(presetKey)
 
 				if (isStale) {
-					console.log(`Updating stale preset: ${presetKey}`)
+					logAlways(`Updating stale preset: ${presetKey}`)
 					await fetchAndProcessMarkdownWithDb(preset, presetKey)
-					console.log(`Successfully updated preset: ${presetKey}`)
+					logAlways(`Successfully updated preset: ${presetKey}`)
 				} else {
-					console.log(`Preset ${presetKey} is still fresh, skipping`)
+					logAlways(`Preset ${presetKey} is still fresh, skipping`)
 				}
 			} catch (error) {
-				console.error(`Failed to update preset ${presetKey}:`, error)
+				logErrorAlways(`Failed to update preset ${presetKey}:`, error)
 			}
 		}
 
-		console.log('Regular preset update job completed')
+		logAlways('Regular preset update job completed')
 	}
 
 	/**
@@ -113,23 +114,23 @@ export class SchedulerService {
 	 * Stop all jobs
 	 */
 	async stop(): Promise<void> {
-		console.log('Stopping SchedulerService...')
+		logAlways('Stopping SchedulerService...')
 
 		for (const [name, job] of this.jobs) {
 			job.stop()
-			console.log(`Stopped job: ${name}`)
+			logAlways(`Stopped job: ${name}`)
 		}
 
 		this.jobs.clear()
 		this.isInitialized = false
-		console.log('SchedulerService stopped')
+		logAlways('SchedulerService stopped')
 	}
 
 	/**
 	 * Trigger immediate update of regular presets (for testing/manual triggers)
 	 */
 	async triggerRegularPresetUpdate(): Promise<void> {
-		console.log('Manually triggering regular preset update...')
+		logAlways('Manually triggering regular preset update...')
 		await this.updateRegularPresets()
 	}
 }

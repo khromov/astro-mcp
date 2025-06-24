@@ -6,7 +6,7 @@ import { createGunzip } from 'zlib'
 import { minimatch } from 'minimatch'
 import { getPresetContent } from './presetCache'
 import { PresetDbService } from '$lib/server/presetDb'
-import { log, logError } from '$lib/log'
+import { log, logAlways, logErrorAlways } from '$lib/log'
 
 function sortFilesWithinGroup(files: string[]): string[] {
 	return files.sort((a, b) => {
@@ -31,7 +31,7 @@ export async function fetchAndProcessMarkdownWithDb(
 		const cachedContent = await getPresetContent(presetKey)
 
 		if (cachedContent) {
-			log(`Using cached content for ${presetKey} from database`)
+			logAlways(`Using cached content for ${presetKey} from database`)
 			return cachedContent
 		}
 
@@ -42,7 +42,7 @@ export async function fetchAndProcessMarkdownWithDb(
 		}>
 		const files = filesWithPaths.map((f) => `## ${f.path}\n\n${f.content}`)
 
-		log(`Fetched ${files.length} files for ${presetKey}`)
+		logAlways(`Fetched ${files.length} files for ${presetKey}`)
 
 		// Sort files
 		const sortedFiles = sortFilesWithinGroup(files)
@@ -59,15 +59,17 @@ export async function fetchAndProcessMarkdownWithDb(
 				document_count: filesWithPaths.length
 			})
 
-			log(`Stored content for preset ${presetKey} (${sizeKb}KB, ${filesWithPaths.length} files)`)
+			logAlways(
+				`Stored content for preset ${presetKey} (${sizeKb}KB, ${filesWithPaths.length} files)`
+			)
 		} catch (dbError) {
-			logError(`Failed to store data in database for preset ${presetKey}:`, dbError)
+			logErrorAlways(`Failed to store data in database for preset ${presetKey}:`, dbError)
 			// Don't throw the error - return the content even if DB storage fails
 		}
 
 		return content
 	} catch (error) {
-		logError(`Error processing preset ${presetKey}:`, error)
+		logErrorAlways(`Error processing preset ${presetKey}:`, error)
 		throw error
 	}
 }
@@ -92,7 +94,7 @@ export async function fetchMarkdownFiles(
 	// Construct the tarball URL
 	const url = `https://api.github.com/repos/${owner}/${repo}/tarball`
 
-	log(`Fetching tarball from: ${url}`)
+	logAlways(`Fetching tarball from: ${url}`)
 
 	// Fetch the tarball
 	const response = await fetch(url, {
@@ -205,8 +207,8 @@ export async function fetchMarkdownFiles(
 	// Wait for the extraction to complete
 	await new Promise<void>((resolve) => extractStream.on('finish', resolve))
 
-	log(`Total files processed: ${processedFiles}`)
-	log(`Files matching glob: ${matchedFiles}`)
+	logAlways(`Total files processed: ${processedFiles}`)
+	logAlways(`Files matching glob: ${matchedFiles}`)
 	log('\nFinal file order:')
 
 	// Log files in their final order

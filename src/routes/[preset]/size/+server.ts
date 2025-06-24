@@ -3,7 +3,7 @@ import { error } from '@sveltejs/kit'
 import { presets } from '$lib/presets'
 import { getPresetSizeKb } from '$lib/presetCache'
 import { PresetDbService } from '$lib/server/presetDb'
-import { log, logError } from '$lib/log'
+import { logAlways, logErrorAlways } from '$lib/log'
 
 // Virtual distilled presets that aren't in the presets object
 const VIRTUAL_DISTILLED_PRESETS = ['svelte-distilled', 'sveltekit-distilled']
@@ -48,7 +48,7 @@ export const GET: RequestHandler = async ({ params }) => {
 		}
 
 		// If content doesn't exist yet in database
-		log(`No content found in database for preset "${presetKey}"`)
+		logAlways(`No content found in database for preset "${presetKey}"`)
 
 		return new Response(JSON.stringify({ sizeKb: 0, status: 'not_generated' }), {
 			headers: {
@@ -56,7 +56,7 @@ export const GET: RequestHandler = async ({ params }) => {
 			}
 		})
 	} catch (e) {
-		logError(`Database error calculating size for preset "${presetKey}":`, e)
+		logErrorAlways(`Database error calculating size for preset "${presetKey}":`, e)
 		error(500, `Failed to get size from database for preset "${presetKey}"`)
 	}
 }

@@ -1,7 +1,7 @@
 import { json, error } from '@sveltejs/kit'
 import type { RequestHandler } from './$types'
 import { PresetDbService } from '$lib/server/presetDb'
-import { logError } from '$lib/log'
+import { logErrorAlways } from '$lib/log'
 
 // Valid basenames for distilled content
 const VALID_DISTILLED_BASENAMES = [
@@ -56,7 +56,7 @@ export const GET: RequestHandler = async ({ url }) => {
 
 		return json(versions)
 	} catch (e) {
-		logError('Database error reading distilled versions:', e)
+		logErrorAlways('Database error reading distilled versions:', e)
 		throw error(500, 'Failed to retrieve distilled versions from database')
 	}
 }

@@ -8,7 +8,7 @@ import { dev } from '$app/environment'
 import { fetchAndProcessMarkdownWithDb } from '$lib/fetchMarkdown'
 import { getPresetContent } from '$lib/presetCache'
 import { PresetDbService } from '$lib/server/presetDb'
-import { log, logError } from '$lib/log'
+import { logAlways, logErrorAlways } from '$lib/log'
 
 // Valid virtual presets that aren't in the presets object
 const VIRTUAL_DISTILLED_PRESETS = ['svelte-distilled', 'sveltekit-distilled']
@@ -19,7 +19,7 @@ const VIRTUAL_DISTILLED_PRESETS = ['svelte-distilled', 'sveltekit-distilled']
 export const GET: RequestHandler = async ({ params, url }) => {
 	const presetNames = params.preset.split(',').map((p) => p.trim())
 
-	log(`Received request for presets: ${presetNames.join(', ')}`)
+	logAlways(`Received request for presets: ${presetNames.join(', ')}`)
 
 	// Validate all preset names first
 	const invalidPresets = presetNames.filter(
@@ -68,7 +68,7 @@ export const GET: RequestHandler = async ({ params, url }) => {
 			if (dev) {
 				console.timeEnd('dataFetching')
 			}
-			log(`Content length for ${presetKey}: ${content.length}`)
+			logAlways(`Content length for ${presetKey}: ${content.length}`)
 
 			if (content.length === 0) {
 				throw new Error(`No content found for ${presetKey}`)
@@ -88,7 +88,7 @@ export const GET: RequestHandler = async ({ params, url }) => {
 		// Join all contents with a delimiter
 		const response = contents.join('\n\n---\n\n')
 
-		log(`Final combined response length: ${response.length}`)
+		logAlways(`Final combined response length: ${response.length}`)
 
 		const headers: HeadersInit = {
 			'Content-Type': 'text/plain; charset=utf-8'
@@ -104,7 +104,7 @@ export const GET: RequestHandler = async ({ params, url }) => {
 			headers
 		})
 	} catch (e) {
-		logError(`Error fetching documentation for presets [${presetNames.join(', ')}]:`, e)
+		logErrorAlways(`Error fetching documentation for presets [${presetNames.join(', ')}]:`, e)
 		error(500, `Failed to fetch documentation for presets "${presetNames.join(', ')}"`)
 	}
 }

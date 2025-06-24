@@ -1,7 +1,7 @@
 import type { LLMProvider } from './llm.ts'
 import { Anthropic } from '@anthropic-ai/sdk'
 import { env } from '$env/dynamic/private'
-import { logError, logWarning, log } from '$lib/log'
+import { logErrorAlways, logWarningAlways, log } from '$lib/log'
 
 // Batch API interfaces
 export interface AnthropicBatchRequest {
@@ -108,7 +108,7 @@ export class AnthropicProvider implements LLMProvider {
 			const firstContent = completion.content[0]
 			return firstContent?.type === 'text' ? firstContent.text : ''
 		} catch (error) {
-			logError('Error generating code with Anthropic:', error)
+			logErrorAlways('Error generating code with Anthropic:', error)
 			throw new Error(
 				`Failed to generate code: ${error instanceof Error ? error.message : String(error)}`
 			)
@@ -157,7 +157,7 @@ export class AnthropicProvider implements LLMProvider {
 
 			return await response.json()
 		} catch (error) {
-			logError('Error creating batch with Anthropic:', error)
+			logErrorAlways('Error creating batch with Anthropic:', error)
 			throw new Error(
 				`Failed to create batch: ${error instanceof Error ? error.message : String(error)}`
 			)
@@ -201,7 +201,10 @@ export class AnthropicProvider implements LLMProvider {
 
 				if (retryCount > maxRetries) {
 					// If we've exceeded the maximum number of retries, log the error and throw
-					logError(`Error getting batch status for ${batchId} after ${maxRetries} retries:`, error)
+					logErrorAlways(
+						`Error getting batch status for ${batchId} after ${maxRetries} retries:`,
+						error
+					)
 					throw new Error(
 						`Failed to get batch status after ${maxRetries} retries: ${
 							error instanceof Error ? error.message : String(error)
@@ -210,7 +213,7 @@ export class AnthropicProvider implements LLMProvider {
 				}
 
 				// Log retry attempt
-				logWarning(
+				logWarningAlways(
 					`Error getting batch status for ${batchId} (attempt ${retryCount}/${maxRetries}):`,
 					error
 				)
@@ -256,7 +259,7 @@ export class AnthropicProvider implements LLMProvider {
 
 			return results
 		} catch (error) {
-			logError(`Error getting batch results:`, error)
+			logErrorAlways(`Error getting batch results:`, error)
 			throw new Error(
 				`Failed to get batch results: ${error instanceof Error ? error.message : String(error)}`
 			)

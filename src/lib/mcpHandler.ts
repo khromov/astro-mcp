@@ -3,7 +3,7 @@ import { createMcpHandler } from '@vercel/mcp-adapter'
 import { env } from '$env/dynamic/private'
 import { presets } from '$lib/presets'
 import { fetchAndProcessMarkdownWithDb } from '$lib/fetchMarkdown'
-import { log, logError } from '$lib/log'
+import { log, logAlways, logErrorAlways } from '$lib/log'
 
 interface DocumentSection {
 	filePath: string
@@ -80,7 +80,7 @@ function findSectionByTitleOrPath(
 }
 
 export const listSectionsHandler = async () => {
-	log('Listing sections from Svelte and SvelteKit full presets')
+	logAlways('Listing sections from Svelte and SvelteKit full presets')
 
 	try {
 		// Get sections from both full presets
@@ -134,7 +134,7 @@ export const listSectionsHandler = async () => {
 			]
 		}
 	} catch (error) {
-		logError('Error listing sections:', error)
+		logErrorAlways('Error listing sections:', error)
 		return {
 			content: [
 				{
@@ -232,7 +232,7 @@ export const getDocumentationHandler = async ({ section }: { section: string | s
 			]
 		}
 	} catch (error) {
-		logError('Error fetching documentation:', error)
+		logErrorAlways('Error fetching documentation:', error)
 		const sectionList = Array.isArray(section) ? section.join(', ') : section
 		return {
 			content: [

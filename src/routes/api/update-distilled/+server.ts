@@ -7,7 +7,7 @@ import type { RequestHandler } from './$types'
 import { AnthropicProvider, type AnthropicBatchRequest } from '$lib/anthropic'
 import { PresetDbService } from '$lib/server/presetDb'
 import type { DbDistillationJob } from '$lib/types/db'
-import { log, logAlways, logError } from '$lib/log'
+import { logAlways, logErrorAlways } from '$lib/log'
 
 const DISTILLATION_PROMPT = `
 You are an expert in web development, specifically Svelte 5 and SvelteKit. Your task is to condense and distill the Svelte documentation into a concise format while preserving the most important information.
@@ -85,19 +85,21 @@ export const GET: RequestHandler = async ({ url }) => {
 		)
 		const shortFilesRemoved = originalFileCount - filesToProcess.length
 
-		log(`Total files: ${originalFileCount}`)
-		log(`Filtered out ${originalFileCount - filesToProcess.length} short files (< 200 chars)`)
-		log(`Processing ${filesToProcess.length} normal files`)
+		logAlways(`Total files: ${originalFileCount}`)
+		logAlways(`Filtered out ${originalFileCount - filesToProcess.length} short files (< 200 chars)`)
+		logAlways(`Processing ${filesToProcess.length} normal files`)
 
 		if (dev) {
 			// DEBUG: Limit to first 10 normal files for debugging
 			filesToProcess = filesToProcess.slice(0, 10)
-			log(`Using ${filesToProcess.length} files for LLM distillation (limited to 10 for debugging)`)
+			logAlways(
+				`Using ${filesToProcess.length} files for LLM distillation (limited to 10 for debugging)`
+			)
 		}
 
 		// Apply the minimize config to each file's content if the preset has a minimize configuration
 		if (distilledPreset.minimize) {
-			log(`Applying minimize configuration before LLM processing`)
+			logAlways(`Applying minimize configuration before LLM processing`)
 
 			filesToProcess = filesToProcess.map((fileObj) => {
 				if (typeof fileObj === 'string') {
@@ -113,7 +115,7 @@ export const GET: RequestHandler = async ({ url }) => {
 				}
 			})
 
-			log(`Content minimized according to preset configuration`)
+			logAlways(`Content minimized according to preset configuration`)
 		}
 
 		// Initialize Anthropic client
@@ -163,7 +165,7 @@ export const GET: RequestHandler = async ({ url }) => {
 				batch_id: batchResponse.id
 			})
 		} catch (dbError) {
-			logError('Failed to update distillation job:', dbError)
+			logErrorAlways('Failed to update distillation job:', dbError)
 		}
 
 		// Poll for completion
@@ -185,7 +187,7 @@ export const GET: RequestHandler = async ({ url }) => {
 					successful_files: batchStatus.request_counts.succeeded
 				})
 			} catch (dbError) {
-				logError('Failed to update job progress:', dbError)
+				logErrorAlways('Failed to update job progress:', dbError)
 			}
 		}
 
@@ -215,7 +217,7 @@ export const GET: RequestHandler = async ({ url }) => {
 							prompt_used: DISTILLATION_PROMPT,
 							success: false,
 							error_message: result.result.error?.message || 'Failed or no message'
-						}).catch((e) => logError('Failed to store distillation result:', e))
+						}).catch((e) => logErrorAlways('Failed to store distillation result:', e))
 					}
 
 					return {
@@ -241,7 +243,7 @@ export const GET: RequestHandler = async ({ url }) => {
 						success: true,
 						input_tokens: result.result.message.usage?.input_tokens,
 						output_tokens: result.result.message.usage?.output_tokens
-					}).catch((e) => logError('Failed to store distillation result:', e))
+					}).catch((e) => logErrorAlways('Failed to store distillation result:', e))
 				}
 
 				return {
@@ -359,7 +361,7 @@ export const GET: RequestHandler = async ({ url }) => {
 				completed_at: new Date()
 			})
 		} catch (dbError) {
-			logError('Failed to store distillations in database:', dbError)
+			logErrorAlways('Failed to store distillations in database:', dbError)
 		}
 
 		return json({
@@ -389,11 +391,11 @@ export const GET: RequestHandler = async ({ url }) => {
 					error_message: e instanceof Error ? e.message : String(e)
 				})
 			} catch (dbError) {
-				logError('Failed to update job as failed:', dbError)
+				logErrorAlways('Failed to update job as failed:', dbError)
 			}
 		}
 
-		logError('Error in distillation process:', e)
+		logErrorAlways('Error in distillation process:', e)
 		throw error(500, `Distillation failed: ${e instanceof Error ? e.message : String(e)}`)
 	}
 }

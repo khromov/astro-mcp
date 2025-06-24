@@ -10,7 +10,7 @@
 	import PresetListItem from '$lib/components/PresetListItem.svelte'
 	import { SITE_URL } from '$lib/constants'
 	import toast from 'svelte-french-toast'
-	import { logError } from '$lib/log'
+	import { logErrorAlways } from '$lib/log'
 
 	const SSE_ENDPOINT = 'https://svelte-llm.khromov.se/mcp/sse'
 	const STREAMABLE_ENDPOINT = 'https://svelte-llm.khromov.se/mcp/mcp'
@@ -141,7 +141,7 @@
 				throw new Error(`Failed to load versions: ${response.status} ${response.statusText}`)
 			}
 		} catch (e) {
-			logError(`Failed to load distilled versions for ${preset}:`, e)
+			logErrorAlways(`Failed to load distilled versions for ${preset}:`, e)
 			throw e
 		}
 	}
