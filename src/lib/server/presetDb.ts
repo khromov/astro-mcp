@@ -1,10 +1,12 @@
 import { query } from '$lib/server/db'
 import type {
 	DbPreset,
+	DbDistillation,
 	DbDistillationJob,
 	DbDistillationResult,
 	CreatePresetInput,
 	UpdatePresetInput,
+	CreateDistillationInput,
 	CreateDistillationJobInput,
 	CreateDistillationResultInput
 } from '$lib/types/db'
@@ -87,6 +89,107 @@ export class PresetDbService {
 	static async deletePreset(presetName: string): Promise<boolean> {
 		const result = await query('DELETE FROM presets WHERE preset_name = $1', [presetName])
 		return result ? result.rowCount > 0 : false
+	}
+
+	// Distillation methods
+
+	/**
+	 * Create distillation version
+	 */
+	static async createDistillation(input: CreateDistillationInput): Promise<DbDistillation> {
+		// Check if version already exists
+		const existingResult = await query(
+			'SELECT * FROM distillations WHERE preset_name = $1 AND version = $2',
+			[input.preset_name, input.version]
+		)
+
+		if (existingResult && existingResult.rows.length > 0) {
+			// Update existing version
+			const updateResult = await query(
+				`UPDATE distillations SET 
+					content = $3,
+					content_hash = $4,
+					size_kb = $5,
+					document_count = $6,
+					distillation_job_id = $7
+				WHERE preset_name = $1 AND version = $2
+				RETURNING *`,
+				[
+					input.preset_name,
+					input.version,
+					input.content,
+					input.content_hash,
+					input.size_kb,
+					input.document_count,
+					input.distillation_job_id || null
+				]
+			)
+
+			if (dev) {
+				console.log(`Updated distillation ${input.preset_name} version ${input.version}`)
+			}
+
+			return updateResult!.rows[0] as DbDistillation
+		} else {
+			// Insert new version
+			const insertResult = await query(
+				`INSERT INTO distillations (
+					preset_name, version, content, content_hash, size_kb, document_count, distillation_job_id
+				) VALUES ($1, $2, $3, $4, $5, $6, $7)
+				RETURNING *`,
+				[
+					input.preset_name,
+					input.version,
+					input.content,
+					input.content_hash,
+					input.size_kb,
+					input.document_count,
+					input.distillation_job_id || null
+				]
+			)
+
+			if (dev) {
+				console.log(`Created distillation ${input.preset_name} version ${input.version}`)
+			}
+
+			return insertResult!.rows[0] as DbDistillation
+		}
+	}
+
+	/**
+	 * Get distillation by preset name and version
+	 */
+	static async getDistillationByVersion(
+		presetName: string,
+		version: string
+	): Promise<DbDistillation | null> {
+		const result = await query(
+			'SELECT * FROM distillations WHERE preset_name = $1 AND version = $2',
+			[presetName, version]
+		)
+		return result && result.rows.length > 0 ? (result.rows[0] as DbDistillation) : null
+	}
+
+	/**
+	 * Get latest distillation for a preset
+	 */
+	static async getLatestDistillation(presetName: string): Promise<DbDistillation | null> {
+		const result = await query(
+			'SELECT * FROM distillations WHERE preset_name = $1 AND version = $2',
+			[presetName, 'latest']
+		)
+		return result && result.rows.length > 0 ? (result.rows[0] as DbDistillation) : null
+	}
+
+	/**
+	 * Get all distillation versions for a preset
+	 */
+	static async getAllDistillationsForPreset(presetName: string): Promise<DbDistillation[]> {
+		const result = await query(
+			'SELECT * FROM distillations WHERE preset_name = $1 ORDER BY created_at DESC',
+			[presetName]
+		)
+		return result ? (result.rows as DbDistillation[]) : []
 	}
 
 	/**

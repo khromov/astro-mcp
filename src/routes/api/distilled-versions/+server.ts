@@ -9,6 +9,27 @@ const VALID_DISTILLED_BASENAMES = [
 	'sveltekit-distilled'
 ]
 
+/**
+ * Transform database distillation to distilled version format
+ */
+function transformDbDistillationToVersion(dbDistillation: any, presetKey: string) {
+	// Handle date format - version could be 'latest' or '2024-01-15'
+	const date =
+		dbDistillation.version === 'latest'
+			? new Date(dbDistillation.created_at).toISOString().split('T')[0]
+			: dbDistillation.version
+
+	// Generate filename from preset key and date
+	const filename = `${presetKey}-${date}.md`
+
+	return {
+		filename,
+		date,
+		path: `/api/preset-content/${presetKey}/${dbDistillation.version}`,
+		sizeKb: dbDistillation.size_kb
+	}
+}
+
 export const GET: RequestHandler = async ({ url }) => {
 	try {
 		// Get the preset key from the URL query parameter
@@ -19,9 +40,20 @@ export const GET: RequestHandler = async ({ url }) => {
 			return json([])
 		}
 
-		// Since we no longer have versions, just return an empty array
-		// The frontend will handle this gracefully
-		return json([])
+		// Get all versions from database
+		const dbDistillations = await PresetDbService.getAllDistillationsForPreset(presetKey)
+
+		if (dbDistillations.length === 0) {
+			return json([])
+		}
+
+		// Transform database distillations to version format
+		const versions = dbDistillations
+			.filter((d) => d.version !== 'latest') // Exclude 'latest' version from list
+			.map((dbDistillation) => transformDbDistillationToVersion(dbDistillation, presetKey))
+			.sort((a, b) => b.date.localeCompare(a.date)) // Sort newest first
+
+		return json(versions)
 	} catch (e) {
 		console.error('Database error reading distilled versions:', e)
 		throw error(500, 'Failed to retrieve distilled versions from database')

@@ -13,6 +13,18 @@ export interface DbPreset {
 	updated_at: Date
 }
 
+export interface DbDistillation {
+	id: number
+	preset_name: 'svelte-distilled' | 'sveltekit-distilled' | 'svelte-complete-distilled'
+	version: string // 'latest' or '2024-01-15'
+	content: string
+	content_hash: string
+	size_kb: number
+	document_count: number
+	distillation_job_id: number | null
+	created_at: Date
+}
+
 export interface DbDistillationJob {
 	id: number
 	preset_name: string
@@ -45,23 +57,6 @@ export interface DbDistillationResult {
 	created_at: Date
 }
 
-// View types
-export interface DistillationJobSummary {
-	id: number
-	status: 'pending' | 'processing' | 'completed' | 'failed'
-	model_used: string
-	total_files: number
-	processed_files: number
-	successful_files: number
-	started_at: Date | null
-	completed_at: Date | null
-	created_at: Date
-	preset_name: string
-	duration_seconds: number | null
-	successful_results: number
-	failed_results: number
-}
-
 // Input types for creating/updating records
 export interface CreatePresetInput {
 	preset_name: string
@@ -76,6 +71,16 @@ export interface UpdatePresetInput {
 	content_hash: string
 	size_kb: number
 	document_count: number
+}
+
+export interface CreateDistillationInput {
+	preset_name: 'svelte-distilled' | 'sveltekit-distilled' | 'svelte-complete-distilled'
+	version: string
+	content: string
+	content_hash: string
+	size_kb: number
+	document_count: number
+	distillation_job_id?: number
 }
 
 export interface CreateDistillationJobInput {

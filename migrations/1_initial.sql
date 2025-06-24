@@ -86,25 +86,26 @@ CREATE TRIGGER update_distillation_jobs_updated_at
   BEFORE UPDATE ON distillation_jobs
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
--- Create distillation job summary view
-CREATE OR REPLACE VIEW distillation_job_summary AS
-SELECT 
-  dj.id,
-  dj.status,
-  dj.model_used,
-  dj.total_files,
-  dj.processed_files,
-  dj.successful_files,
-  dj.started_at,
-  dj.completed_at,
-  dj.created_at,
-  dj.preset_name,
-  CASE 
-    WHEN dj.completed_at IS NOT NULL AND dj.started_at IS NOT NULL 
-    THEN EXTRACT(EPOCH FROM (dj.completed_at - dj.started_at))
-    ELSE NULL 
-  END AS duration_seconds,
-  (SELECT COUNT(*) FROM distillation_results WHERE job_id = dj.id AND success = TRUE) AS successful_results,
-  (SELECT COUNT(*) FROM distillation_results WHERE job_id = dj.id AND success = FALSE) AS failed_results
-FROM distillation_jobs dj
-ORDER BY dj.created_at DESC;
+-- Add versioning support for distilled presets
+
+-- Create distillations table for versioned distilled content
+CREATE TABLE IF NOT EXISTS distillations (
+  id SERIAL PRIMARY KEY,
+  preset_name VARCHAR(100) NOT NULL CHECK (preset_name IN ('svelte-distilled', 'sveltekit-distilled', 'svelte-complete-distilled')),
+  version VARCHAR(50) NOT NULL, -- 'latest' or date like '2024-01-15'
+  content TEXT NOT NULL,
+  content_hash VARCHAR(64) NOT NULL,
+  size_kb INTEGER NOT NULL,
+  document_count INTEGER DEFAULT 0,
+  distillation_job_id INTEGER REFERENCES distillation_jobs(id),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create indexes for efficient queries
+CREATE INDEX IF NOT EXISTS idx_distillations_preset_name ON distillations(preset_name);
+CREATE INDEX IF NOT EXISTS idx_distillations_version ON distillations(version);
+CREATE INDEX IF NOT EXISTS idx_distillations_preset_version ON distillations(preset_name, version);
+CREATE INDEX IF NOT EXISTS idx_distillations_job_id ON distillations(distillation_job_id);
+
+-- Add unique constraint for preset + version combination
+CREATE UNIQUE INDEX IF NOT EXISTS idx_distillations_unique ON distillations(preset_name, version);

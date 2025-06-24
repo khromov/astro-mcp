@@ -4,7 +4,7 @@ import { presets } from '$lib/presets'
 import { getPresetSizeKb, isPresetStale } from '$lib/presetCache'
 import { dev } from '$app/environment'
 import { fetchAndProcessMarkdownWithDb } from '$lib/fetchMarkdown'
-import { env } from '$env/dynamic/private'
+import { PresetDbService } from '$lib/server/presetDb'
 
 // Virtual distilled presets that aren't in the presets object
 const VIRTUAL_DISTILLED_PRESETS = ['svelte-distilled', 'sveltekit-distilled']
@@ -35,6 +35,7 @@ export const GET: RequestHandler = async ({ params }) => {
 	// Handle both regular presets and virtual distilled presets
 	const isVirtualPreset = VIRTUAL_DISTILLED_PRESETS.includes(presetKey)
 	const isRegularPreset = presetKey in presets
+	const isDistilledPreset = isVirtualPreset || presets[presetKey]?.distilled
 
 	// If it's neither a virtual nor a regular preset, it's invalid
 	if (!isVirtualPreset && !isRegularPreset) {
@@ -42,17 +43,29 @@ export const GET: RequestHandler = async ({ params }) => {
 	}
 
 	try {
-		// Get size from database
-		const sizeKb = await getPresetSizeKb(presetKey)
+		let sizeKb: number | null = null
+
+		if (isDistilledPreset) {
+			// Get size from distillations table
+			const distillation = await PresetDbService.getLatestDistillation(presetKey)
+			if (distillation) {
+				sizeKb = distillation.size_kb
+			}
+		} else {
+			// Get size from presets table
+			sizeKb = await getPresetSizeKb(presetKey)
+
+			if (sizeKb !== null) {
+				// Check if content is stale and trigger background update if needed
+				const isStale = await isPresetStale(presetKey)
+				if (isStale) {
+					if (dev) console.log(`Preset ${presetKey} is stale, triggering background update`)
+					triggerBackgroundUpdate(presetKey)
+				}
+			}
+		}
 
 		if (sizeKb !== null) {
-			// Check if content is stale and trigger background update if needed
-			const isStale = await isPresetStale(presetKey)
-			if (isStale && !presets[presetKey]?.distilled) {
-				if (dev) console.log(`Preset ${presetKey} is stale, triggering background update`)
-				triggerBackgroundUpdate(presetKey)
-			}
-
 			return new Response(JSON.stringify({ sizeKb }), {
 				headers: {
 					'Content-Type': 'application/json'

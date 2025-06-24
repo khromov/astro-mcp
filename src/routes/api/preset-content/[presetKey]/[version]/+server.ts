@@ -17,24 +17,25 @@ export const GET: RequestHandler = async ({ params }) => {
 		throw error(404, 'Preset not found')
 	}
 
-	// Since we no longer support versions, we only return content for 'latest'
-	if (version !== 'latest') {
-		throw error(404, 'Version not found - only "latest" is supported')
+	// Validate version format (should be date like 2024-01-15 or 'latest')
+	const isValidVersion = version === 'latest' || /^\d{4}-\d{2}-\d{2}$/.test(version)
+	if (!isValidVersion) {
+		throw error(400, 'Invalid version format')
 	}
 
 	try {
-		// Get content from database
-		const preset = await PresetDbService.getPresetByName(presetKey)
+		// Get content from distillations table
+		const dbDistillation = await PresetDbService.getDistillationByVersion(presetKey, version)
 
-		if (!preset || !preset.content) {
+		if (!dbDistillation || !dbDistillation.content) {
 			throw error(404, 'Content not found in database')
 		}
 
-		return new Response(preset.content, {
+		return new Response(dbDistillation.content, {
 			headers: {
 				'Content-Type': 'text/markdown; charset=utf-8',
 				'Cache-Control': 'public, max-age=3600', // Cache for 1 hour
-				'Content-Disposition': `inline; filename="${presetKey}-latest.md"`
+				'Content-Disposition': `inline; filename="${presetKey}-${version}.md"`
 			}
 		})
 	} catch (e) {

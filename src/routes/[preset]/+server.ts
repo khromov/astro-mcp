@@ -49,6 +49,9 @@ export const GET: RequestHandler = async ({ params, url }) => {
 	}
 
 	try {
+		// Determine which version of the distilled doc to use
+		const version = url.searchParams.get('version') || 'latest'
+
 		// Fetch all contents in parallel
 		const contentPromises = presetNames.map(async (presetKey) => {
 			if (dev) {
@@ -59,16 +62,16 @@ export const GET: RequestHandler = async ({ params, url }) => {
 
 			// Handle both regular distilled presets and virtual ones
 			if (presets[presetKey]?.distilled || VIRTUAL_DISTILLED_PRESETS.includes(presetKey)) {
-				// For distilled presets, fetch from database
-				const dbPreset = await PresetDbService.getPresetByName(presetKey)
+				// For distilled presets, fetch from distillations table
+				const dbDistillation = await PresetDbService.getDistillationByVersion(presetKey, version)
 
-				if (!dbPreset || !dbPreset.content) {
+				if (!dbDistillation || !dbDistillation.content) {
 					throw new Error(
-						`Failed to read distilled content for ${presetKey}. Make sure to run the distillation process first.`
+						`Failed to read distilled content for ${presetKey} version ${version}. Make sure to run the distillation process first.`
 					)
 				}
 
-				content = dbPreset.content
+				content = dbDistillation.content
 			} else {
 				// Regular preset processing with database caching
 				content = await getPresetContent(presetKey)
