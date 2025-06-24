@@ -302,26 +302,35 @@ export class PresetDbService {
 		updates: Partial<DbDistillationJob>
 	): Promise<DbDistillationJob> {
 		try {
-			const allowedFields = [
-				'batch_id',
-				'status',
-				'processed_files',
-				'successful_files',
-				'completed_at',
-				'error_message',
-				'metadata'
-			]
+			// Secure whitelist mapping - prevents SQL injection by using predefined column names
+			const allowedFieldsMap: Record<string, string> = {
+				batch_id: 'batch_id',
+				status: 'status', 
+				processed_files: 'processed_files',
+				successful_files: 'successful_files',
+				completed_at: 'completed_at',
+				error_message: 'error_message',
+				metadata: 'metadata'
+			}
 
-			const updateFields = []
-			const values = []
+			const updateFields: string[] = []
+			const values: any[] = []
 			let paramCount = 1
 
 			for (const [key, value] of Object.entries(updates)) {
-				if (allowedFields.includes(key)) {
-					updateFields.push(`${key} = $${paramCount}`)
+				// Strict validation: only allow fields that exist in our secure mapping
+				const columnName = allowedFieldsMap[key]
+				if (columnName) {
+					updateFields.push(`${columnName} = $${paramCount}`)
 					values.push(value)
 					paramCount++
+				} else {
+					throw new Error(`Invalid field for update: ${key}`)
 				}
+			}
+
+			if (updateFields.length === 0) {
+				throw new Error('No valid fields provided for update')
 			}
 
 			values.push(jobId)
@@ -330,6 +339,10 @@ export class PresetDbService {
 				`UPDATE distillation_jobs SET ${updateFields.join(', ')} WHERE id = $${paramCount} RETURNING *`,
 				values
 			)
+
+			if (result.rows.length === 0) {
+				throw new Error(`Distillation job with id ${jobId} not found`)
+			}
 
 			return result.rows[0] as DbDistillationJob
 		} catch (error) {
