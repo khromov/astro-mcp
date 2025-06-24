@@ -7,7 +7,6 @@ import { createGunzip } from 'zlib'
 import { minimatch } from 'minimatch'
 import { getPresetContent } from './presetCache'
 import { PresetDbService } from '$lib/server/presetDb'
-import type { CreatePresetInput } from '$lib/types/db'
 import { createHash } from 'crypto'
 
 function sortFilesWithinGroup(files: string[]): string[] {
@@ -31,38 +30,11 @@ function generateHash(content: string): string {
 	return createHash('sha256').update(content).digest('hex')
 }
 
-/**
- * Convert PresetConfig to CreatePresetInput for database
- */
-function presetConfigToDbInput(config: PresetConfig, key: string): CreatePresetInput {
-	return {
-		key,
-		title: config.title,
-		description: config.description,
-		owner: config.owner,
-		repo: config.repo,
-		glob: config.glob,
-		ignore_patterns: config.ignore,
-		prompt: config.prompt,
-		minimize_options: config.minimize,
-		is_distilled: config.distilled,
-		distilled_filename_base: config.distilledFilenameBase
-	}
-}
-
 export async function fetchAndProcessMarkdownWithDb(
 	preset: PresetConfig,
 	presetKey: string
 ): Promise<string> {
 	try {
-		// Sync preset configuration to database
-		const presetInput = presetConfigToDbInput(preset, presetKey)
-		const dbPreset = await PresetDbService.syncPreset(presetInput)
-
-		if (dev) {
-			console.log(`Synced preset ${presetKey} to database (ID: ${dbPreset.id})`)
-		}
-
 		// Check database cache first
 		const cachedContent = await getPresetContent(presetKey)
 
@@ -70,9 +42,6 @@ export async function fetchAndProcessMarkdownWithDb(
 			if (dev) {
 				console.log(`Using cached content for ${presetKey} from database`)
 			}
-
-			// Update cache stats (cache hit)
-			await PresetDbService.updateCacheStats(dbPreset.id, true)
 			return cachedContent
 		}
 
@@ -92,51 +61,26 @@ export async function fetchAndProcessMarkdownWithDb(
 		const content = sortedFiles.join('\n\n')
 
 		try {
-			// Sync documents
-			await PresetDbService.syncDocuments(dbPreset.id, filesWithPaths)
-
-			// Create preset version
+			// Store preset content in database
 			const contentHash = generateHash(content)
 			const sizeKb = Math.floor(new TextEncoder().encode(content).length / 1024)
-			const today = new Date()
-			const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(
-				today.getDate()
-			).padStart(2, '0')}`
 
-			// Create both latest and dated versions
-			await PresetDbService.createPresetVersion({
-				preset_id: dbPreset.id,
-				version: 'latest',
+			await PresetDbService.upsertPreset({
+				preset_name: presetKey,
 				content,
 				content_hash: contentHash,
 				size_kb: sizeKb,
-				is_latest: true,
-				document_count: filesWithPaths.length,
-				generated_at: new Date()
+				document_count: filesWithPaths.length
 			})
-
-			await PresetDbService.createPresetVersion({
-				preset_id: dbPreset.id,
-				version: dateStr,
-				content,
-				content_hash: contentHash,
-				size_kb: sizeKb,
-				is_latest: false,
-				document_count: filesWithPaths.length,
-				generated_at: new Date()
-			})
-
-			// Update cache stats (cache miss)
-			await PresetDbService.updateCacheStats(dbPreset.id, false)
 
 			if (dev) {
 				console.log(
-					`Stored ${filesWithPaths.length} documents and created version for preset ${presetKey}`
+					`Stored content for preset ${presetKey} (${sizeKb}KB, ${filesWithPaths.length} files)`
 				)
 			}
 		} catch (dbError) {
 			console.error(`Failed to store data in database for preset ${presetKey}:`, dbError)
-			throw dbError
+			// Don't throw the error - return the content even if DB storage fails
 		}
 
 		return content

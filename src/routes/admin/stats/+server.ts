@@ -18,8 +18,8 @@ export const GET: RequestHandler = async ({ url }) => {
 	}
 
 	try {
-		// Get all preset summaries
-		const presetSummaries = await PresetDbService.getAllPresetSummaries()
+		// Get all presets
+		const presets = await PresetDbService.getAllPresets()
 
 		// Get recent distillation jobs
 		const distillationJobs = await query(
@@ -32,52 +32,34 @@ export const GET: RequestHandler = async ({ url }) => {
 		const stats = await query(
 			`SELECT 
 				(SELECT COUNT(*) FROM presets) as total_presets,
-				(SELECT COUNT(*) FROM documents) as total_documents,
-				(SELECT COUNT(*) FROM preset_versions) as total_versions,
 				(SELECT COUNT(*) FROM distillation_jobs) as total_distillation_jobs,
 				(SELECT COUNT(*) FROM distillation_jobs WHERE status = 'completed') as completed_distillations,
-				(SELECT SUM(cache_hits) FROM cache_stats) as total_cache_hits,
-				(SELECT SUM(cache_misses) FROM cache_stats) as total_cache_misses,
-				(SELECT SUM(file_size_bytes) FROM documents) as total_bytes_stored`
+				(SELECT SUM(size_kb) FROM presets) as total_kb_stored`
 		)
 
-		// Get preset-specific statistics
+		// Get preset-specific statistics with distillation info
 		const presetStats = await query(
 			`SELECT 
-				p.key,
-				p.title,
-				p.is_distilled,
-				COUNT(DISTINCT d.id) as document_count,
-				COUNT(DISTINCT pv.id) as version_count,
-				MAX(pv.generated_at) as last_generated,
-				SUM(d.file_size_bytes) as total_bytes,
-				cs.cache_hits,
-				cs.cache_misses,
-				cs.last_accessed_at
+				p.preset_name,
+				p.size_kb,
+				p.document_count,
+				p.updated_at,
+				(SELECT COUNT(*) FROM distillation_jobs WHERE preset_name = p.preset_name) as distillation_count,
+				(SELECT MAX(created_at) FROM distillation_jobs WHERE preset_name = p.preset_name) as last_distillation
 			FROM presets p
-			LEFT JOIN documents d ON p.id = d.preset_id
-			LEFT JOIN preset_versions pv ON p.id = pv.preset_id
-			LEFT JOIN cache_stats cs ON p.id = cs.preset_id
-			GROUP BY p.id, p.key, p.title, p.is_distilled, cs.cache_hits, cs.cache_misses, cs.last_accessed_at
-			ORDER BY p.key`
+			ORDER BY p.preset_name`
 		)
 
 		return json({
 			success: true,
 			summary: {
 				total_presets: parseInt(stats?.rows[0]?.total_presets || '0'),
-				total_documents: parseInt(stats?.rows[0]?.total_documents || '0'),
-				total_versions: parseInt(stats?.rows[0]?.total_versions || '0'),
 				total_distillation_jobs: parseInt(stats?.rows[0]?.total_distillation_jobs || '0'),
 				completed_distillations: parseInt(stats?.rows[0]?.completed_distillations || '0'),
-				total_cache_hits: parseInt(stats?.rows[0]?.total_cache_hits || '0'),
-				total_cache_misses: parseInt(stats?.rows[0]?.total_cache_misses || '0'),
-				total_bytes_stored: parseInt(stats?.rows[0]?.total_bytes_stored || '0'),
-				total_mb_stored: Math.round(
-					parseInt(stats?.rows[0]?.total_bytes_stored || '0') / 1024 / 1024
-				)
+				total_kb_stored: parseInt(stats?.rows[0]?.total_kb_stored || '0'),
+				total_mb_stored: Math.round(parseInt(stats?.rows[0]?.total_kb_stored || '0') / 1024)
 			},
-			presets: presetSummaries,
+			presets: presets,
 			preset_details: presetStats?.rows || [],
 			recent_distillation_jobs: distillationJobs?.rows || []
 		})

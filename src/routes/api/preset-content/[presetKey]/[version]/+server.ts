@@ -1,7 +1,6 @@
 import { error } from '@sveltejs/kit'
 import type { RequestHandler } from './$types'
 import { PresetDbService } from '$lib/server/presetDb'
-import { env } from '$env/dynamic/private'
 
 // Valid basenames for distilled content
 const VALID_DISTILLED_BASENAMES = [
@@ -18,25 +17,24 @@ export const GET: RequestHandler = async ({ params }) => {
 		throw error(404, 'Preset not found')
 	}
 
-	// Validate version format (should be date like 2024-01-15 or 'latest')
-	const isValidVersion = version === 'latest' || /^\d{4}-\d{2}-\d{2}$/.test(version)
-	if (!isValidVersion) {
-		throw error(400, 'Invalid version format')
+	// Since we no longer support versions, we only return content for 'latest'
+	if (version !== 'latest') {
+		throw error(404, 'Version not found - only "latest" is supported')
 	}
 
 	try {
 		// Get content from database
-		const dbVersion = await PresetDbService.getPresetVersion(presetKey, version)
+		const preset = await PresetDbService.getPresetByName(presetKey)
 
-		if (!dbVersion || !dbVersion.content) {
+		if (!preset || !preset.content) {
 			throw error(404, 'Content not found in database')
 		}
 
-		return new Response(dbVersion.content, {
+		return new Response(preset.content, {
 			headers: {
 				'Content-Type': 'text/markdown; charset=utf-8',
 				'Cache-Control': 'public, max-age=3600', // Cache for 1 hour
-				'Content-Disposition': `inline; filename="${presetKey}-${version}.md"`
+				'Content-Disposition': `inline; filename="${presetKey}-latest.md"`
 			}
 		})
 	} catch (e) {

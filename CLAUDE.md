@@ -35,7 +35,7 @@ This is a SvelteKit application that provides Svelte 5 and SvelteKit documentati
 
 - **Documentation Transformation**: Fetches markdown files from GitHub repositories and processes them into LLM-optimized formats
 - **Preset System**: Configurable documentation bundles defined in `src/lib/presets.ts` with different sizes and content filters
-- **Database Storage**: PostgreSQL database for storing processed documentation, versions, and caching metadata
+- **Database Storage**: PostgreSQL database for storing processed documentation and caching
 - **Distilled Content**: AI-processed versions of documentation stored in the database
 
 ### Key Routes
@@ -58,12 +58,9 @@ This is a SvelteKit application that provides Svelte 5 and SvelteKit documentati
 
 The application uses PostgreSQL with the following main tables:
 
-- `presets` - Stores preset configurations
-- `documents` - Individual documentation files
-- `preset_versions` - Different versions of processed documentation
+- `presets` - Stores preset content and metadata
 - `distillation_jobs` - Tracks AI distillation processes
 - `distillation_results` - Results from AI processing
-- `cache_stats` - Cache performance metrics
 
 ### Environment Setup
 

@@ -1,21 +1,20 @@
 #!/usr/bin/env node
 
 /**
- * Script to sync all existing presets to the database
+ * Script to sync all existing presets to the simplified database
  * Run with: npx tsx scripts/sync-presets-to-db.ts
  */
 
 import { presets } from '../src/lib/presets'
 import { PresetDbService } from '../src/lib/server/presetDb'
 import { disconnect } from '../src/lib/server/db'
-import type { CreatePresetInput } from '../src/lib/types/db'
 import { config } from 'dotenv'
 
 // Load environment variables
 config()
 
 async function syncPresetsToDatabase() {
-	console.log('🚀 Starting preset synchronization to database...')
+	console.log('🚀 Starting preset synchronization to simplified database...')
 
 	try {
 		let successCount = 0
@@ -26,65 +25,63 @@ async function syncPresetsToDatabase() {
 			try {
 				console.log(`\n📦 Processing preset: ${key}`)
 
-				// Convert to database input format
-				const presetInput: CreatePresetInput = {
-					key,
-					title: preset.title,
-					description: preset.description,
-					owner: preset.owner,
-					repo: preset.repo,
-					glob: preset.glob,
-					ignore_patterns: preset.ignore,
-					prompt: preset.prompt,
-					minimize_options: preset.minimize,
-					is_distilled: preset.distilled,
-					distilled_filename_base: preset.distilledFilenameBase
+				// For non-distilled presets, we'll need to fetch and store the content
+				if (!preset.distilled) {
+					console.log(
+						`   ⚠️  Preset ${key} is not distilled and will need to be fetched on first request`
+					)
+					console.log(`   💡 Skipping for now - content will be generated on first access`)
+					continue
 				}
 
-				// Sync to database
-				const dbPreset = await PresetDbService.syncPreset(presetInput)
-				console.log(`✅ Successfully synced preset: ${key} (ID: ${dbPreset.id})`)
-				successCount++
-
-				// Optional: Fetch and sync documents for non-distilled presets
-				if (!preset.distilled) {
-					console.log(`   Fetching documents for ${key}...`)
-					try {
-						// Import the fetch function dynamically to avoid circular dependencies
-						const { fetchMarkdownFiles } = await import('../src/lib/fetchMarkdownWithDb')
-						const filesWithPaths = (await fetchMarkdownFiles(preset, true)) as Array<{
-							path: string
-							content: string
-						}>
-
-						if (filesWithPaths.length > 0) {
-							await PresetDbService.syncDocuments(dbPreset.id, filesWithPaths)
-							console.log(`   📄 Synced ${filesWithPaths.length} documents`)
-						}
-					} catch (fetchError) {
-						console.error(
-							`   ⚠️  Failed to fetch documents: ${fetchError instanceof Error ? fetchError.message : String(fetchError)}`
-						)
-					}
+				// For distilled presets, check if content exists
+				const existingPreset = await PresetDbService.getPresetByName(key)
+				if (existingPreset) {
+					console.log(`   ✅ Distilled preset ${key} already exists in database`)
+					successCount++
+				} else {
+					console.log(
+						`   ℹ️  Distilled preset ${key} not found - run distillation process to generate`
+					)
 				}
 			} catch (error) {
-				console.error(`❌ Failed to sync preset ${key}:`, error)
+				console.error(`❌ Failed to check preset ${key}:`, error)
 				errorCount++
 			}
 		}
 
+		// Also check for virtual distilled presets
+		const virtualPresets = ['svelte-distilled', 'sveltekit-distilled']
+		for (const presetKey of virtualPresets) {
+			const existingPreset = await PresetDbService.getPresetByName(presetKey)
+			if (existingPreset) {
+				console.log(`   ✅ Virtual distilled preset ${presetKey} exists in database`)
+				successCount++
+			} else {
+				console.log(
+					`   ℹ️  Virtual distilled preset ${presetKey} not found - run distillation process to generate`
+				)
+			}
+		}
+
 		console.log('\n📊 Synchronization Summary:')
-		console.log(`   ✅ Successful: ${successCount}`)
+		console.log(`   ✅ Found: ${successCount}`)
 		console.log(`   ❌ Failed: ${errorCount}`)
-		console.log(`   📦 Total: ${Object.keys(presets).length}`)
+		console.log(`   📦 Total presets in code: ${Object.keys(presets).length}`)
 
 		// Get and display overall statistics
 		try {
-			const summaries = await PresetDbService.getAllPresetSummaries()
+			const allPresets = await PresetDbService.getAllPresets()
 			console.log('\n📈 Database Statistics:')
-			console.log(`   Total presets: ${summaries.length}`)
-			console.log(`   Distilled presets: ${summaries.filter((s) => s.is_distilled).length}`)
-			console.log(`   Regular presets: ${summaries.filter((s) => !s.is_distilled).length}`)
+			console.log(`   Total presets in DB: ${allPresets.length}`)
+			console.log(`   Total KB stored: ${allPresets.reduce((sum, p) => sum + p.size_kb, 0)}`)
+
+			console.log('\n📋 Presets in database:')
+			for (const preset of allPresets) {
+				console.log(
+					`   - ${preset.preset_name} (${preset.size_kb}KB, ${preset.document_count} docs, updated: ${preset.updated_at})`
+				)
+			}
 		} catch (statsError) {
 			console.error('Failed to fetch statistics:', statsError)
 		}
@@ -101,7 +98,7 @@ async function syncPresetsToDatabase() {
 // Run the sync
 syncPresetsToDatabase()
 	.then(() => {
-		console.log('\n🎉 Preset synchronization completed!')
+		console.log('\n🎉 Preset synchronization check completed!')
 		process.exit(0)
 	})
 	.catch((error) => {

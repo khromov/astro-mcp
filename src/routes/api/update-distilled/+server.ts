@@ -6,8 +6,7 @@ import { fetchMarkdownFiles, minimizeContent } from '$lib/fetchMarkdown'
 import type { RequestHandler } from './$types'
 import { AnthropicProvider, type AnthropicBatchRequest } from '$lib/anthropic'
 import { PresetDbService } from '$lib/server/presetDb'
-import { createHash } from 'crypto'
-import type { DbPreset, DbDistillationJob } from '$lib/types/db'
+import type { DbDistillationJob } from '$lib/types/db'
 
 const DISTILLATION_PROMPT = `
 You are an expert in web development, specifically Svelte 5 and SvelteKit. Your task is to condense and distill the Svelte documentation into a concise format while preserving the most important information.
@@ -50,10 +49,6 @@ Here is the documentation you must condense:
 const SVELTE_DISTILLED_BASENAME = 'svelte-distilled'
 const SVELTEKIT_DISTILLED_BASENAME = 'sveltekit-distilled'
 
-function generateHash(content: string): string {
-	return createHash('sha256').update(content).digest('hex')
-}
-
 export const GET: RequestHandler = async ({ url }) => {
 	// Check secret key
 	const secretKey = url.searchParams.get('secret_key')
@@ -76,30 +71,9 @@ export const GET: RequestHandler = async ({ url }) => {
 		throw error(500, 'No distilled preset found')
 	}
 
-	let dbPreset: DbPreset | null = null
 	let distillationJob: DbDistillationJob | null = null
 
 	try {
-		// Get the preset from database
-		dbPreset = await PresetDbService.getPresetByKey('svelte-complete-distilled')
-		if (!dbPreset) {
-			// Sync preset if it doesn't exist
-			const presetInput = {
-				key: 'svelte-complete-distilled',
-				title: distilledPreset.title,
-				description: distilledPreset.description,
-				owner: distilledPreset.owner,
-				repo: distilledPreset.repo,
-				glob: distilledPreset.glob,
-				ignore_patterns: distilledPreset.ignore,
-				prompt: distilledPreset.prompt,
-				minimize_options: distilledPreset.minimize,
-				is_distilled: true,
-				distilled_filename_base: distilledPreset.distilledFilenameBase
-			}
-			dbPreset = await PresetDbService.syncPreset(presetInput)
-		}
-
 		// Fetch all markdown files for the preset with their file paths
 		const filesWithPaths = await fetchMarkdownFiles(distilledPreset, true)
 
@@ -155,7 +129,7 @@ export const GET: RequestHandler = async ({ url }) => {
 
 		// Create distillation job in database
 		distillationJob = await PresetDbService.createDistillationJob({
-			preset_id: dbPreset.id,
+			preset_name: 'svelte-complete-distilled',
 			status: 'pending',
 			model_used: anthropic.getModelIdentifier(),
 			total_files: filesToProcess.length,
@@ -310,7 +284,7 @@ export const GET: RequestHandler = async ({ url }) => {
 
 		// Add prompt if it exists
 		const prompt = distilledPreset.prompt
-			? `\n\nInstructions for LLMs: <SYSTEM>${distilledPreset.prompt}</SYSTEM>`
+			? `\n\nInstructions for LLMs: <s>${distilledPreset.prompt}</s>`
 			: ''
 
 		// Finalize content with prompts
@@ -318,96 +292,34 @@ export const GET: RequestHandler = async ({ url }) => {
 		const finalSvelteContent = svelteContent + prompt
 		const finalSvelteKitContent = svelteKitContent + prompt
 
-		// Generate date string for versioning
-		const today = new Date()
-		const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(
-			today.getDate()
-		).padStart(2, '0')}`
-
-		// Store all versions in database
+		// Store all presets in database
 		try {
 			// Store combined version
-			await PresetDbService.createPresetVersion({
-				preset_id: dbPreset.id,
-				version: 'latest',
+			await PresetDbService.upsertPreset({
+				preset_name: 'svelte-complete-distilled',
 				content: finalContent,
-				content_hash: generateHash(finalContent),
+				content_hash: PresetDbService.generateHash(finalContent),
 				size_kb: Math.floor(new TextEncoder().encode(finalContent).length / 1024),
-				is_latest: true,
-				document_count: successfulResults.length,
-				metadata: {
-					svelteResults: svelteResults.length,
-					svelteKitResults: svelteKitResults.length
-				},
-				generated_at: new Date()
-			})
-
-			await PresetDbService.createPresetVersion({
-				preset_id: dbPreset.id,
-				version: dateStr,
-				content: finalContent,
-				content_hash: generateHash(finalContent),
-				size_kb: Math.floor(new TextEncoder().encode(finalContent).length / 1024),
-				is_latest: false,
-				document_count: successfulResults.length,
-				metadata: {
-					svelteResults: svelteResults.length,
-					svelteKitResults: svelteKitResults.length
-				},
-				generated_at: new Date()
+				document_count: successfulResults.length
 			})
 
 			// Store Svelte-only version
-			const sveltePreset = await PresetDbService.getPresetByKey(SVELTE_DISTILLED_BASENAME)
-			if (sveltePreset) {
-				await PresetDbService.createPresetVersion({
-					preset_id: sveltePreset.id,
-					version: 'latest',
-					content: finalSvelteContent,
-					content_hash: generateHash(finalSvelteContent),
-					size_kb: Math.floor(new TextEncoder().encode(finalSvelteContent).length / 1024),
-					is_latest: true,
-					document_count: svelteResults.length,
-					generated_at: new Date()
-				})
-
-				await PresetDbService.createPresetVersion({
-					preset_id: sveltePreset.id,
-					version: dateStr,
-					content: finalSvelteContent,
-					content_hash: generateHash(finalSvelteContent),
-					size_kb: Math.floor(new TextEncoder().encode(finalSvelteContent).length / 1024),
-					is_latest: false,
-					document_count: svelteResults.length,
-					generated_at: new Date()
-				})
-			}
+			await PresetDbService.upsertPreset({
+				preset_name: SVELTE_DISTILLED_BASENAME,
+				content: finalSvelteContent,
+				content_hash: PresetDbService.generateHash(finalSvelteContent),
+				size_kb: Math.floor(new TextEncoder().encode(finalSvelteContent).length / 1024),
+				document_count: svelteResults.length
+			})
 
 			// Store SvelteKit-only version
-			const svelteKitPreset = await PresetDbService.getPresetByKey(SVELTEKIT_DISTILLED_BASENAME)
-			if (svelteKitPreset) {
-				await PresetDbService.createPresetVersion({
-					preset_id: svelteKitPreset.id,
-					version: 'latest',
-					content: finalSvelteKitContent,
-					content_hash: generateHash(finalSvelteKitContent),
-					size_kb: Math.floor(new TextEncoder().encode(finalSvelteKitContent).length / 1024),
-					is_latest: true,
-					document_count: svelteKitResults.length,
-					generated_at: new Date()
-				})
-
-				await PresetDbService.createPresetVersion({
-					preset_id: svelteKitPreset.id,
-					version: dateStr,
-					content: finalSvelteKitContent,
-					content_hash: generateHash(finalSvelteKitContent),
-					size_kb: Math.floor(new TextEncoder().encode(finalSvelteKitContent).length / 1024),
-					is_latest: false,
-					document_count: svelteKitResults.length,
-					generated_at: new Date()
-				})
-			}
+			await PresetDbService.upsertPreset({
+				preset_name: SVELTEKIT_DISTILLED_BASENAME,
+				content: finalSvelteKitContent,
+				content_hash: PresetDbService.generateHash(finalSvelteKitContent),
+				size_kb: Math.floor(new TextEncoder().encode(finalSvelteKitContent).length / 1024),
+				document_count: svelteKitResults.length
+			})
 
 			// Update distillation job as completed
 			await PresetDbService.updateDistillationJob(distillationJob.id, {
@@ -417,7 +329,7 @@ export const GET: RequestHandler = async ({ url }) => {
 				completed_at: new Date()
 			})
 		} catch (dbError) {
-			console.error('Failed to store versions in database:', dbError)
+			console.error('Failed to store presets in database:', dbError)
 		}
 
 		return json({
