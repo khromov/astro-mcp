@@ -7,7 +7,6 @@ import { createGunzip } from 'zlib'
 import { minimatch } from 'minimatch'
 import { getPresetContent } from './presetCache'
 import { PresetDbService } from '$lib/server/presetDb'
-import { createHash } from 'crypto'
 
 function sortFilesWithinGroup(files: string[]): string[] {
 	return files.sort((a, b) => {
@@ -21,13 +20,6 @@ function sortFilesWithinGroup(files: string[]): string[] {
 		// If not parent/child relationship, sort by path
 		return aPath.localeCompare(bPath)
 	})
-}
-
-/**
- * Generate SHA256 hash of content
- */
-function generateHash(content: string): string {
-	return createHash('sha256').update(content).digest('hex')
 }
 
 export async function fetchAndProcessMarkdownWithDb(
@@ -62,13 +54,11 @@ export async function fetchAndProcessMarkdownWithDb(
 
 		try {
 			// Store preset content in database
-			const contentHash = generateHash(content)
 			const sizeKb = Math.floor(new TextEncoder().encode(content).length / 1024)
 
 			await PresetDbService.upsertPreset({
 				preset_name: presetKey,
 				content,
-				content_hash: contentHash,
 				size_kb: sizeKb,
 				document_count: filesWithPaths.length
 			})

@@ -10,17 +10,9 @@ import type {
 	CreateDistillationJobInput,
 	CreateDistillationResultInput
 } from '$lib/types/db'
-import { createHash } from 'crypto'
 import { dev } from '$app/environment'
 
 export class PresetDbService {
-	/**
-	 * Generate SHA256 hash of content
-	 */
-	static generateHash(content: string): string {
-		return createHash('sha256').update(content).digest('hex')
-	}
-
 	/**
 	 * Create or update preset content
 	 */
@@ -36,19 +28,12 @@ export class PresetDbService {
 				const updateResult = await query(
 					`UPDATE presets SET 
 						content = $2,
-						content_hash = $3,
-						size_kb = $4,
-						document_count = $5,
+						size_kb = $3,
+						document_count = $4,
 						updated_at = CURRENT_TIMESTAMP
 					WHERE preset_name = $1
 					RETURNING *`,
-					[
-						input.preset_name,
-						input.content,
-						input.content_hash,
-						input.size_kb,
-						input.document_count
-					]
+					[input.preset_name, input.content, input.size_kb, input.document_count]
 				)
 
 				if (dev) {
@@ -60,16 +45,10 @@ export class PresetDbService {
 				// Insert new preset
 				const insertResult = await query(
 					`INSERT INTO presets (
-						preset_name, content, content_hash, size_kb, document_count
-					) VALUES ($1, $2, $3, $4, $5)
+						preset_name, content, size_kb, document_count
+					) VALUES ($1, $2, $3, $4)
 					RETURNING *`,
-					[
-						input.preset_name,
-						input.content,
-						input.content_hash,
-						input.size_kb,
-						input.document_count
-					]
+					[input.preset_name, input.content, input.size_kb, input.document_count]
 				)
 
 				if (dev) {
@@ -149,17 +128,15 @@ export class PresetDbService {
 				const updateResult = await query(
 					`UPDATE distillations SET 
 						content = $3,
-						content_hash = $4,
-						size_kb = $5,
-						document_count = $6,
-						distillation_job_id = $7
+						size_kb = $4,
+						document_count = $5,
+						distillation_job_id = $6
 					WHERE preset_name = $1 AND version = $2
 					RETURNING *`,
 					[
 						input.preset_name,
 						input.version,
 						input.content,
-						input.content_hash,
 						input.size_kb,
 						input.document_count,
 						input.distillation_job_id || null
@@ -175,14 +152,13 @@ export class PresetDbService {
 				// Insert new version
 				const insertResult = await query(
 					`INSERT INTO distillations (
-						preset_name, version, content, content_hash, size_kb, document_count, distillation_job_id
-					) VALUES ($1, $2, $3, $4, $5, $6, $7)
+						preset_name, version, content, size_kb, document_count, distillation_job_id
+					) VALUES ($1, $2, $3, $4, $5, $6)
 					RETURNING *`,
 					[
 						input.preset_name,
 						input.version,
 						input.content,
-						input.content_hash,
 						input.size_kb,
 						input.document_count,
 						input.distillation_job_id || null
@@ -305,7 +281,7 @@ export class PresetDbService {
 			// Secure whitelist mapping - prevents SQL injection by using predefined column names
 			const allowedFieldsMap: Record<string, string> = {
 				batch_id: 'batch_id',
-				status: 'status', 
+				status: 'status',
 				processed_files: 'processed_files',
 				successful_files: 'successful_files',
 				completed_at: 'completed_at',

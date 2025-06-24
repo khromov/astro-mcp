@@ -310,7 +310,6 @@ export const GET: RequestHandler = async ({ url }) => {
 				preset_name: 'svelte-complete-distilled',
 				version: 'latest',
 				content: finalContent,
-				content_hash: PresetDbService.generateHash(finalContent),
 				size_kb: Math.floor(new TextEncoder().encode(finalContent).length / 1024),
 				document_count: successfulResults.length,
 				distillation_job_id: distillationJob?.id
@@ -320,7 +319,6 @@ export const GET: RequestHandler = async ({ url }) => {
 				preset_name: 'svelte-complete-distilled',
 				version: dateStr,
 				content: finalContent,
-				content_hash: PresetDbService.generateHash(finalContent),
 				size_kb: Math.floor(new TextEncoder().encode(finalContent).length / 1024),
 				document_count: successfulResults.length,
 				distillation_job_id: distillationJob?.id
@@ -331,7 +329,6 @@ export const GET: RequestHandler = async ({ url }) => {
 				preset_name: SVELTE_DISTILLED_BASENAME as any,
 				version: 'latest',
 				content: finalSvelteContent,
-				content_hash: PresetDbService.generateHash(finalSvelteContent),
 				size_kb: Math.floor(new TextEncoder().encode(finalSvelteContent).length / 1024),
 				document_count: svelteResults.length,
 				distillation_job_id: distillationJob?.id
@@ -341,7 +338,6 @@ export const GET: RequestHandler = async ({ url }) => {
 				preset_name: SVELTE_DISTILLED_BASENAME as any,
 				version: dateStr,
 				content: finalSvelteContent,
-				content_hash: PresetDbService.generateHash(finalSvelteContent),
 				size_kb: Math.floor(new TextEncoder().encode(finalSvelteContent).length / 1024),
 				document_count: svelteResults.length,
 				distillation_job_id: distillationJob?.id
@@ -352,7 +348,6 @@ export const GET: RequestHandler = async ({ url }) => {
 				preset_name: SVELTEKIT_DISTILLED_BASENAME as any,
 				version: 'latest',
 				content: finalSvelteKitContent,
-				content_hash: PresetDbService.generateHash(finalSvelteKitContent),
 				size_kb: Math.floor(new TextEncoder().encode(finalSvelteKitContent).length / 1024),
 				document_count: svelteKitResults.length,
 				distillation_job_id: distillationJob?.id
@@ -362,7 +357,6 @@ export const GET: RequestHandler = async ({ url }) => {
 				preset_name: SVELTEKIT_DISTILLED_BASENAME as any,
 				version: dateStr,
 				content: finalSvelteKitContent,
-				content_hash: PresetDbService.generateHash(finalSvelteKitContent),
 				size_kb: Math.floor(new TextEncoder().encode(finalSvelteKitContent).length / 1024),
 				document_count: svelteKitResults.length,
 				distillation_job_id: distillationJob?.id

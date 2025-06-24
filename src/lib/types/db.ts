@@ -7,7 +7,6 @@ export interface DbPreset {
 	id: number
 	preset_name: string
 	content: string
-	content_hash: string
 	size_kb: number
 	document_count: number
 	updated_at: Date
@@ -18,7 +17,6 @@ export interface DbDistillation {
 	preset_name: 'svelte-distilled' | 'sveltekit-distilled' | 'svelte-complete-distilled'
 	version: string // 'latest' or '2024-01-15'
 	content: string
-	content_hash: string
 	size_kb: number
 	document_count: number
 	distillation_job_id: number | null
@@ -61,14 +59,12 @@ export interface DbDistillationResult {
 export interface CreatePresetInput {
 	preset_name: string
 	content: string
-	content_hash: string
 	size_kb: number
 	document_count: number
 }
 
 export interface UpdatePresetInput {
 	content: string
-	content_hash: string
 	size_kb: number
 	document_count: number
 }
@@ -77,7 +73,6 @@ export interface CreateDistillationInput {
 	preset_name: 'svelte-distilled' | 'sveltekit-distilled' | 'svelte-complete-distilled'
 	version: string
 	content: string
-	content_hash: string
 	size_kb: number
 	document_count: number
 	distillation_job_id?: number
