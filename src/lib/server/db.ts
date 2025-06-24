@@ -23,8 +23,12 @@ export async function query(
 	incomingQuery: string,
 	params: any[] = [],
 	config: QueryConfig = {}
-): Promise<QueryResult | null> {
-	maybeInitializePool()
+): Promise<QueryResult> {
+	const pool = maybeInitializePool()
+
+	if (!pool) {
+		throw new Error('Database connection pool is not initialized')
+	}
 
 	const timingStart = new Date()
 
@@ -34,8 +38,9 @@ export async function query(
 		console.info('📊 Data: ', params)
 	}
 
-	if (pool) {
+	try {
 		const results = await pool.query(incomingQuery, params)
+
 		if (config.debug === true || env?.DB_DEBUG === 'true') {
 			console.info(
 				'⏰ Postgres query execution time: %dms',
@@ -45,8 +50,16 @@ export async function query(
 		}
 
 		return results
-	} else {
-		return null
+	} catch (error) {
+		// Log the error for debugging
+		console.error('Database query error:', {
+			query: incomingQuery,
+			params,
+			error: error instanceof Error ? error.message : String(error)
+		})
+
+		// Re-throw the error to let it bubble up
+		throw error
 	}
 }
 

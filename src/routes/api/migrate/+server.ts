@@ -14,9 +14,14 @@ export const GET: RequestHandler = async () => {
 	const messages: string[] = []
 	const errors: string[] = []
 
-	const client = maybeInitializePool()
-
 	try {
+		// Initialize the database pool - this will now throw if it fails
+		const client = maybeInitializePool()
+
+		if (!client) {
+			throw new Error('Failed to initialize database connection pool')
+		}
+
 		const migrationsPath = dev
 			? `${__dirname}/../../../../migrations`
 			: `${__dirname}/../../migrations`
@@ -26,12 +31,25 @@ export const GET: RequestHandler = async () => {
 		migrations.forEach((migration) => messages.push(`✅ ${migration.fileName}`))
 		messages.push('🏁 Migrations completed')
 	} catch (e) {
-		logWarningAlways(e)
-		errors.push(e?.message || 'Unknown')
+		logWarningAlways('Migration error:', e)
+
+		const errorMessage = e instanceof Error ? e.message : 'Unknown error occurred'
+		errors.push(errorMessage)
+
+		// Add more helpful error messages for common issues
+		if (errorMessage.includes('connection') || errorMessage.includes('pool')) {
+			errors.push('Please check your database connection settings in DB_URL environment variable')
+		}
 	}
 
-	return json({
-		messages,
-		errors
-	})
+	// Return appropriate status code based on success/failure
+	const status = errors.length > 0 ? 500 : 200
+
+	return json(
+		{
+			messages,
+			errors
+		},
+		{ status }
+	)
 }
