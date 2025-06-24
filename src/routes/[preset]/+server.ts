@@ -6,9 +6,8 @@ import { error } from '@sveltejs/kit'
 import { presets } from '$lib/presets'
 import { dev } from '$app/environment'
 import { fetchAndProcessMarkdownWithDb } from '$lib/fetchMarkdown'
-import { readFile } from 'fs/promises'
 import { getPresetContent, isPresetStale } from '$lib/presetCache'
-import { env } from '$env/dynamic/private'
+import { PresetDbService } from '$lib/server/presetDb'
 
 // Valid virtual presets that aren't in the presets object
 const VIRTUAL_DISTILLED_PRESETS = ['svelte-distilled', 'sveltekit-distilled']
@@ -51,7 +50,7 @@ export const GET: RequestHandler = async ({ params, url }) => {
 
 	try {
 		// Determine which version of the distilled doc to use
-		const version = url.searchParams.get('version')
+		const version = url.searchParams.get('version') || 'latest'
 
 		// Fetch all contents in parallel
 		const contentPromises = presetNames.map(async (presetKey) => {
@@ -63,27 +62,18 @@ export const GET: RequestHandler = async ({ params, url }) => {
 
 			// Handle both regular distilled presets and virtual ones
 			if (presets[presetKey]?.distilled || VIRTUAL_DISTILLED_PRESETS.includes(presetKey)) {
-				// For virtual presets, use their basename directly
-				const baseFilename = presets[presetKey]?.distilledFilenameBase || presetKey
-				let filename
+				// For distilled presets, fetch from database
+				const dbVersion = await PresetDbService.getPresetVersion(presetKey, version)
 
-				if (version) {
-					// Use specific version if provided
-					filename = `outputs/${baseFilename}-${version}.md`
-				} else {
-					// Use latest version otherwise
-					filename = `outputs/${baseFilename}-latest.md`
-				}
-
-				try {
-					content = await readFile(filename, 'utf-8')
-				} catch (e) {
+				if (!dbVersion || !dbVersion.content) {
 					throw new Error(
-						`Failed to read distilled content: ${e instanceof Error ? e.message : String(e)}. Make sure to run the distillation process first.`
+						`Failed to read distilled content for ${presetKey} version ${version}. Make sure to run the distillation process first.`
 					)
 				}
+
+				content = dbVersion.content
 			} else {
-				// Regular preset processing with database-only caching
+				// Regular preset processing with database caching
 				content = await getPresetContent(presetKey)
 
 				if (content) {
@@ -94,7 +84,7 @@ export const GET: RequestHandler = async ({ params, url }) => {
 						triggerBackgroundUpdate(presetKey)
 					}
 				} else {
-					// If not in database cache, fetch and process markdown (database-only)
+					// If not in database cache, fetch and process markdown
 					content = await fetchAndProcessMarkdownWithDb(presets[presetKey], presetKey)
 				}
 			}

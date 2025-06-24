@@ -166,37 +166,10 @@ export const GET: RequestHandler = async ({ url }) => {
 			}
 		})
 
-		// Create debug structure to store inputs and outputs
-		const debugData = {
-			timestamp: new Date().toISOString(),
-			model: anthropic.getModelIdentifier(),
-			totalFiles: originalFileCount,
-			processedFiles: filesToProcess.length,
-			shortFilesRemoved: originalFileCount - filesToProcess.length,
-			minimizeApplied: !!distilledPreset.minimize,
-			distillationJobId: distillationJob?.id,
-			requests: [] as Array<{
-				index: number
-				path: string
-				originalContent: string
-				fullPrompt: string
-				response?: string
-				error?: string
-			}>
-		}
-
 		// Prepare batch requests
 		const batchRequests: AnthropicBatchRequest[] = filesToProcess.map((fileObj, index) => {
 			const content = typeof fileObj === 'string' ? fileObj : fileObj.content
 			const fullPrompt = DISTILLATION_PROMPT + content
-
-			// Store input for debugging
-			debugData.requests.push({
-				index,
-				path: typeof fileObj === 'string' ? 'unknown' : fileObj.path,
-				originalContent: typeof fileObj === 'string' ? fileObj : fileObj.content,
-				fullPrompt
-			})
 
 			return {
 				custom_id: `file-${index}`,
@@ -267,12 +240,6 @@ export const GET: RequestHandler = async ({ url }) => {
 				const fileObj = filesToProcess[index]
 
 				if (result.result.type !== 'succeeded' || !result.result.message) {
-					// Update debug data with error
-					const debugEntry = debugData.requests.find((r) => r.index === index)
-					if (debugEntry) {
-						debugEntry.error = result.result.error?.message || 'Failed or no message'
-					}
-
 					// Store failed result in database
 					const filePath = typeof fileObj === 'string' ? 'unknown' : fileObj.path
 					const originalContent = typeof fileObj === 'string' ? fileObj : fileObj.content
@@ -294,12 +261,6 @@ export const GET: RequestHandler = async ({ url }) => {
 				}
 
 				const outputContent = result.result.message.content[0].text
-
-				// Update debug data with response
-				const debugEntry = debugData.requests.find((r) => r.index === index)
-				if (debugEntry) {
-					debugEntry.response = outputContent
-				}
 
 				// Store successful result in database
 				const filePath = typeof fileObj === 'string' ? 'unknown' : fileObj.path
@@ -330,7 +291,6 @@ export const GET: RequestHandler = async ({ url }) => {
 
 		// Split results into Svelte and SvelteKit categories
 		const svelteResults = successfulResults.filter((result) => result.path.includes('docs/svelte/'))
-
 		const svelteKitResults = successfulResults.filter((result) => result.path.includes('docs/kit/'))
 
 		// Create content for each category
@@ -358,28 +318,13 @@ export const GET: RequestHandler = async ({ url }) => {
 		const finalSvelteContent = svelteContent + prompt
 		const finalSvelteKitContent = svelteKitContent + prompt
 
-		// Generate filenames
+		// Generate date string for versioning
 		const today = new Date()
 		const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(
 			today.getDate()
 		).padStart(2, '0')}`
 
-		// Combined content file paths
-		const latestFilename = `outputs/${distilledPreset.distilledFilenameBase}-latest.md`
-		const datedFilename = `outputs/${distilledPreset.distilledFilenameBase}-${dateStr}.md`
-
-		// Svelte content file paths
-		const svelteLatestFilename = `outputs/${SVELTE_DISTILLED_BASENAME}-latest.md`
-		const svelteDatedFilename = `outputs/${SVELTE_DISTILLED_BASENAME}-${dateStr}.md`
-
-		// SvelteKit content file paths
-		const svelteKitLatestFilename = `outputs/${SVELTEKIT_DISTILLED_BASENAME}-latest.md`
-		const svelteKitDatedFilename = `outputs/${SVELTEKIT_DISTILLED_BASENAME}-${dateStr}.md`
-
-		// Debug file path
-		const debugFilename = `outputs/${distilledPreset.distilledFilenameBase}-debug.json`
-
-		// Store versions in database
+		// Store all versions in database
 		try {
 			// Store combined version
 			await PresetDbService.createPresetVersion({
@@ -412,6 +357,58 @@ export const GET: RequestHandler = async ({ url }) => {
 				generated_at: new Date()
 			})
 
+			// Store Svelte-only version
+			const sveltePreset = await PresetDbService.getPresetByKey(SVELTE_DISTILLED_BASENAME)
+			if (sveltePreset) {
+				await PresetDbService.createPresetVersion({
+					preset_id: sveltePreset.id,
+					version: 'latest',
+					content: finalSvelteContent,
+					content_hash: generateHash(finalSvelteContent),
+					size_kb: Math.floor(new TextEncoder().encode(finalSvelteContent).length / 1024),
+					is_latest: true,
+					document_count: svelteResults.length,
+					generated_at: new Date()
+				})
+
+				await PresetDbService.createPresetVersion({
+					preset_id: sveltePreset.id,
+					version: dateStr,
+					content: finalSvelteContent,
+					content_hash: generateHash(finalSvelteContent),
+					size_kb: Math.floor(new TextEncoder().encode(finalSvelteContent).length / 1024),
+					is_latest: false,
+					document_count: svelteResults.length,
+					generated_at: new Date()
+				})
+			}
+
+			// Store SvelteKit-only version
+			const svelteKitPreset = await PresetDbService.getPresetByKey(SVELTEKIT_DISTILLED_BASENAME)
+			if (svelteKitPreset) {
+				await PresetDbService.createPresetVersion({
+					preset_id: svelteKitPreset.id,
+					version: 'latest',
+					content: finalSvelteKitContent,
+					content_hash: generateHash(finalSvelteKitContent),
+					size_kb: Math.floor(new TextEncoder().encode(finalSvelteKitContent).length / 1024),
+					is_latest: true,
+					document_count: svelteKitResults.length,
+					generated_at: new Date()
+				})
+
+				await PresetDbService.createPresetVersion({
+					preset_id: svelteKitPreset.id,
+					version: dateStr,
+					content: finalSvelteKitContent,
+					content_hash: generateHash(finalSvelteKitContent),
+					size_kb: Math.floor(new TextEncoder().encode(finalSvelteKitContent).length / 1024),
+					is_latest: false,
+					document_count: svelteKitResults.length,
+					generated_at: new Date()
+				})
+			}
+
 			// Update distillation job as completed
 			await PresetDbService.updateDistillationJob(distillationJob.id, {
 				status: 'completed',
@@ -438,33 +435,20 @@ export const GET: RequestHandler = async ({ url }) => {
 				combined: finalContent.length,
 				svelte: finalSvelteContent.length,
 				svelteKit: finalSvelteKitContent.length
-			},
-			files: {
-				combined: {
-					latest: latestFilename,
-					dated: datedFilename
-				},
-				svelte: {
-					latest: svelteLatestFilename,
-					dated: svelteDatedFilename
-				},
-				svelteKit: {
-					latest: svelteKitLatestFilename,
-					dated: svelteKitDatedFilename
-				},
-				debug: debugFilename
 			}
 		})
 	} catch (e) {
 		// Update job as failed
-		try {
-			await PresetDbService.updateDistillationJob(distillationJob.id, {
-				status: 'failed',
-				completed_at: new Date(),
-				error_message: e instanceof Error ? e.message : String(e)
-			})
-		} catch (dbError) {
-			console.error('Failed to update job as failed:', dbError)
+		if (distillationJob) {
+			try {
+				await PresetDbService.updateDistillationJob(distillationJob.id, {
+					status: 'failed',
+					completed_at: new Date(),
+					error_message: e instanceof Error ? e.message : String(e)
+				})
+			} catch (dbError) {
+				console.error('Failed to update job as failed:', dbError)
+			}
 		}
 
 		console.error('Error in distillation process:', e)
