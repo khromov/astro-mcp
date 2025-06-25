@@ -18,41 +18,23 @@ export class PresetDbService {
 	 */
 	static async upsertPreset(input: CreatePresetInput): Promise<DbPreset> {
 		try {
-			// First, try to find existing preset
-			const existingResult = await query('SELECT * FROM presets WHERE preset_name = $1', [
-				input.preset_name
-			])
+			// Use INSERT ... ON CONFLICT to handle race conditions atomically
+			const result = await query(
+				`INSERT INTO presets (
+					preset_name, content, size_kb, document_count
+				) VALUES ($1, $2, $3, $4)
+				ON CONFLICT (preset_name) DO UPDATE SET
+					content = EXCLUDED.content,
+					size_kb = EXCLUDED.size_kb,
+					document_count = EXCLUDED.document_count,
+					updated_at = CURRENT_TIMESTAMP
+				RETURNING *`,
+				[input.preset_name, input.content, input.size_kb, input.document_count]
+			)
 
-			if (existingResult.rows.length > 0) {
-				// Update existing preset
-				const updateResult = await query(
-					`UPDATE presets SET 
-						content = $2,
-						size_kb = $3,
-						document_count = $4,
-						updated_at = CURRENT_TIMESTAMP
-					WHERE preset_name = $1
-					RETURNING *`,
-					[input.preset_name, input.content, input.size_kb, input.document_count]
-				)
+			logAlways(`Upserted preset ${input.preset_name} in database`)
 
-				logAlways(`Updated preset ${input.preset_name} in database`)
-
-				return updateResult.rows[0] as DbPreset
-			} else {
-				// Insert new preset
-				const insertResult = await query(
-					`INSERT INTO presets (
-						preset_name, content, size_kb, document_count
-					) VALUES ($1, $2, $3, $4)
-					RETURNING *`,
-					[input.preset_name, input.content, input.size_kb, input.document_count]
-				)
-
-				logAlways(`Created new preset ${input.preset_name} in database`)
-
-				return insertResult.rows[0] as DbPreset
-			}
+			return result.rows[0] as DbPreset
 		} catch (error) {
 			logErrorAlways(`Failed to upsert preset ${input.preset_name}:`, error)
 			throw new Error(
@@ -113,56 +95,30 @@ export class PresetDbService {
 	 */
 	static async createDistillation(input: CreateDistillationInput): Promise<DbDistillation> {
 		try {
-			// Check if version already exists
-			const existingResult = await query(
-				'SELECT * FROM distillations WHERE preset_name = $1 AND version = $2',
-				[input.preset_name, input.version]
+			// Use INSERT ... ON CONFLICT to handle race conditions atomically
+			const result = await query(
+				`INSERT INTO distillations (
+					preset_name, version, content, size_kb, document_count, distillation_job_id
+				) VALUES ($1, $2, $3, $4, $5, $6)
+				ON CONFLICT (preset_name, version) DO UPDATE SET
+					content = EXCLUDED.content,
+					size_kb = EXCLUDED.size_kb,
+					document_count = EXCLUDED.document_count,
+					distillation_job_id = EXCLUDED.distillation_job_id
+				RETURNING *`,
+				[
+					input.preset_name,
+					input.version,
+					input.content,
+					input.size_kb,
+					input.document_count,
+					input.distillation_job_id || null
+				]
 			)
 
-			if (existingResult.rows.length > 0) {
-				// Update existing version
-				const updateResult = await query(
-					`UPDATE distillations SET 
-						content = $3,
-						size_kb = $4,
-						document_count = $5,
-						distillation_job_id = $6
-					WHERE preset_name = $1 AND version = $2
-					RETURNING *`,
-					[
-						input.preset_name,
-						input.version,
-						input.content,
-						input.size_kb,
-						input.document_count,
-						input.distillation_job_id || null
-					]
-				)
+			logAlways(`Upserted distillation ${input.preset_name} version ${input.version}`)
 
-				logAlways(`Updated distillation ${input.preset_name} version ${input.version}`)
-
-				return updateResult.rows[0] as DbDistillation
-			} else {
-				// Insert new version
-				const insertResult = await query(
-					`INSERT INTO distillations (
-						preset_name, version, content, size_kb, document_count, distillation_job_id
-					) VALUES ($1, $2, $3, $4, $5, $6)
-					RETURNING *`,
-					[
-						input.preset_name,
-						input.version,
-						input.content,
-						input.size_kb,
-						input.document_count,
-						input.distillation_job_id || null
-					]
-				)
-
-				logAlways(`Created distillation ${input.preset_name} version ${input.version}`)
-
-				return insertResult.rows[0] as DbDistillation
-			}
+			return result.rows[0] as DbDistillation
 		} catch (error) {
 			logErrorAlways(`Failed to create distillation for ${input.preset_name}:`, error)
 			throw new Error(
