@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { createMcpHandler } from '@vercel/mcp-adapter'
 import { env } from '$env/dynamic/private'
 import { presets } from '$lib/presets'
-import { fetchAndProcessMarkdownWithDb } from '$lib/fetchMarkdown'
+import { fetchAndProcessMultiplePresetsWithDb } from '$lib/fetchMarkdown'
 import { log, logAlways, logErrorAlways } from '$lib/log'
 
 interface DocumentSection {
@@ -83,9 +83,20 @@ export const listSectionsHandler = async () => {
 	logAlways('Listing sections from Svelte and SvelteKit full presets')
 
 	try {
-		// Get sections from both full presets
-		const svelteDoc = await fetchAndProcessMarkdownWithDb(presets['svelte'], 'svelte')
-		const svelteKitDoc = await fetchAndProcessMarkdownWithDb(presets['sveltekit'], 'sveltekit')
+		// Use batch processing to get both presets at once
+		const presetsToFetch = [
+			{ key: 'svelte', config: presets['svelte'] },
+			{ key: 'sveltekit', config: presets['sveltekit'] }
+		]
+
+		const contentMap = await fetchAndProcessMultiplePresetsWithDb(presetsToFetch)
+
+		const svelteDoc = contentMap.get('svelte')
+		const svelteKitDoc = contentMap.get('sveltekit')
+
+		if (!svelteDoc || !svelteKitDoc) {
+			throw new Error('Failed to fetch documentation')
+		}
 
 		const svelteSections = parseDocumentSections(svelteDoc)
 		const svelteKitSections = parseDocumentSections(svelteKitDoc)
@@ -148,9 +159,20 @@ export const listSectionsHandler = async () => {
 
 export const getDocumentationHandler = async ({ section }: { section: string | string[] }) => {
 	try {
-		// Get documentation from both full presets
-		const svelteDoc = await fetchAndProcessMarkdownWithDb(presets['svelte'], 'svelte')
-		const svelteKitDoc = await fetchAndProcessMarkdownWithDb(presets['sveltekit'], 'sveltekit')
+		// Use batch processing to get both presets at once
+		const presetsToFetch = [
+			{ key: 'svelte', config: presets['svelte'] },
+			{ key: 'sveltekit', config: presets['sveltekit'] }
+		]
+
+		const contentMap = await fetchAndProcessMultiplePresetsWithDb(presetsToFetch)
+
+		const svelteDoc = contentMap.get('svelte')
+		const svelteKitDoc = contentMap.get('sveltekit')
+
+		if (!svelteDoc || !svelteKitDoc) {
+			throw new Error('Failed to fetch documentation')
+		}
 
 		// Parse sections with titles
 		const svelteSections = parseDocumentSections(svelteDoc)

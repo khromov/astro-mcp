@@ -5,7 +5,10 @@ import type { RequestHandler } from './$types'
 import { error } from '@sveltejs/kit'
 import { presets } from '$lib/presets'
 import { dev } from '$app/environment'
-import { fetchAndProcessMarkdownWithDb } from '$lib/fetchMarkdown'
+import {
+	fetchAndProcessMarkdownWithDb,
+	fetchAndProcessMultiplePresetsWithDb
+} from '$lib/fetchMarkdown'
 import { getPresetContent } from '$lib/presetCache'
 import { PresetDbService } from '$lib/server/presetDb'
 import { logAlways, logErrorAlways } from '$lib/log'
@@ -34,17 +37,19 @@ export const GET: RequestHandler = async ({ params, url }) => {
 		// Determine which version of the distilled doc to use
 		const version = url.searchParams.get('version') || 'latest'
 
-		// Fetch all contents in parallel
-		const contentPromises = presetNames.map(async (presetKey) => {
-			if (dev) {
-				console.time('dataFetching')
-			}
+		// Separate distilled and regular presets
+		const distilledPresetNames = presetNames.filter(
+			(name) => presets[name]?.distilled || VIRTUAL_DISTILLED_PRESETS.includes(name)
+		)
+		const regularPresetNames = presetNames.filter(
+			(name) => !presets[name]?.distilled && !VIRTUAL_DISTILLED_PRESETS.includes(name)
+		)
 
-			let content
+		const contentMap = new Map<string, string>()
 
-			// Handle both regular distilled presets and virtual ones
-			if (presets[presetKey]?.distilled || VIRTUAL_DISTILLED_PRESETS.includes(presetKey)) {
-				// For distilled presets, fetch from distillations table
+		// Handle distilled presets individually (they come from the database)
+		for (const presetKey of distilledPresetNames) {
+			try {
 				const dbDistillation = await PresetDbService.getDistillationByVersion(presetKey, version)
 
 				if (!dbDistillation || !dbDistillation.content) {
@@ -53,37 +58,73 @@ export const GET: RequestHandler = async ({ params, url }) => {
 					)
 				}
 
-				content = dbDistillation.content
-			} else {
-				// Regular preset processing with database caching
-				content = await getPresetContent(presetKey)
+				contentMap.set(presetKey, dbDistillation.content)
+			} catch (e) {
+				logErrorAlways(`Error fetching distilled preset ${presetKey}:`, e)
+				throw e
+			}
+		}
 
-				if (!content) {
-					// If not in database cache, fetch and process markdown
-					content = await fetchAndProcessMarkdownWithDb(presets[presetKey], presetKey)
+		// Handle regular presets - check cache first, then use batch processing for non-cached
+		if (regularPresetNames.length > 0) {
+			const nonCachedPresets: Array<{
+				key: string
+				config: (typeof presets)[keyof typeof presets]
+			}> = []
+
+			// Check cache for each regular preset
+			for (const presetKey of regularPresetNames) {
+				const cachedContent = await getPresetContent(presetKey)
+				if (cachedContent) {
+					contentMap.set(presetKey, cachedContent)
+					logAlways(`Using cached content for ${presetKey}`)
+				} else {
+					nonCachedPresets.push({ key: presetKey, config: presets[presetKey] })
 				}
-				// Note: Staleness checks and background updates are now handled by the scheduler service
 			}
 
-			if (dev) {
-				console.timeEnd('dataFetching')
-			}
-			logAlways(`Content length for ${presetKey}: ${content.length}`)
+			// If we have non-cached presets, process them together
+			if (nonCachedPresets.length > 0) {
+				if (dev) {
+					console.time('batchDataFetching')
+				}
 
-			if (content.length === 0) {
+				const batchResults = await fetchAndProcessMultiplePresetsWithDb(nonCachedPresets)
+
+				if (dev) {
+					console.timeEnd('batchDataFetching')
+				}
+
+				// Add batch results to content map
+				for (const [key, content] of batchResults) {
+					contentMap.set(key, content)
+				}
+			}
+		}
+
+		// Build the final response in the order requested
+		const contents: string[] = []
+
+		for (const presetKey of presetNames) {
+			const content = contentMap.get(presetKey)
+
+			if (!content) {
 				throw new Error(`No content found for ${presetKey}`)
 			}
 
+			logAlways(`Content length for ${presetKey}: ${content.length}`)
+
 			// Add the prompt if it exists and we're not using a distilled preset
 			// (distilled presets already have the prompt added)
-			return !presets[presetKey]?.distilled &&
+			const finalContent =
+				!presets[presetKey]?.distilled &&
 				!VIRTUAL_DISTILLED_PRESETS.includes(presetKey) &&
 				presets[presetKey]?.prompt
-				? `${content}\n\nInstructions for LLMs: <SYSTEM>${presets[presetKey].prompt}</SYSTEM>`
-				: content
-		})
+					? `${content}\n\nInstructions for LLMs: <SYSTEM>${presets[presetKey].prompt}</SYSTEM>`
+					: content
 
-		const contents = await Promise.all(contentPromises)
+			contents.push(finalContent)
+		}
 
 		// Join all contents with a delimiter
 		const response = contents.join('\n\n---\n\n')

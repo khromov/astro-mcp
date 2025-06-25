@@ -2,7 +2,12 @@ import { error, json } from '@sveltejs/kit'
 import { env } from '$env/dynamic/private'
 import { dev } from '$app/environment'
 import { presets } from '$lib/presets'
-import { fetchMarkdownFiles, minimizeContent } from '$lib/fetchMarkdown'
+import {
+	fetchMarkdownFiles,
+	minimizeContent,
+	fetchRepositoryTarball,
+	processMarkdownFromTarball
+} from '$lib/fetchMarkdown'
 import type { RequestHandler } from './$types'
 import { AnthropicProvider, type AnthropicBatchRequest } from '$lib/anthropic'
 import { PresetDbService } from '$lib/server/presetDb'
@@ -75,14 +80,23 @@ export const GET: RequestHandler = async ({ url }) => {
 	let distillationJob: DbDistillationJob | null = null
 
 	try {
-		// Fetch all markdown files for the preset with their file paths
-		const filesWithPaths = await fetchMarkdownFiles(distilledPreset, true)
+		// Use the new batch processing approach
+		const { owner, repo } = distilledPreset
+		const tarballBuffer = await fetchRepositoryTarball(owner, repo)
+
+		// Process the tarball to get files
+		const filesWithPaths = (await processMarkdownFromTarball(
+			tarballBuffer,
+			distilledPreset,
+			true
+		)) as Array<{
+			path: string
+			content: string
+		}>
 
 		// Filter out short files, only keep normal files
 		const originalFileCount = filesWithPaths.length
-		let filesToProcess = filesWithPaths.filter((file) =>
-			typeof file === 'string' ? false : file.content.length >= 200
-		)
+		let filesToProcess = filesWithPaths.filter((file) => file.content.length >= 200)
 		const shortFilesRemoved = originalFileCount - filesToProcess.length
 
 		logAlways(`Total files: ${originalFileCount}`)
@@ -102,10 +116,6 @@ export const GET: RequestHandler = async ({ url }) => {
 			logAlways(`Applying minimize configuration before LLM processing`)
 
 			filesToProcess = filesToProcess.map((fileObj) => {
-				if (typeof fileObj === 'string') {
-					return fileObj // Should not happen with includePathInfo=true
-				}
-
 				// Apply minimization to the content
 				const minimized = minimizeContent(fileObj.content, distilledPreset.minimize)
 
@@ -136,7 +146,7 @@ export const GET: RequestHandler = async ({ url }) => {
 
 		// Prepare batch requests
 		const batchRequests: AnthropicBatchRequest[] = filesToProcess.map((fileObj, index) => {
-			const content = typeof fileObj === 'string' ? fileObj : fileObj.content
+			const content = fileObj.content
 			const fullPrompt = DISTILLATION_PROMPT + content
 
 			return {
@@ -207,8 +217,8 @@ export const GET: RequestHandler = async ({ url }) => {
 
 				if (result.result.type !== 'succeeded' || !result.result.message) {
 					// Store failed result in database
-					const filePath = typeof fileObj === 'string' ? 'unknown' : fileObj.path
-					const originalContent = typeof fileObj === 'string' ? fileObj : fileObj.content
+					const filePath = fileObj.path
+					const originalContent = fileObj.content
 					if (distillationJob) {
 						PresetDbService.createDistillationResult({
 							job_id: distillationJob.id,
@@ -222,7 +232,7 @@ export const GET: RequestHandler = async ({ url }) => {
 
 					return {
 						index,
-						path: typeof fileObj === 'string' ? 'unknown' : fileObj.path,
+						path: fileObj.path,
 						content: '',
 						error: 'Failed or no message'
 					}
@@ -231,8 +241,8 @@ export const GET: RequestHandler = async ({ url }) => {
 				const outputContent = result.result.message.content[0].text
 
 				// Store successful result in database
-				const filePath = typeof fileObj === 'string' ? 'unknown' : fileObj.path
-				const originalContent = typeof fileObj === 'string' ? fileObj : fileObj.content
+				const filePath = fileObj.path
+				const originalContent = fileObj.content
 				if (distillationJob) {
 					PresetDbService.createDistillationResult({
 						job_id: distillationJob.id,
@@ -248,7 +258,7 @@ export const GET: RequestHandler = async ({ url }) => {
 
 				return {
 					index,
-					path: typeof fileObj === 'string' ? 'unknown' : fileObj.path,
+					path: fileObj.path,
 					content: outputContent
 				}
 			})

@@ -1,7 +1,7 @@
 import { Cron } from 'croner'
 import { dev } from '$app/environment'
 import { presets } from '$lib/presets'
-import { fetchAndProcessMarkdownWithDb } from '$lib/fetchMarkdown'
+import { fetchAndProcessMultiplePresetsWithDb } from '$lib/fetchMarkdown'
 import { isPresetStale } from '$lib/presetCache'
 import { logAlways, logErrorAlways } from '$lib/log'
 
@@ -68,27 +68,50 @@ export class SchedulerService {
 	}
 
 	/**
-	 * Update all regular presets that are stale
+	 * Update all regular presets that are stale using batch processing
 	 */
 	private async updateRegularPresets(): Promise<void> {
 		logAlways('Starting regular preset update job...')
 
-		const regularPresets = Object.entries(presets).filter(([_, preset]) => !preset.distilled)
+		// Filter regular (non-distilled) presets
+		const regularPresets = Object.entries(presets)
+			.filter(([_, preset]) => !preset.distilled)
+			.map(([key, config]) => ({ key, config }))
 
-		for (const [presetKey, preset] of regularPresets) {
+		// Check which presets are stale
+		const stalePresets: Array<{ key: string; config: (typeof presets)[keyof typeof presets] }> = []
+
+		for (const { key, config } of regularPresets) {
 			try {
-				const isStale = await isPresetStale(presetKey)
-
+				const isStale = await isPresetStale(key)
 				if (isStale) {
-					logAlways(`Updating stale preset: ${presetKey}`)
-					await fetchAndProcessMarkdownWithDb(preset, presetKey)
-					logAlways(`Successfully updated preset: ${presetKey}`)
+					stalePresets.push({ key, config })
+					logAlways(`Preset ${key} is stale and will be updated`)
 				} else {
-					logAlways(`Preset ${presetKey} is still fresh, skipping`)
+					logAlways(`Preset ${key} is still fresh, skipping`)
 				}
 			} catch (error) {
-				logErrorAlways(`Failed to update preset ${presetKey}:`, error)
+				logErrorAlways(`Failed to check staleness for preset ${key}:`, error)
 			}
+		}
+
+		if (stalePresets.length === 0) {
+			logAlways('No stale presets found, skipping update')
+			return
+		}
+
+		logAlways(`Found ${stalePresets.length} stale presets to update`)
+
+		// Process stale presets using batch processing
+		try {
+			const results = await fetchAndProcessMultiplePresetsWithDb(stalePresets)
+
+			logAlways(`Successfully updated ${results.size} presets`)
+			for (const [key, _] of results) {
+				logAlways(`  - ${key}`)
+			}
+		} catch (error) {
+			logErrorAlways('Failed to update presets in batch:', error)
 		}
 
 		logAlways('Regular preset update job completed')
