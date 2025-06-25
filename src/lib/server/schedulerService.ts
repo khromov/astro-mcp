@@ -1,4 +1,4 @@
-import { Cron } from 'croner'
+import { Cron, scheduledJobs } from 'croner'
 import { dev } from '$app/environment'
 import { presets } from '$lib/presets'
 import { fetchAndProcessMultiplePresetsWithDb } from '$lib/fetchMarkdown'
@@ -27,12 +27,32 @@ export class SchedulerService {
 	}
 
 	/**
+	 * Clean up any orphaned jobs from Croner's global registry
+	 */
+	private cleanupOrphanedJobs(): void {
+		if (scheduledJobs && Array.isArray(scheduledJobs)) {
+			const jobNames = ['regular-preset-updates', 'cache-cleanup']
+			for (let i = scheduledJobs.length - 1; i >= 0; i--) {
+				const job = scheduledJobs[i]
+				if (job && job.options && jobNames.includes(job.options.name)) {
+					job.stop()
+					logAlways(`Cleaned up orphaned job: ${job.options.name}`)
+				}
+			}
+		}
+	}
+
+	/**
 	 * Initialize and start all scheduled jobs
 	 */
 	async init(): Promise<void> {
+		// Clean up any orphaned jobs from previous runs (e.g., hot module reloading)
+		this.cleanupOrphanedJobs()
+
 		if (this.isInitialized) {
-			logAlways('SchedulerService already initialized')
-			return
+			logAlways('SchedulerService already initialized, reinitializing...')
+			// Stop all existing jobs before reinitializing
+			await this.stop()
 		}
 
 		logAlways('Initializing SchedulerService...')
@@ -56,10 +76,17 @@ export class SchedulerService {
 	 * Schedule updates for regular (non-distilled) presets
 	 */
 	private scheduleRegularPresetUpdates(schedule: string): void {
+		// Stop existing job if it exists
+		const existingJob = this.jobs.get('regular-presets')
+		if (existingJob) {
+			existingJob.stop()
+			logAlways('Stopped existing regular-preset-updates job')
+		}
+
 		const job = new Cron(
 			schedule,
 			{
-				name: 'regular-preset-updates',
+				// Don't use name to avoid conflicts during hot module reloading
 				timezone: 'UTC',
 				catch: (err) => {
 					logErrorAlways('Error in regular preset update job:', err)
@@ -146,9 +173,23 @@ export class SchedulerService {
 	async stop(): Promise<void> {
 		logAlways('Stopping SchedulerService...')
 
+		// Stop all jobs and remove from Croner's global registry
 		for (const [name, job] of this.jobs) {
 			job.stop()
 			logAlways(`Stopped job: ${name}`)
+		}
+
+		// Clear any remaining jobs from Croner's global scheduledJobs array
+		// This handles cases where hot module reloading might leave orphaned jobs
+		if (scheduledJobs && Array.isArray(scheduledJobs)) {
+			const jobNames = ['regular-preset-updates', 'cache-cleanup']
+			for (let i = scheduledJobs.length - 1; i >= 0; i--) {
+				const job = scheduledJobs[i]
+				if (job && job.options && jobNames.includes(job.options.name)) {
+					job.stop()
+					logAlways(`Removed orphaned job from global registry: ${job.options.name}`)
+				}
+			}
 		}
 
 		this.jobs.clear()
@@ -160,11 +201,18 @@ export class SchedulerService {
 	 * Schedule cache cleanup job
 	 */
 	private scheduleCacheCleanup(): void {
+		// Stop existing job if it exists
+		const existingJob = this.jobs.get('cache-cleanup')
+		if (existingJob) {
+			existingJob.stop()
+			logAlways('Stopped existing cache-cleanup job')
+		}
+
 		// Run every minute
 		const job = new Cron(
 			'* * * * *',
 			{
-				name: 'cache-cleanup',
+				// Don't use name to avoid conflicts during hot module reloading
 				timezone: 'UTC',
 				catch: (err) => {
 					logErrorAlways('Error in cache cleanup job:', err)
