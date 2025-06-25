@@ -4,7 +4,7 @@ import { presets } from '$lib/presets'
 import { fetchAndProcessMultiplePresetsWithDb } from '$lib/fetchMarkdown'
 import { isPresetStale } from '$lib/presetCache'
 import { CacheDbService } from '$lib/server/cacheDb'
-import { logAlways, logErrorAlways } from '$lib/log'
+import { log, logAlways, logErrorAlways } from '$lib/log'
 
 /**
  * Background scheduler service using Croner for preset updates
@@ -34,7 +34,7 @@ export class SchedulerService {
 			const jobNames = ['regular-preset-updates', 'cache-cleanup']
 			for (let i = scheduledJobs.length - 1; i >= 0; i--) {
 				const job = scheduledJobs[i]
-				if (job && job.options && jobNames.includes(job.options.name)) {
+				if (job && job.options && job.options.name && jobNames.includes(job.options.name)) {
 					job.stop()
 					logAlways(`Cleaned up orphaned job: ${job.options.name}`)
 				}
@@ -231,6 +231,7 @@ export class SchedulerService {
 	 * Clean up expired cache entries
 	 */
 	private async cleanupExpiredCache(): Promise<void> {
+		log('Starting cache cleanup job...'))
 		try {
 			const deletedCount = await this.cacheService.deleteExpired()
 			if (deletedCount > 0) {
