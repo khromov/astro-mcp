@@ -3,6 +3,7 @@ import { dev } from '$app/environment'
 import { presets } from '$lib/presets'
 import { fetchAndProcessMultiplePresetsWithDb } from '$lib/fetchMarkdown'
 import { isPresetStale } from '$lib/presetCache'
+import { CacheDbService } from '$lib/server/cacheDb'
 import { logAlways, logErrorAlways } from '$lib/log'
 
 /**
@@ -12,8 +13,11 @@ export class SchedulerService {
 	private static instance: SchedulerService | null = null
 	private jobs: Map<string, Cron> = new Map()
 	private isInitialized = false
+	private cacheService: CacheDbService
 
-	private constructor() {}
+	private constructor() {
+		this.cacheService = new CacheDbService()
+	}
 
 	static getInstance(): SchedulerService {
 		if (!SchedulerService.instance) {
@@ -40,6 +44,9 @@ export class SchedulerService {
 		const devSchedule = '*/30 * * * *'
 
 		this.scheduleRegularPresetUpdates(dev ? devSchedule : regularPresetSchedule)
+
+		// Schedule cache cleanup every minute
+		this.scheduleCacheCleanup()
 
 		this.isInitialized = true
 		logAlways(`SchedulerService initialized with ${this.jobs.size} jobs`)
@@ -150,11 +157,56 @@ export class SchedulerService {
 	}
 
 	/**
+	 * Schedule cache cleanup job
+	 */
+	private scheduleCacheCleanup(): void {
+		// Run every minute
+		const job = new Cron(
+			'* * * * *',
+			{
+				name: 'cache-cleanup',
+				timezone: 'UTC',
+				catch: (err) => {
+					logErrorAlways('Error in cache cleanup job:', err)
+				}
+			},
+			() => {
+				this.cleanupExpiredCache()
+			}
+		)
+
+		this.jobs.set('cache-cleanup', job)
+		logAlways('Scheduled cache cleanup: every minute')
+	}
+
+	/**
+	 * Clean up expired cache entries
+	 */
+	private async cleanupExpiredCache(): Promise<void> {
+		try {
+			const deletedCount = await this.cacheService.deleteExpired()
+			if (deletedCount > 0) {
+				logAlways(`Cleaned up ${deletedCount} expired cache entries`)
+			}
+		} catch (error) {
+			logErrorAlways('Failed to clean up expired cache entries:', error)
+		}
+	}
+
+	/**
 	 * Trigger immediate update of regular presets (for testing/manual triggers)
 	 */
 	async triggerRegularPresetUpdate(): Promise<void> {
 		logAlways('Manually triggering regular preset update...')
 		await this.updateRegularPresets()
+	}
+
+	/**
+	 * Trigger immediate cache cleanup (for testing/manual triggers)
+	 */
+	async triggerCacheCleanup(): Promise<void> {
+		logAlways('Manually triggering cache cleanup...')
+		await this.cleanupExpiredCache()
 	}
 }
 

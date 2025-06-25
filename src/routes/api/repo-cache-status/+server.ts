@@ -9,7 +9,7 @@ import { logAlways } from '$lib/log'
 export const GET: RequestHandler = async ({ url }) => {
 	// Check if clear parameter is present
 	if (url.searchParams.has('clear')) {
-		clearRepositoryCache()
+		await clearRepositoryCache()
 		logAlways('Repository cache cleared via API')
 
 		return json({
@@ -20,7 +20,7 @@ export const GET: RequestHandler = async ({ url }) => {
 	}
 
 	// Get cache status
-	const status = getRepositoryCacheStatus()
+	const status = await getRepositoryCacheStatus()
 
 	return json({
 		success: true,

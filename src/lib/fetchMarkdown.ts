@@ -6,10 +6,18 @@ import { createGunzip } from 'zlib'
 import { minimatch } from 'minimatch'
 import { getPresetContent } from './presetCache'
 import { PresetDbService } from '$lib/server/presetDb'
+import { CacheDbService } from '$lib/server/cacheDb'
 import { log, logAlways, logErrorAlways } from '$lib/log'
 
-// Repository cache to store downloaded tarballs
-const repositoryCache = new Map<string, Buffer>()
+// Database cache service instance
+let cacheService: CacheDbService | null = null
+
+function getCacheService(): CacheDbService {
+	if (!cacheService) {
+		cacheService = new CacheDbService()
+	}
+	return cacheService
+}
 
 function sortFilesWithinGroup(files: string[]): string[] {
 	return files.sort((a, b) => {
@@ -180,11 +188,13 @@ export async function fetchAndProcessMultiplePresetsWithDb(
  */
 export async function fetchRepositoryTarball(owner: string, repo: string): Promise<Buffer> {
 	const cacheKey = `${owner}/${repo}`
+	const cache = getCacheService()
 
-	// Check memory cache first
-	if (repositoryCache.has(cacheKey)) {
-		logAlways(`Using cached tarball for ${cacheKey}`)
-		return repositoryCache.get(cacheKey)!
+	// Check database cache first
+	const cachedBuffer = await cache.get(cacheKey)
+	if (cachedBuffer) {
+		logAlways(`Using cached tarball for ${cacheKey} from database`)
+		return cachedBuffer
 	}
 
 	// Construct the tarball URL
@@ -220,8 +230,8 @@ export async function fetchRepositoryTarball(owner: string, repo: string): Promi
 
 	const buffer = Buffer.concat(chunks)
 
-	// Cache the buffer
-	repositoryCache.set(cacheKey, buffer)
+	// Cache the buffer in database with 60 minutes TTL
+	await cache.set(cacheKey, buffer, 60)
 
 	return buffer
 }
@@ -386,18 +396,26 @@ export async function fetchMarkdownFiles(
 /**
  * Clear repository cache (useful for forcing fresh downloads)
  */
-export function clearRepositoryCache(): void {
-	repositoryCache.clear()
+export async function clearRepositoryCache(): Promise<void> {
+	const cache = getCacheService()
+	await cache.clear()
 	logAlways('Repository cache cleared')
 }
 
 /**
  * Get repository cache status
  */
-export function getRepositoryCacheStatus(): { size: number; repositories: string[] } {
+export async function getRepositoryCacheStatus(): Promise<{
+	size: number
+	repositories: string[]
+	totalSizeBytes: number
+}> {
+	const cache = getCacheService()
+	const status = await cache.getStatus()
 	return {
-		size: repositoryCache.size,
-		repositories: Array.from(repositoryCache.keys())
+		size: status.count,
+		repositories: status.keys,
+		totalSizeBytes: status.totalSizeBytes
 	}
 }
 
