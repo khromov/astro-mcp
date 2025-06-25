@@ -128,7 +128,11 @@ export async function fetchAndProcessMultiplePresetsWithDb(
 			// Process each preset using the shared tarball
 			for (const { config, key } of repoPresets) {
 				try {
-					const filesWithPaths = await processMarkdownFromTarball(tarballBuffer, config, true)
+					const filesWithPaths = (await processMarkdownFromTarball(
+						tarballBuffer,
+						config,
+						true
+					)) as { path: string; content: string }[]
 					const files = filesWithPaths.map((f) => `## ${f.path}\n\n${f.content}`)
 
 					logAlways(`Processed ${files.length} files for ${key}`)
@@ -374,7 +378,7 @@ export async function fetchMarkdownFiles(
 	// Process the tarball
 	return processMarkdownFromTarball(
 		tarballBuffer,
-		{ owner, repo, glob, ignore, minimize },
+		{ owner, repo, glob, ignore, minimize, title: '', distilled: false },
 		includePathInfo
 	)
 }
