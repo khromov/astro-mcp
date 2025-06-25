@@ -82,7 +82,7 @@ CREATE TRIGGER update_distillation_jobs_updated_at
 -- Create distillations table for versioned distilled content
 CREATE TABLE IF NOT EXISTS distillations (
   id SERIAL PRIMARY KEY,
-  preset_name VARCHAR(100) NOT NULL CHECK (preset_name IN ('svelte-distilled', 'sveltekit-distilled', 'svelte-complete-distilled')),
+  preset_name VARCHAR(100) NOT NULL,
   version VARCHAR(50) NOT NULL, -- 'latest' or date like '2024-01-15'
   content TEXT NOT NULL,
   size_kb INTEGER NOT NULL,
