@@ -185,7 +185,7 @@ export class SchedulerService {
 			const jobNames = ['regular-preset-updates', 'cache-cleanup']
 			for (let i = scheduledJobs.length - 1; i >= 0; i--) {
 				const job = scheduledJobs[i]
-				if (job && job.options && jobNames.includes(job.options.name)) {
+				if (job && job.options && job.options.name && jobNames.includes(job.options.name)) {
 					job.stop()
 					logAlways(`Removed orphaned job from global registry: ${job.options.name}`)
 				}
@@ -231,7 +231,7 @@ export class SchedulerService {
 	 * Clean up expired cache entries
 	 */
 	private async cleanupExpiredCache(): Promise<void> {
-		log('Starting cache cleanup job...'))
+		log('Starting cache cleanup job...')
 		try {
 			const deletedCount = await this.cacheService.deleteExpired()
 			if (deletedCount > 0) {
