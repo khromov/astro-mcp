@@ -55,6 +55,30 @@ export interface DbDistillationResult {
 	created_at: Date
 }
 
+export interface DbContent {
+	id: number
+	// Repository information
+	owner: string // Repository owner (e.g., 'sveltejs')
+	repo_name: string // Repository name (e.g., 'svelte')
+
+	// File information
+	path: string // Full file path
+	filename: string // Just the filename
+
+	// Content
+	content: string // The actual file content
+
+	// Metadata
+	size_bytes: number // Size of the content in bytes
+	is_processed: boolean // Whether content has been processed
+	processed_at: Date | null // When content was processed
+	metadata: Record<string, any> // Additional metadata (frontmatter, etc.)
+
+	// Timestamps
+	created_at: Date
+	updated_at: Date
+}
+
 // Input types for creating/updating records
 export interface CreatePresetInput {
 	preset_name: string
@@ -99,3 +123,80 @@ export interface CreateDistillationResultInput {
 	input_tokens?: number
 	output_tokens?: number
 }
+
+export interface CreateContentInput {
+	owner: string
+	repo_name: string
+	path: string
+	filename: string
+	content: string
+	size_bytes: number
+	metadata?: Record<string, any>
+}
+
+export interface UpdateContentInput {
+	content: string
+	size_bytes: number
+	is_processed?: boolean
+	processed_at?: Date
+	metadata?: Record<string, any>
+}
+
+export interface DbContent {
+	id: number
+	// Repository information
+	owner: string // Repository owner (e.g., 'sveltejs')
+	repo_name: string // Repository name (e.g., 'svelte')
+
+	// File information
+	path: string // Full file path
+	filename: string // Just the filename
+
+	// Content
+	content: string // The actual file content
+
+	// Metadata
+	size_bytes: number // Size of the content in bytes
+	is_processed: boolean // Whether content has been processed
+	processed_at: Date | null // When content was processed
+	metadata: Record<string, any> // Additional metadata (frontmatter, etc.)
+
+	// Timestamps
+	created_at: Date
+	updated_at: Date
+}
+
+export interface CreateContentInput {
+	owner: string
+	repo_name: string
+	path: string
+	filename: string
+	content: string
+	size_bytes: number
+	metadata?: Record<string, any>
+}
+
+export interface UpdateContentInput {
+	content: string
+	size_bytes: number
+	is_processed?: boolean
+	processed_at?: Date
+	metadata?: Record<string, any>
+}
+
+export interface ContentFilter {
+	owner?: string
+	repo_name?: string
+	is_processed?: boolean
+	path_pattern?: string // For glob pattern matching
+}
+
+export interface ContentStats {
+	total_files: number
+	total_size_bytes: number
+	by_repo: Record<string, { files: number; size_bytes: number }>
+	last_updated: Date
+}
+
+// Helper type for the combined repo string
+export type RepoString = `${string}/${string}` // e.g., 'sveltejs/svelte'
