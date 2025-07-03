@@ -1,4 +1,10 @@
 services:
+  mcp-server:
+    image: ghcr.io/khromov/safe-file-mcp:main
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./:/app
   redis:
     image: 'redis:8.0.2-alpine'
     ports:
