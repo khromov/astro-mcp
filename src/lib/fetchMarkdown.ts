@@ -5,7 +5,6 @@ import { Readable } from 'stream'
 import { createGunzip } from 'zlib'
 import { minimatch } from 'minimatch'
 import { getPresetContent } from './presetCache'
-import { PresetDbService } from '$lib/server/presetDb'
 import { CacheDbService } from '$lib/server/cacheDb'
 import { ContentSyncService } from '$lib/server/contentSync'
 import { log, logAlways, logErrorAlways } from '$lib/log'
@@ -39,15 +38,7 @@ export async function fetchAndProcessMarkdownWithDb(
 	presetKey: string
 ): Promise<string> {
 	try {
-		// Check database cache first
-		const cachedContent = await getPresetContent(presetKey)
-
-		if (cachedContent) {
-			logAlways(`Using cached content for ${presetKey} from database`)
-			return cachedContent
-		}
-
-		// Try to get content from the master content table
+		// Get content from the master content table
 		const filesWithPaths = await ContentSyncService.getPresetContentFromDb(presetKey)
 		
 		if (filesWithPaths) {
@@ -59,25 +50,6 @@ export async function fetchAndProcessMarkdownWithDb(
 			// Sort files
 			const sortedFiles = sortFilesWithinGroup(files)
 			const content = sortedFiles.join('\n\n')
-
-			try {
-				// Store preset content in database
-				const sizeKb = Math.floor(new TextEncoder().encode(content).length / 1024)
-
-				await PresetDbService.upsertPreset({
-					preset_name: presetKey,
-					content,
-					size_kb: sizeKb,
-					document_count: filesWithPaths.length
-				})
-
-				logAlways(
-					`Stored content for preset ${presetKey} (${sizeKb}KB, ${filesWithPaths.length} files)`
-				)
-			} catch (dbError) {
-				logErrorAlways(`Failed to store data in database for preset ${presetKey}:`, dbError)
-				// Don't throw the error - return the content even if DB storage fails
-			}
 
 			return content
 		}
@@ -95,25 +67,6 @@ export async function fetchAndProcessMarkdownWithDb(
 		// Sort files
 		const sortedFiles = sortFilesWithinGroup(files)
 		const content = sortedFiles.join('\n\n')
-
-		try {
-			// Store preset content in database
-			const sizeKb = Math.floor(new TextEncoder().encode(content).length / 1024)
-
-			await PresetDbService.upsertPreset({
-				preset_name: presetKey,
-				content,
-				size_kb: sizeKb,
-				document_count: githubFilesWithPaths.length
-			})
-
-			logAlways(
-				`Stored content for preset ${presetKey} (${sizeKb}KB, ${githubFilesWithPaths.length} files)`
-			)
-		} catch (dbError) {
-			logErrorAlways(`Failed to store data in database for preset ${presetKey}:`, dbError)
-			// Don't throw the error - return the content even if DB storage fails
-		}
 
 		return content
 	} catch (error) {
@@ -137,15 +90,6 @@ export async function fetchAndProcessMultiplePresetsWithDb(
 		logAlways(`Processing preset ${key}`)
 
 		try {
-			// Check if preset has cached content
-			const cachedContent = await getPresetContent(key)
-
-			if (cachedContent) {
-				logAlways(`Using cached content for ${key} from database`)
-				results.set(key, cachedContent)
-				continue
-			}
-
 			// Try to get content from the master content table
 			const filesWithPaths = await ContentSyncService.getPresetContentFromDb(key)
 
@@ -167,24 +111,6 @@ export async function fetchAndProcessMultiplePresetsWithDb(
 
 			// Store in results
 			results.set(key, content)
-
-			// Store in database
-			try {
-				const sizeKb = Math.floor(new TextEncoder().encode(content).length / 1024)
-
-				await PresetDbService.upsertPreset({
-					preset_name: key,
-					content,
-					size_kb: sizeKb,
-					document_count: filesWithPaths.length
-				})
-
-				logAlways(
-					`Stored content for preset ${key} (${sizeKb}KB, ${filesWithPaths.length} files)`
-				)
-			} catch (dbError) {
-				logErrorAlways(`Failed to store data in database for preset ${key}:`, dbError)
-			}
 		} catch (error) {
 			logErrorAlways(`Error processing preset ${key}:`, error)
 			throw error

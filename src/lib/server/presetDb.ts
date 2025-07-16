@@ -1,93 +1,19 @@
 import { query } from '$lib/server/db'
 import type {
-	DbPreset,
 	DbDistillation,
 	DbDistillationJob,
 	DbDistillationResult,
-	CreatePresetInput,
-	UpdatePresetInput,
 	CreateDistillationInput,
 	CreateDistillationJobInput,
 	CreateDistillationResultInput
 } from '$lib/types/db'
 import { logAlways, logErrorAlways } from '$lib/log'
 
+/**
+ * Service for managing distillation-related database operations
+ * Note: Preset table operations have been removed as presets are now generated on-demand from the content table
+ */
 export class PresetDbService {
-	/**
-	 * Create or update preset content
-	 */
-	static async upsertPreset(input: CreatePresetInput): Promise<DbPreset> {
-		try {
-			// Use INSERT ... ON CONFLICT to handle race conditions atomically
-			const result = await query(
-				`INSERT INTO presets (
-					preset_name, content, size_kb, document_count
-				) VALUES ($1, $2, $3, $4)
-				ON CONFLICT (preset_name) DO UPDATE SET
-					content = EXCLUDED.content,
-					size_kb = EXCLUDED.size_kb,
-					document_count = EXCLUDED.document_count,
-					updated_at = CURRENT_TIMESTAMP
-				RETURNING *`,
-				[input.preset_name, input.content, input.size_kb, input.document_count]
-			)
-
-			logAlways(`Upserted preset ${input.preset_name} in database`)
-
-			return result.rows[0] as DbPreset
-		} catch (error) {
-			logErrorAlways(`Failed to upsert preset ${input.preset_name}:`, error)
-			throw new Error(
-				`Failed to upsert preset: ${error instanceof Error ? error.message : String(error)}`
-			)
-		}
-	}
-
-	/**
-	 * Get preset by name
-	 */
-	static async getPresetByName(presetName: string): Promise<DbPreset | null> {
-		try {
-			const result = await query('SELECT * FROM presets WHERE preset_name = $1', [presetName])
-			return result.rows.length > 0 ? (result.rows[0] as DbPreset) : null
-		} catch (error) {
-			logErrorAlways(`Failed to get preset ${presetName}:`, error)
-			throw new Error(
-				`Failed to get preset: ${error instanceof Error ? error.message : String(error)}`
-			)
-		}
-	}
-
-	/**
-	 * Get all presets
-	 */
-	static async getAllPresets(): Promise<DbPreset[]> {
-		try {
-			const result = await query('SELECT * FROM presets ORDER BY preset_name')
-			return result.rows as DbPreset[]
-		} catch (error) {
-			logErrorAlways('Failed to get all presets:', error)
-			throw new Error(
-				`Failed to get all presets: ${error instanceof Error ? error.message : String(error)}`
-			)
-		}
-	}
-
-	/**
-	 * Delete preset by name
-	 */
-	static async deletePreset(presetName: string): Promise<boolean> {
-		try {
-			const result = await query('DELETE FROM presets WHERE preset_name = $1', [presetName])
-			return (result.rowCount ?? 0) > 0
-		} catch (error) {
-			logErrorAlways(`Failed to delete preset ${presetName}:`, error)
-			throw new Error(
-				`Failed to delete preset: ${error instanceof Error ? error.message : String(error)}`
-			)
-		}
-	}
-
 	// Distillation methods
 
 	/**

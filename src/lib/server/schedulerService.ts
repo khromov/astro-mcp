@@ -1,14 +1,12 @@
 import { Cron, scheduledJobs } from 'croner'
 import { dev } from '$app/environment'
-import { presets } from '$lib/presets'
-import { fetchAndProcessMultiplePresetsWithDb } from '$lib/fetchMarkdown'
-import { isPresetStale } from '$lib/presetCache'
-import { CacheDbService } from '$lib/server/cacheDb'
 import { ContentSyncService } from '$lib/server/contentSync'
+import { getDefaultRepository } from '$lib/presets'
+import { CacheDbService } from '$lib/server/cacheDb'
 import { log, logAlways, logErrorAlways } from '$lib/log'
 
 /**
- * Background scheduler service using Croner for preset updates
+ * Background scheduler service using Croner for content sync
  */
 export class SchedulerService {
 	private static instance: SchedulerService | null = null
@@ -32,7 +30,7 @@ export class SchedulerService {
 	 */
 	private cleanupOrphanedJobs(): void {
 		if (scheduledJobs && Array.isArray(scheduledJobs)) {
-			const jobNames = ['regular-preset-updates', 'cache-cleanup']
+			const jobNames = ['content-sync', 'cache-cleanup']
 			for (let i = scheduledJobs.length - 1; i >= 0; i--) {
 				const job = scheduledJobs[i]
 				if (job && job.options && job.options.name && jobNames.includes(job.options.name)) {
@@ -58,13 +56,13 @@ export class SchedulerService {
 
 		logAlways('Initializing SchedulerService...')
 
-		// Regular presets: update every 12 hours (at 2:00 AM and 2:00 PM)
-		const regularPresetSchedule = process.env.REGULAR_PRESET_SCHEDULE || '0 2,14 * * *'
+		// Content sync: update every 12 hours (at 2:00 AM and 2:00 PM)
+		const contentSyncSchedule = process.env.CONTENT_SYNC_SCHEDULE || '0 2,14 * * *'
 
 		// In development, run every 30 minutes for testing
 		const devSchedule = '*/30 * * * *'
 
-		this.scheduleRegularPresetUpdates(dev ? devSchedule : regularPresetSchedule)
+		this.scheduleContentSync(dev ? devSchedule : contentSyncSchedule)
 
 		// Schedule cache cleanup every minute
 		this.scheduleCacheCleanup()
@@ -74,14 +72,14 @@ export class SchedulerService {
 	}
 
 	/**
-	 * Schedule updates for regular (non-distilled) presets
+	 * Schedule content synchronization from GitHub
 	 */
-	private scheduleRegularPresetUpdates(schedule: string): void {
+	private scheduleContentSync(schedule: string): void {
 		// Stop existing job if it exists
-		const existingJob = this.jobs.get('regular-presets')
+		const existingJob = this.jobs.get('content-sync')
 		if (existingJob) {
 			existingJob.stop()
-			logAlways('Stopped existing regular-preset-updates job')
+			logAlways('Stopped existing content-sync job')
 		}
 
 		const job = new Cron(
@@ -90,72 +88,45 @@ export class SchedulerService {
 				// Don't use name to avoid conflicts during hot module reloading
 				timezone: 'UTC',
 				catch: (err) => {
-					logErrorAlways('Error in regular preset update job:', err)
+					logErrorAlways('Error in content sync job:', err)
 				}
 			},
 			() => {
-				this.updateRegularPresets()
+				this.syncContent()
 			}
 		)
 
-		this.jobs.set('regular-presets', job)
-		logAlways(`Scheduled regular preset updates: ${schedule}`)
+		this.jobs.set('content-sync', job)
+		logAlways(`Scheduled content sync: ${schedule}`)
 	}
 
 	/**
-	 * Update all regular presets by first syncing the repository content
+	 * Sync content from GitHub repository to the master content table
 	 */
-	private async updateRegularPresets(): Promise<void> {
-		logAlways('Starting regular preset update job...')
+	private async syncContent(): Promise<void> {
+		logAlways('Starting content sync job...')
 
 		try {
-			// Step 1: Sync the sveltejs/svelte.dev repository to the master content table
-			logAlways('Syncing sveltejs/svelte.dev repository to master content table...')
-			await ContentSyncService.syncRepository('sveltejs', 'svelte.dev')
-			logAlways('Repository sync completed successfully')
-
-			// Step 2: Process all presets using the content from the database
-			// Filter regular (non-distilled) presets
-			const regularPresets = Object.entries(presets)
-				.filter(([_, preset]) => !preset.distilled)
-				.map(([key, config]) => ({ key, config }))
-
-			// Check which presets are stale
-			const stalePresets: Array<{ key: string; config: (typeof presets)[keyof typeof presets] }> = []
-
-			for (const { key, config } of regularPresets) {
-				try {
-					const isStale = await isPresetStale(key)
-					if (isStale) {
-						stalePresets.push({ key, config })
-						logAlways(`Preset ${key} is stale and will be updated`)
-					} else {
-						logAlways(`Preset ${key} is still fresh, skipping`)
-					}
-				} catch (error) {
-					logErrorAlways(`Failed to check staleness for preset ${key}:`, error)
-				}
-			}
-
-			if (stalePresets.length === 0) {
-				logAlways('No stale presets found, skipping update')
+			// Get the default repository
+			const { owner, repo } = getDefaultRepository()
+			
+			// Check if content is stale before syncing
+			const isStale = await ContentSyncService.isRepositoryContentStale(owner, repo)
+			
+			if (!isStale) {
+				logAlways(`Repository ${owner}/${repo} content is fresh, skipping sync`)
 				return
 			}
-
-			logAlways(`Found ${stalePresets.length} stale presets to update`)
-
-			// Process stale presets using batch processing (which will now use the database content)
-			const results = await fetchAndProcessMultiplePresetsWithDb(stalePresets)
-
-			logAlways(`Successfully updated ${results.size} presets`)
-			for (const [key, _] of results) {
-				logAlways(`  - ${key}`)
-			}
+			
+			// Sync the repository to the master content table
+			logAlways(`Syncing ${owner}/${repo} repository to master content table...`)
+			await ContentSyncService.syncRepository(owner, repo)
+			logAlways('Repository sync completed successfully')
 		} catch (error) {
-			logErrorAlways('Failed to update presets:', error)
+			logErrorAlways('Failed to sync content:', error)
 		}
 
-		logAlways('Regular preset update job completed')
+		logAlways('Content sync job completed')
 	}
 
 	/**
@@ -189,7 +160,7 @@ export class SchedulerService {
 		// Clear any remaining jobs from Croner's global scheduledJobs array
 		// This handles cases where hot module reloading might leave orphaned jobs
 		if (scheduledJobs && Array.isArray(scheduledJobs)) {
-			const jobNames = ['regular-preset-updates', 'cache-cleanup']
+			const jobNames = ['content-sync', 'cache-cleanup']
 			for (let i = scheduledJobs.length - 1; i >= 0; i--) {
 				const job = scheduledJobs[i]
 				if (job && job.options && job.options.name && jobNames.includes(job.options.name)) {
@@ -250,11 +221,11 @@ export class SchedulerService {
 	}
 
 	/**
-	 * Trigger immediate update of regular presets (for testing/manual triggers)
+	 * Trigger immediate content sync (for testing/manual triggers)
 	 */
-	async triggerRegularPresetUpdate(): Promise<void> {
-		logAlways('Manually triggering regular preset update...')
-		await this.updateRegularPresets()
+	async triggerContentSync(): Promise<void> {
+		logAlways('Manually triggering content sync...')
+		await this.syncContent()
 	}
 
 	/**

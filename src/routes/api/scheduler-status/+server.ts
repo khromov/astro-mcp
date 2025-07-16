@@ -10,11 +10,11 @@ export const GET: RequestHandler = async ({ url }) => {
 	try {
 		// Check if update parameter is present
 		if (url.searchParams.has('update')) {
-			await schedulerService.triggerRegularPresetUpdate()
+			await schedulerService.triggerContentSync()
 
 			return json({
 				success: true,
-				message: 'Regular preset update triggered',
+				message: 'Content sync triggered',
 				jobs: schedulerService.getJobStatus(),
 				timestamp: new Date().toISOString()
 			})

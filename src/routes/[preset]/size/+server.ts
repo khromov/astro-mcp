@@ -8,9 +8,6 @@ import { logAlways, logErrorAlways } from '$lib/log'
 // Virtual distilled presets that aren't in the presets object
 const VIRTUAL_DISTILLED_PRESETS = ['svelte-distilled', 'sveltekit-distilled']
 
-// Background updates are now handled by the scheduler service
-// This function is no longer used
-
 export const GET: RequestHandler = async ({ params }) => {
 	const presetKey = params.preset
 
@@ -34,9 +31,8 @@ export const GET: RequestHandler = async ({ params }) => {
 				sizeKb = distillation.size_kb
 			}
 		} else {
-			// Get size from presets table
+			// Calculate size on-demand from content table
 			sizeKb = await getPresetSizeKb(presetKey)
-			// Note: Staleness checks and background updates are now handled by the scheduler service
 		}
 
 		if (sizeKb !== null) {
@@ -47,8 +43,8 @@ export const GET: RequestHandler = async ({ params }) => {
 			})
 		}
 
-		// If content doesn't exist yet in database
-		logAlways(`No content found in database for preset "${presetKey}"`)
+		// If content doesn't exist yet
+		logAlways(`No content found for preset "${presetKey}"`)
 
 		return new Response(JSON.stringify({ sizeKb: 0, status: 'not_generated' }), {
 			headers: {
@@ -56,7 +52,7 @@ export const GET: RequestHandler = async ({ params }) => {
 			}
 		})
 	} catch (e) {
-		logErrorAlways(`Database error calculating size for preset "${presetKey}":`, e)
-		error(500, `Failed to get size from database for preset "${presetKey}"`)
+		logErrorAlways(`Error calculating size for preset "${presetKey}":`, e)
+		error(500, `Failed to get size for preset "${presetKey}"`)
 	}
 }

@@ -3,14 +3,7 @@ export interface QueryConfig {
 }
 
 // Database table types
-export interface DbPreset {
-	id: number
-	preset_name: string
-	content: string
-	size_kb: number
-	document_count: number
-	updated_at: Date
-}
+// Note: DbPreset type has been removed as presets are now generated on-demand from the content table
 
 export interface DbDistillation {
 	id: number
@@ -80,18 +73,7 @@ export interface DbContent {
 }
 
 // Input types for creating/updating records
-export interface CreatePresetInput {
-	preset_name: string
-	content: string
-	size_kb: number
-	document_count: number
-}
-
-export interface UpdatePresetInput {
-	content: string
-	size_kb: number
-	document_count: number
-}
+// Note: CreatePresetInput and UpdatePresetInput have been removed
 
 export interface CreateDistillationInput {
 	preset_name: 'svelte-distilled' | 'sveltekit-distilled' | 'svelte-complete-distilled'
@@ -122,48 +104,6 @@ export interface CreateDistillationResultInput {
 	error_message?: string
 	input_tokens?: number
 	output_tokens?: number
-}
-
-export interface CreateContentInput {
-	owner: string
-	repo_name: string
-	path: string
-	filename: string
-	content: string
-	size_bytes: number
-	metadata?: Record<string, any>
-}
-
-export interface UpdateContentInput {
-	content: string
-	size_bytes: number
-	is_processed?: boolean
-	processed_at?: Date
-	metadata?: Record<string, any>
-}
-
-export interface DbContent {
-	id: number
-	// Repository information
-	owner: string // Repository owner (e.g., 'sveltejs')
-	repo_name: string // Repository name (e.g., 'svelte')
-
-	// File information
-	path: string // Full file path
-	filename: string // Just the filename
-
-	// Content
-	content: string // The actual file content
-
-	// Metadata
-	size_bytes: number // Size of the content in bytes
-	is_processed: boolean // Whether content has been processed
-	processed_at: Date | null // When content was processed
-	metadata: Record<string, any> // Additional metadata (frontmatter, etc.)
-
-	// Timestamps
-	created_at: Date
-	updated_at: Date
 }
 
 export interface CreateContentInput {

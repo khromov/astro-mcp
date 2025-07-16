@@ -1,4 +1,4 @@
-import { fetchRepositoryTarball, processMarkdownFromTarball } from '$lib/fetchMarkdown'
+import { fetchRepositoryTarball, processMarkdownFromTarball, minimizeContent } from '$lib/fetchMarkdown'
 import { ContentDbService } from '$lib/server/contentDb'
 import type { CreateContentInput } from '$lib/types/db'
 import { presets, getDefaultRepository } from '$lib/presets'
@@ -9,6 +9,9 @@ import { logAlways, logErrorAlways } from '$lib/log'
  * This can be used to populate the content table initially or update it periodically
  */
 export class ContentSyncService {
+	// Maximum age of content in milliseconds (24 hours)
+	static readonly MAX_CONTENT_AGE_MS = 24 * 60 * 60 * 1000
+
 	/**
 	 * Sync all repositories used in presets to the content table
 	 * Since we now use only one repository, this will sync sveltejs/svelte.dev
@@ -98,6 +101,36 @@ export class ContentSyncService {
 	}
 
 	/**
+	 * Check if repository content is stale and needs to be re-synced
+	 */
+	static async isRepositoryContentStale(owner: string, repoName: string): Promise<boolean> {
+		try {
+			const stats = await ContentDbService.getContentStats()
+			const repoKey = ContentDbService.getRepoString(owner, repoName)
+			
+			// Check if repository exists in stats
+			if (!stats.by_repo[repoKey]) {
+				return true // No content for this repo, consider stale
+			}
+
+			// Check the age of the content
+			const lastUpdated = new Date(stats.last_updated)
+			const contentAge = Date.now() - lastUpdated.getTime()
+			
+			const isStale = contentAge > ContentSyncService.MAX_CONTENT_AGE_MS
+			
+			if (isStale) {
+				logAlways(`Repository ${repoKey} content is stale (age: ${Math.floor(contentAge / 1000 / 60)} minutes)`)
+			}
+			
+			return isStale
+		} catch (error) {
+			logErrorAlways(`Error checking repository staleness for ${owner}/${repoName}:`, error)
+			return true // On error, assume stale
+		}
+	}
+
+	/**
 	 * Get content from the database matching preset glob patterns
 	 * This replaces the Git fetching when content table is populated
 	 */
@@ -132,9 +165,15 @@ export class ContentSyncService {
 				// Check if file matches any glob pattern
 				const matches = preset.glob.some((pattern) => minimatch(content.path, pattern))
 				if (matches) {
+					// Apply minimize options if specified in the preset
+					let processedContent = content.content
+					if (preset.minimize && Object.keys(preset.minimize).length > 0) {
+						processedContent = minimizeContent(content.content, preset.minimize)
+					}
+
 					matchedContent.push({
 						path: content.path,
-						content: content.content
+						content: processedContent
 					})
 				}
 			}

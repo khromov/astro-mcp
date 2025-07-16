@@ -1,65 +1,79 @@
-import { PresetDbService } from '$lib/server/presetDb'
+import { ContentSyncService } from '$lib/server/contentSync'
+import { presets, getDefaultRepository } from '$lib/presets'
 import { log, logAlways, logErrorAlways } from '$lib/log'
 
 // Maximum age of cached content in milliseconds (24 hours)
 export const MAX_CACHE_AGE_MS = 24 * 60 * 60 * 1000
 
+function sortFilesWithinGroup(files: string[]): string[] {
+	return files.sort((a, b) => {
+		const aPath = a.split('\n')[0].replace('## ', '')
+		const bPath = b.split('\n')[0].replace('## ', '')
+
+		// Check if one path is a parent of the other
+		if (bPath.startsWith(aPath.replace('/index.md', '/'))) return -1
+		if (aPath.startsWith(bPath.replace('/index.md', '/'))) return 1
+
+		// If not parent/child relationship, sort by path
+		return aPath.localeCompare(bPath)
+	})
+}
+
 /**
- * Get preset content from database
+ * Get preset content generated on-demand from the content table
  */
 export async function getPresetContent(presetKey: string): Promise<string | null> {
 	try {
-		const preset = await PresetDbService.getPresetByName(presetKey)
-		if (!preset || !preset.content) {
-			log(`Preset not found in database: ${presetKey}`)
+		// Get files from the content table matching the preset's glob patterns
+		const filesWithPaths = await ContentSyncService.getPresetContentFromDb(presetKey)
+		
+		if (!filesWithPaths || filesWithPaths.length === 0) {
+			log(`No content found for preset: ${presetKey}`)
 			return null
 		}
 
-		logAlways(`Retrieved content for ${presetKey} from database (${preset.size_kb}KB)`)
+		// Format files with headers
+		const files = filesWithPaths.map((f) => `## ${f.path}\n\n${f.content}`)
+		
+		// Sort files
+		const sortedFiles = sortFilesWithinGroup(files)
+		const content = sortedFiles.join('\n\n')
 
-		return preset.content
+		logAlways(`Generated content for ${presetKey} on-demand (${filesWithPaths.length} files)`)
+
+		return content
 	} catch (error) {
-		logErrorAlways(`Error getting preset content for ${presetKey}:`, error)
+		logErrorAlways(`Error generating preset content for ${presetKey}:`, error)
 		return null
 	}
 }
 
 /**
- * Get content size in KB from database
+ * Get content size in KB calculated on-demand
  */
 export async function getPresetSizeKb(presetKey: string): Promise<number | null> {
 	try {
-		const preset = await PresetDbService.getPresetByName(presetKey)
-		if (!preset) {
+		const content = await getPresetContent(presetKey)
+		if (!content) {
 			return null
 		}
 
-		return preset.size_kb
+		const sizeKb = Math.floor(new TextEncoder().encode(content).length / 1024)
+		return sizeKb
 	} catch (error) {
-		logErrorAlways(`Error getting preset size for ${presetKey}:`, error)
+		logErrorAlways(`Error calculating preset size for ${presetKey}:`, error)
 		return null
 	}
 }
 
 /**
- * Check if preset content is stale based on database timestamps
+ * Check if preset content is stale based on repository content staleness
  */
 export async function isPresetStale(presetKey: string): Promise<boolean> {
 	try {
-		const preset = await PresetDbService.getPresetByName(presetKey)
-		if (!preset) {
-			return true // No preset exists, consider stale
-		}
-
-		// Check if content is older than MAX_CACHE_AGE_MS
-		const contentAge = Date.now() - new Date(preset.updated_at).getTime()
-		const isStale = contentAge > MAX_CACHE_AGE_MS
-
-		if (isStale) {
-			logAlways(`Preset ${presetKey} is stale (age: ${Math.floor(contentAge / 1000 / 60)} minutes)`)
-		}
-
-		return isStale
+		// Check if the repository content is stale
+		const { owner, repo } = getDefaultRepository()
+		return await ContentSyncService.isRepositoryContentStale(owner, repo)
 	} catch (error) {
 		logErrorAlways(`Error checking preset staleness for ${presetKey}:`, error)
 		return true // On error, assume stale
@@ -67,12 +81,17 @@ export async function isPresetStale(presetKey: string): Promise<boolean> {
 }
 
 /**
- * Check if preset exists in database
+ * Check if preset exists (has matching content in database)
  */
 export async function presetExists(presetKey: string): Promise<boolean> {
 	try {
-		const preset = await PresetDbService.getPresetByName(presetKey)
-		return preset !== null
+		const preset = presets[presetKey]
+		if (!preset) {
+			return false
+		}
+
+		const filesWithPaths = await ContentSyncService.getPresetContentFromDb(presetKey)
+		return filesWithPaths !== null && filesWithPaths.length > 0
 	} catch (error) {
 		logErrorAlways(`Error checking preset existence for ${presetKey}:`, error)
 		return false
@@ -80,7 +99,7 @@ export async function presetExists(presetKey: string): Promise<boolean> {
 }
 
 /**
- * Get preset metadata from database
+ * Get preset metadata calculated on-demand
  */
 export async function getPresetMetadata(presetKey: string): Promise<{
 	size_kb: number
@@ -89,17 +108,25 @@ export async function getPresetMetadata(presetKey: string): Promise<{
 	is_stale: boolean
 } | null> {
 	try {
-		const preset = await PresetDbService.getPresetByName(presetKey)
-		if (!preset) {
+		const filesWithPaths = await ContentSyncService.getPresetContentFromDb(presetKey)
+		
+		if (!filesWithPaths || filesWithPaths.length === 0) {
 			return null
 		}
 
+		// Calculate total size
+		let totalSize = 0
+		for (const file of filesWithPaths) {
+			totalSize += new TextEncoder().encode(`## ${file.path}\n\n${file.content}\n\n`).length
+		}
+		
+		const sizeKb = Math.floor(totalSize / 1024)
 		const isStale = await isPresetStale(presetKey)
 
 		return {
-			size_kb: preset.size_kb,
-			document_count: preset.document_count,
-			updated_at: preset.updated_at,
+			size_kb: sizeKb,
+			document_count: filesWithPaths.length,
+			updated_at: new Date(), // Since it's generated on-demand, it's always "now"
 			is_stale: isStale
 		}
 	} catch (error) {
