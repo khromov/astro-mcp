@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { onMount } from 'svelte'
+
 	let secretKey = $state('')
 
 	const endpoints = {
@@ -8,6 +10,25 @@
 		'sync-specific': '/api/sync-content?owner=sveltejs&repo=svelte.dev',
 		'update-distilled': '/api/update-distilled'
 	}
+
+	// Load secret key from localStorage on mount
+	onMount(() => {
+		const saved = localStorage.getItem('admin-secret-key')
+		if (saved) {
+			secretKey = saved
+		}
+	})
+
+	// Save to localStorage whenever secretKey changes
+	$effect(() => {
+		if (typeof window !== 'undefined') {
+			if (secretKey.trim()) {
+				localStorage.setItem('admin-secret-key', secretKey)
+			} else {
+				localStorage.removeItem('admin-secret-key')
+			}
+		}
+	})
 
 	function buildUrl(basePath: string): string {
 		if (!secretKey.trim()) {
