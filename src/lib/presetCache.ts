@@ -6,20 +6,6 @@ import { log, logAlways, logErrorAlways } from '$lib/log'
 // Maximum age of cached content in milliseconds (24 hours)
 export const MAX_CACHE_AGE_MS = 24 * 60 * 60 * 1000
 
-function sortFilesWithinGroup(files: string[]): string[] {
-	return files.sort((a, b) => {
-		const aPath = a.split('\n')[0].replace('## ', '')
-		const bPath = b.split('\n')[0].replace('## ', '')
-
-		// Check if one path is a parent of the other
-		if (bPath.startsWith(aPath.replace('/index.md', '/'))) return -1
-		if (aPath.startsWith(bPath.replace('/index.md', '/'))) return 1
-
-		// If not parent/child relationship, sort by path
-		return aPath.localeCompare(bPath)
-	})
-}
-
 /**
  * Get preset content generated on-demand from the content table
  * Falls back to GitHub fetch if content table is empty
@@ -52,12 +38,12 @@ export async function getPresetContent(presetKey: string): Promise<string | null
 			}
 		}
 
-		// Format files with headers
+		// Format files with headers and preserve the order from database
+		// The files are already correctly ordered by glob pattern precedence
 		const files = filesWithPaths.map((f) => `## ${f.path}\n\n${f.content}`)
 		
-		// Sort files
-		const sortedFiles = sortFilesWithinGroup(files)
-		const content = sortedFiles.join('\n\n')
+		// DO NOT sort - files are already in correct glob pattern order from ContentSyncService
+		const content = files.join('\n\n')
 
 		logAlways(`Generated content for ${presetKey} on-demand (${filesWithPaths.length} files)`)
 

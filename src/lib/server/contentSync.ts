@@ -5,6 +5,23 @@ import { presets, getDefaultRepository } from '$lib/presets'
 import { logAlways, logErrorAlways, log } from '$lib/log'
 
 /**
+ * Sort files within a group using the same logic as the original sortFilesWithinGroup
+ */
+function sortFilesWithinGroup(files: Array<{ path: string; content: string }>): Array<{ path: string; content: string }> {
+	return files.sort((a, b) => {
+		const aPath = a.path
+		const bPath = b.path
+
+		// Check if one path is a parent of the other
+		if (bPath.startsWith(aPath.replace('/index.md', '/'))) return -1
+		if (aPath.startsWith(bPath.replace('/index.md', '/'))) return 1
+
+		// If not parent/child relationship, sort by path
+		return aPath.localeCompare(bPath)
+	})
+}
+
+/**
  * Sync content from GitHub repositories to the content table
  * This can be used to populate the content table initially or update it periodically
  */
@@ -133,6 +150,8 @@ export class ContentSyncService {
 	/**
 	 * Get content from the database matching preset glob patterns
 	 * This replaces the Git fetching when content table is populated
+	 * FIXED: Now processes one glob pattern at a time to maintain natural order
+	 * AND applies proper sorting within each glob group
 	 */
 	static async getPresetContentFromDb(
 		presetKey: string
@@ -146,7 +165,7 @@ export class ContentSyncService {
 			// Use the default repository since we're standardizing on sveltejs/svelte.dev
 			const { owner, repo } = getDefaultRepository()
 			
-			// Get all content for the repository
+			// Get all content for the repository ONCE
 			const allContent = await ContentDbService.getContentByRepo(owner, repo)
 
 			if (allContent.length === 0) {
@@ -157,55 +176,68 @@ export class ContentSyncService {
 			log(`Glob patterns: ${JSON.stringify(preset.glob)}`)
 			log(`Ignore patterns: ${JSON.stringify(preset.ignore || [])}`)
 
-			// Filter content based on glob patterns
+			// Import minimatch
 			const { minimatch } = await import('minimatch')
-			const matchedContent: Array<{ path: string; content: string }> = []
 
-			for (const content of allContent) {
-				// Check if file should be ignored
-				const shouldIgnore = preset.ignore?.some((pattern) => {
-					const matches = minimatch(content.path, pattern)
-					if (matches) {
-						log(`  File ${content.path} ignored by pattern: ${pattern}`)
-					}
-					return matches
-				})
-				if (shouldIgnore) continue
+			// Final result array that maintains glob pattern order
+			const orderedResults: Array<{ path: string; content: string }> = []
 
-				// Check if file matches any glob pattern
-				const matchingPattern = preset.glob.find((pattern) => {
-					const matches = minimatch(content.path, pattern)
-					if (matches) {
-						log(`  File ${content.path} matched by pattern: ${pattern}`)
-					}
-					return matches
-				})
+			// Process one glob pattern at a time
+			for (const pattern of preset.glob) {
+				log(`\nProcessing glob pattern: ${pattern}`)
 				
-				if (matchingPattern) {
-					// Apply minimize options if specified in the preset
-					let processedContent = content.content
-					if (preset.minimize && Object.keys(preset.minimize).length > 0) {
-						processedContent = minimizeContent(content.content, preset.minimize)
-					}
-
-					matchedContent.push({
-						path: content.path,
-						content: processedContent
+				// Find all files matching this specific pattern
+				const matchingFiles: Array<{ path: string; content: string }> = []
+				
+				for (const dbContent of allContent) {
+					// Check if file should be ignored
+					const shouldIgnore = preset.ignore?.some((ignorePattern) => {
+						const matches = minimatch(dbContent.path, ignorePattern)
+						if (matches) {
+							log(`  File ${dbContent.path} ignored by pattern: ${ignorePattern}`)
+						}
+						return matches
 					})
+					if (shouldIgnore) continue
+
+					// Check if this file matches the current glob pattern
+					if (minimatch(dbContent.path, pattern)) {
+						log(`  File ${dbContent.path} matched`)
+						
+						// Apply minimize options if specified in the preset
+						let processedContent = dbContent.content
+						if (preset.minimize && Object.keys(preset.minimize).length > 0) {
+							processedContent = minimizeContent(dbContent.content, preset.minimize)
+						}
+
+						matchingFiles.push({
+							path: dbContent.path,
+							content: processedContent
+						})
+					}
 				}
+
+				// Sort files within this glob pattern using the proper sorting logic
+				const sortedFiles = sortFilesWithinGroup(matchingFiles)
+				
+				log(`  Found ${sortedFiles.length} files for pattern: ${pattern}`)
+				sortedFiles.forEach((file, i) => {
+					log(`    ${i + 1}. ${file.path}`)
+				})
+
+				// Add all files from this pattern to the final result
+				orderedResults.push(...sortedFiles)
 			}
 
-			logAlways(`Found ${matchedContent.length} files matching preset ${presetKey} from database`)
+			logAlways(`Found ${orderedResults.length} files matching preset ${presetKey} from database in natural glob order`)
 			
-			// Log a few sample paths if we found matches
-			if (matchedContent.length > 0) {
-				log(`Sample matched paths:`)
-				matchedContent.slice(0, 5).forEach(file => {
-					log(`  - ${file.path}`)
-				})
-			}
+			// Log the final order for verification
+			log('\nFinal file order:')
+			orderedResults.forEach((file, i) => {
+				log(`  ${i + 1}. ${file.path}`)
+			})
 			
-			return matchedContent
+			return orderedResults
 		} catch (error) {
 			logErrorAlways(`Failed to get preset content from database for ${presetKey}:`, error)
 			return null
