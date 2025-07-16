@@ -1,21 +1,13 @@
 import type { MinimizeOptions } from './fetchMarkdown'
 
 export type PresetConfig = {
-	/** The pretty title of the preset */
 	title: string
-	/** Optional description of the preset */
 	description?: string
-	/** List of glob patterns for including files */
 	glob: string[]
-	/** List of glob patterns for excluding files */
 	ignore?: string[]
-	/** Optional prompt to provide additional context or instructions to language models */
 	prompt?: string
-	/** Minimization options for the content */
 	minimize?: MinimizeOptions
-	/** Whether this preset is distilled by an LLM */
 	distilled?: boolean
-	/** For distilled presets, the filename base to use */
 	distilledFilenameBase?: string
 }
 

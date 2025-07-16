@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS presets (
 CREATE INDEX IF NOT EXISTS idx_presets_preset_name ON presets(preset_name);
 CREATE INDEX IF NOT EXISTS idx_presets_updated_at ON presets(updated_at);
 
--- Create distillation_jobs table
+-- Create distillation_jobs table (consolidated with token tracking)
 CREATE TABLE IF NOT EXISTS distillation_jobs (
   id SERIAL PRIMARY KEY,
   preset_name VARCHAR(100) NOT NULL,
@@ -25,6 +25,8 @@ CREATE TABLE IF NOT EXISTS distillation_jobs (
   processed_files INTEGER DEFAULT 0,
   successful_files INTEGER DEFAULT 0,
   minimize_applied BOOLEAN DEFAULT FALSE,
+  total_input_tokens INTEGER DEFAULT 0,
+  total_output_tokens INTEGER DEFAULT 0,
   started_at TIMESTAMP,
   completed_at TIMESTAMP,
   error_message TEXT,
@@ -37,25 +39,6 @@ CREATE TABLE IF NOT EXISTS distillation_jobs (
 CREATE INDEX IF NOT EXISTS idx_distillation_jobs_preset_name ON distillation_jobs(preset_name);
 CREATE INDEX IF NOT EXISTS idx_distillation_jobs_status ON distillation_jobs(status);
 CREATE INDEX IF NOT EXISTS idx_distillation_jobs_batch_id ON distillation_jobs(batch_id);
-
--- Create distillation_results table
-CREATE TABLE IF NOT EXISTS distillation_results (
-  id SERIAL PRIMARY KEY,
-  job_id INTEGER REFERENCES distillation_jobs(id) ON DELETE CASCADE,
-  file_path VARCHAR(500) NOT NULL,
-  original_content TEXT NOT NULL,
-  distilled_content TEXT,
-  prompt_used TEXT NOT NULL,
-  success BOOLEAN DEFAULT FALSE,
-  error_message TEXT,
-  input_tokens INTEGER,
-  output_tokens INTEGER,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Create indexes for distillation_results
-CREATE INDEX IF NOT EXISTS idx_distillation_results_job_id ON distillation_results(job_id);
-CREATE INDEX IF NOT EXISTS idx_distillation_results_success ON distillation_results(success);
 
 -- Create update trigger function
 CREATE OR REPLACE FUNCTION update_updated_at_column()

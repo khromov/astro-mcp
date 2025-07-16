@@ -2,10 +2,8 @@ import { query } from '$lib/server/db'
 import type {
 	DbDistillation,
 	DbDistillationJob,
-	DbDistillationResult,
 	CreateDistillationInput,
-	CreateDistillationJobInput,
-	CreateDistillationResultInput
+	CreateDistillationJobInput
 } from '$lib/types/db'
 import { logAlways, logErrorAlways } from '$lib/log'
 
@@ -119,8 +117,8 @@ export class PresetDbService {
 			const result = await query(
 				`INSERT INTO distillation_jobs (
 					preset_name, batch_id, status, model_used, total_files, 
-					minimize_applied, metadata, started_at
-				) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+					minimize_applied, metadata, started_at, total_input_tokens, total_output_tokens
+				) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 				RETURNING *`,
 				[
 					input.preset_name,
@@ -130,7 +128,9 @@ export class PresetDbService {
 					input.total_files,
 					input.minimize_applied || false,
 					input.metadata ? JSON.stringify(input.metadata) : '{}',
-					input.status === 'processing' ? new Date() : null
+					input.status === 'processing' ? new Date() : null,
+					0, // total_input_tokens - initialize to 0
+					0  // total_output_tokens - initialize to 0
 				]
 			)
 
@@ -157,6 +157,8 @@ export class PresetDbService {
 				status: 'status',
 				processed_files: 'processed_files',
 				successful_files: 'successful_files',
+				total_input_tokens: 'total_input_tokens',
+				total_output_tokens: 'total_output_tokens',
 				completed_at: 'completed_at',
 				error_message: 'error_message',
 				metadata: 'metadata'
@@ -198,36 +200,6 @@ export class PresetDbService {
 			logErrorAlways(`Failed to update distillation job ${jobId}:`, error)
 			throw new Error(
 				`Failed to update distillation job: ${error instanceof Error ? error.message : String(error)}`
-			)
-		}
-	}
-
-	/**
-	 * Create distillation result
-	 */
-	static async createDistillationResult(input: CreateDistillationResultInput): Promise<void> {
-		try {
-			await query(
-				`INSERT INTO distillation_results (
-					job_id, file_path, original_content, distilled_content,
-					prompt_used, success, error_message, input_tokens, output_tokens
-				) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-				[
-					input.job_id,
-					input.file_path,
-					input.original_content,
-					input.distilled_content || null,
-					input.prompt_used,
-					input.success,
-					input.error_message || null,
-					input.input_tokens || null,
-					input.output_tokens || null
-				]
-			)
-		} catch (error) {
-			logErrorAlways('Failed to create distillation result:', error)
-			throw new Error(
-				`Failed to create distillation result: ${error instanceof Error ? error.message : String(error)}`
 			)
 		}
 	}

@@ -205,7 +205,10 @@ export const GET: RequestHandler = async ({ url }) => {
 
 		const results = await anthropic.getBatchResults(batchStatus.results_url)
 
-		// Process results
+		// Process results and accumulate token counts
+		let totalInputTokens = 0
+		let totalOutputTokens = 0
+
 		const processedResults = results
 			.filter((result) => result.result.type === 'succeeded')
 			.map((result) => {
@@ -213,20 +216,6 @@ export const GET: RequestHandler = async ({ url }) => {
 				const fileObj = filesToProcess[index]
 
 				if (result.result.type !== 'succeeded' || !result.result.message) {
-					// Store failed result in database
-					const filePath = fileObj.path
-					const originalContent = fileObj.content
-					if (distillationJob) {
-						PresetDbService.createDistillationResult({
-							job_id: distillationJob.id,
-							file_path: filePath,
-							original_content: originalContent,
-							prompt_used: DISTILLATION_PROMPT,
-							success: false,
-							error_message: result.result.error?.message || 'Failed or no message'
-						}).catch((e) => logErrorAlways('Failed to store distillation result:', e))
-					}
-
 					return {
 						index,
 						path: fileObj.path,
@@ -237,20 +226,10 @@ export const GET: RequestHandler = async ({ url }) => {
 
 				const outputContent = result.result.message.content[0].text
 
-				// Store successful result in database
-				const filePath = fileObj.path
-				const originalContent = fileObj.content
-				if (distillationJob) {
-					PresetDbService.createDistillationResult({
-						job_id: distillationJob.id,
-						file_path: filePath,
-						original_content: originalContent,
-						distilled_content: outputContent,
-						prompt_used: DISTILLATION_PROMPT,
-						success: true,
-						input_tokens: result.result.message.usage?.input_tokens,
-						output_tokens: result.result.message.usage?.output_tokens
-					}).catch((e) => logErrorAlways('Failed to store distillation result:', e))
+				// Accumulate token usage
+				if (result.result.message.usage) {
+					totalInputTokens += result.result.message.usage.input_tokens || 0
+					totalOutputTokens += result.result.message.usage.output_tokens || 0
 				}
 
 				return {
@@ -364,11 +343,13 @@ export const GET: RequestHandler = async ({ url }) => {
 				distillation_job_id: distillationJob?.id
 			})
 
-			// Update distillation job as completed
+			// Update distillation job as completed with token counts
 			await PresetDbService.updateDistillationJob(distillationJob.id, {
 				status: 'completed',
 				processed_files: filesToProcess.length,
 				successful_files: successfulResults.length,
+				total_input_tokens: totalInputTokens,
+				total_output_tokens: totalOutputTokens,
 				completed_at: new Date()
 			})
 		} catch (dbError) {
@@ -386,6 +367,10 @@ export const GET: RequestHandler = async ({ url }) => {
 			svelteResults: svelteResults.length,
 			svelteKitResults: svelteKitResults.length,
 			distillationJobId: distillationJob?.id,
+			tokenUsage: {
+				totalInputTokens,
+				totalOutputTokens
+			},
 			bytes: {
 				combined: finalContent.length,
 				svelte: finalSvelteContent.length,
