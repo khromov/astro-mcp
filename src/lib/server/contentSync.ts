@@ -1,7 +1,7 @@
 import { fetchRepositoryTarball, processMarkdownFromTarball } from '$lib/fetchMarkdown'
 import { ContentDbService } from '$lib/server/contentDb'
 import type { CreateContentInput } from '$lib/types/db'
-import { presets } from '$lib/presets'
+import { presets, getDefaultRepository } from '$lib/presets'
 import { logAlways, logErrorAlways } from '$lib/log'
 
 /**
@@ -11,21 +11,14 @@ import { logAlways, logErrorAlways } from '$lib/log'
 export class ContentSyncService {
 	/**
 	 * Sync all repositories used in presets to the content table
+	 * Since we now use only one repository, this will sync sveltejs/svelte.dev
 	 */
 	static async syncAllRepositories(): Promise<void> {
-		// Get unique repositories from presets
-		const repositories = new Set<string>()
+		// We now use a single repository for all content
+		const { owner, repo } = getDefaultRepository()
 		
-		for (const preset of Object.values(presets)) {
-			repositories.add(`${preset.owner}/${preset.repo}`)
-		}
-
-		logAlways(`Found ${repositories.size} unique repositories to sync`)
-
-		for (const repo of repositories) {
-			const [owner, repoName] = repo.split('/')
-			await ContentSyncService.syncRepository(owner, repoName)
-		}
+		logAlways(`Syncing repository: ${owner}/${repo}`)
+		await ContentSyncService.syncRepository(owner, repo)
 	}
 
 	/**
@@ -44,8 +37,6 @@ export class ContentSyncService {
 			const filesWithPaths = (await processMarkdownFromTarball(
 				tarballBuffer,
 				{
-					owner,
-					repo: repoName,
 					glob: ['**/*.md', '**/*.mdx'],
 					ignore: [],
 					title: `Sync ${repoString}`,
@@ -119,8 +110,11 @@ export class ContentSyncService {
 		}
 
 		try {
+			// Use the default repository since we're standardizing on sveltejs/svelte.dev
+			const { owner, repo } = getDefaultRepository()
+			
 			// Get all content for the repository
-			const allContent = await ContentDbService.getContentByRepo(preset.owner, preset.repo)
+			const allContent = await ContentDbService.getContentByRepo(owner, repo)
 
 			if (allContent.length === 0) {
 				return null // No content in database yet
@@ -162,20 +156,19 @@ export class ContentSyncService {
 
 	/**
 	 * Clean up old or unused content
+	 * Since we now use only one repository, this won't do much
 	 */
 	static async cleanupUnusedContent(): Promise<number> {
-		// Get all repositories used in presets
-		const usedRepos = new Set<string>()
-		for (const preset of Object.values(presets)) {
-			usedRepos.add(ContentDbService.getRepoString(preset.owner, preset.repo))
-		}
+		// Get the default repository
+		const { owner, repo } = getDefaultRepository()
+		const defaultRepoString = ContentDbService.getRepoString(owner, repo)
 
 		// Get all repositories in the database
 		const stats = await ContentDbService.getContentStats()
 		const dbRepos = Object.keys(stats.by_repo)
 
-		// Find repositories not used in any preset
-		const unusedRepos = dbRepos.filter(repo => !usedRepos.has(repo))
+		// Find repositories that aren't the default repository
+		const unusedRepos = dbRepos.filter(repo => repo !== defaultRepoString)
 
 		let deletedCount = 0
 		for (const repo of unusedRepos) {

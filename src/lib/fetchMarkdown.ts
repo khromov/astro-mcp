@@ -7,6 +7,7 @@ import { minimatch } from 'minimatch'
 import { getPresetContent } from './presetCache'
 import { PresetDbService } from '$lib/server/presetDb'
 import { CacheDbService } from '$lib/server/cacheDb'
+import { ContentSyncService } from '$lib/server/contentSync'
 import { log, logAlways, logErrorAlways } from '$lib/log'
 
 // Database cache service instance
@@ -46,14 +47,50 @@ export async function fetchAndProcessMarkdownWithDb(
 			return cachedContent
 		}
 
-		// If no cached content, fetch and process the files
-		const filesWithPaths = (await fetchMarkdownFiles(preset, true)) as Array<{
+		// Try to get content from the master content table
+		const filesWithPaths = await ContentSyncService.getPresetContentFromDb(presetKey)
+		
+		if (filesWithPaths) {
+			// Content exists in the master table, use it
+			const files = filesWithPaths.map((f) => `## ${f.path}\n\n${f.content}`)
+
+			logAlways(`Fetched ${files.length} files for ${presetKey} from master content table`)
+
+			// Sort files
+			const sortedFiles = sortFilesWithinGroup(files)
+			const content = sortedFiles.join('\n\n')
+
+			try {
+				// Store preset content in database
+				const sizeKb = Math.floor(new TextEncoder().encode(content).length / 1024)
+
+				await PresetDbService.upsertPreset({
+					preset_name: presetKey,
+					content,
+					size_kb: sizeKb,
+					document_count: filesWithPaths.length
+				})
+
+				logAlways(
+					`Stored content for preset ${presetKey} (${sizeKb}KB, ${filesWithPaths.length} files)`
+				)
+			} catch (dbError) {
+				logErrorAlways(`Failed to store data in database for preset ${presetKey}:`, dbError)
+				// Don't throw the error - return the content even if DB storage fails
+			}
+
+			return content
+		}
+
+		// If no content in master table, fall back to fetching from GitHub
+		logAlways(`No content in master table for ${presetKey}, falling back to GitHub fetch`)
+		const githubFilesWithPaths = (await fetchMarkdownFiles(preset, true)) as Array<{
 			path: string
 			content: string
 		}>
-		const files = filesWithPaths.map((f) => `## ${f.path}\n\n${f.content}`)
+		const files = githubFilesWithPaths.map((f) => `## ${f.path}\n\n${f.content}`)
 
-		logAlways(`Fetched ${files.length} files for ${presetKey}`)
+		logAlways(`Fetched ${files.length} files for ${presetKey} from GitHub`)
 
 		// Sort files
 		const sortedFiles = sortFilesWithinGroup(files)
@@ -67,11 +104,11 @@ export async function fetchAndProcessMarkdownWithDb(
 				preset_name: presetKey,
 				content,
 				size_kb: sizeKb,
-				document_count: filesWithPaths.length
+				document_count: githubFilesWithPaths.length
 			})
 
 			logAlways(
-				`Stored content for preset ${presetKey} (${sizeKb}KB, ${filesWithPaths.length} files)`
+				`Stored content for preset ${presetKey} (${sizeKb}KB, ${githubFilesWithPaths.length} files)`
 			)
 		} catch (dbError) {
 			logErrorAlways(`Failed to store data in database for preset ${presetKey}:`, dbError)
@@ -86,96 +123,70 @@ export async function fetchAndProcessMarkdownWithDb(
 }
 
 /**
- * Process multiple presets that share the same repository
+ * Process multiple presets using the master content table
  */
 export async function fetchAndProcessMultiplePresetsWithDb(
 	presets: Array<{ config: PresetConfig; key: string }>
 ): Promise<Map<string, string>> {
 	const results = new Map<string, string>()
 
-	// Group presets by repository
-	const presetsByRepo = new Map<string, Array<{ config: PresetConfig; key: string }>>()
+	// Since we're now using a single repository (sveltejs/svelte.dev), 
+	// we can process all presets from the master content table
 
-	for (const preset of presets) {
-		const repoKey = `${preset.config.owner}/${preset.config.repo}`
-		const existing = presetsByRepo.get(repoKey) || []
-		existing.push(preset)
-		presetsByRepo.set(repoKey, existing)
-	}
-
-	// Process each repository group
-	for (const [repoKey, repoPresets] of presetsByRepo) {
-		logAlways(`Processing repository ${repoKey} with ${repoPresets.length} presets`)
+	for (const { config, key } of presets) {
+		logAlways(`Processing preset ${key}`)
 
 		try {
-			// Check if all presets in this group have cached content
-			const cachedContents = await Promise.all(
-				repoPresets.map(async ({ key }) => ({
-					key,
-					content: await getPresetContent(key)
-				}))
-			)
+			// Check if preset has cached content
+			const cachedContent = await getPresetContent(key)
 
-			const allCached = cachedContents.every(({ content }) => content !== null)
-
-			if (allCached) {
-				// All presets have cached content, use it
-				for (const { key, content } of cachedContents) {
-					if (content) {
-						logAlways(`Using cached content for ${key} from database`)
-						results.set(key, content)
-					}
-				}
+			if (cachedContent) {
+				logAlways(`Using cached content for ${key} from database`)
+				results.set(key, cachedContent)
 				continue
 			}
 
-			// At least one preset needs fresh data, fetch the repository once
-			const { owner, repo } = repoPresets[0].config
-			const tarballBuffer = await fetchRepositoryTarball(owner, repo)
+			// Try to get content from the master content table
+			const filesWithPaths = await ContentSyncService.getPresetContentFromDb(key)
 
-			// Process each preset using the shared tarball
-			for (const { config, key } of repoPresets) {
-				try {
-					const filesWithPaths = (await processMarkdownFromTarball(
-						tarballBuffer,
-						config,
-						true
-					)) as { path: string; content: string }[]
-					const files = filesWithPaths.map((f) => `## ${f.path}\n\n${f.content}`)
+			if (!filesWithPaths) {
+				logErrorAlways(`No content found in master table for preset ${key}`)
+				// Fall back to direct fetch
+				const content = await fetchAndProcessMarkdownWithDb(config, key)
+				results.set(key, content)
+				continue
+			}
 
-					logAlways(`Processed ${files.length} files for ${key}`)
+			const files = filesWithPaths.map((f) => `## ${f.path}\n\n${f.content}`)
 
-					// Sort files
-					const sortedFiles = sortFilesWithinGroup(files)
-					const content = sortedFiles.join('\n\n')
+			logAlways(`Processed ${files.length} files for ${key} from master content table`)
 
-					// Store in results
-					results.set(key, content)
+			// Sort files
+			const sortedFiles = sortFilesWithinGroup(files)
+			const content = sortedFiles.join('\n\n')
 
-					// Store in database
-					try {
-						const sizeKb = Math.floor(new TextEncoder().encode(content).length / 1024)
+			// Store in results
+			results.set(key, content)
 
-						await PresetDbService.upsertPreset({
-							preset_name: key,
-							content,
-							size_kb: sizeKb,
-							document_count: filesWithPaths.length
-						})
+			// Store in database
+			try {
+				const sizeKb = Math.floor(new TextEncoder().encode(content).length / 1024)
 
-						logAlways(
-							`Stored content for preset ${key} (${sizeKb}KB, ${filesWithPaths.length} files)`
-						)
-					} catch (dbError) {
-						logErrorAlways(`Failed to store data in database for preset ${key}:`, dbError)
-					}
-				} catch (error) {
-					logErrorAlways(`Error processing preset ${key}:`, error)
-					throw error
-				}
+				await PresetDbService.upsertPreset({
+					preset_name: key,
+					content,
+					size_kb: sizeKb,
+					document_count: filesWithPaths.length
+				})
+
+				logAlways(
+					`Stored content for preset ${key} (${sizeKb}KB, ${filesWithPaths.length} files)`
+				)
+			} catch (dbError) {
+				logErrorAlways(`Failed to store data in database for preset ${key}:`, dbError)
 			}
 		} catch (error) {
-			logErrorAlways(`Error processing repository ${repoKey}:`, error)
+			logErrorAlways(`Error processing preset ${key}:`, error)
 			throw error
 		}
 	}

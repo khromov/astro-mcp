@@ -4,6 +4,7 @@ import { presets } from '$lib/presets'
 import { fetchAndProcessMultiplePresetsWithDb } from '$lib/fetchMarkdown'
 import { isPresetStale } from '$lib/presetCache'
 import { CacheDbService } from '$lib/server/cacheDb'
+import { ContentSyncService } from '$lib/server/contentSync'
 import { log, logAlways, logErrorAlways } from '$lib/log'
 
 /**
@@ -102,42 +103,48 @@ export class SchedulerService {
 	}
 
 	/**
-	 * Update all regular presets that are stale using batch processing
+	 * Update all regular presets by first syncing the repository content
 	 */
 	private async updateRegularPresets(): Promise<void> {
 		logAlways('Starting regular preset update job...')
 
-		// Filter regular (non-distilled) presets
-		const regularPresets = Object.entries(presets)
-			.filter(([_, preset]) => !preset.distilled)
-			.map(([key, config]) => ({ key, config }))
-
-		// Check which presets are stale
-		const stalePresets: Array<{ key: string; config: (typeof presets)[keyof typeof presets] }> = []
-
-		for (const { key, config } of regularPresets) {
-			try {
-				const isStale = await isPresetStale(key)
-				if (isStale) {
-					stalePresets.push({ key, config })
-					logAlways(`Preset ${key} is stale and will be updated`)
-				} else {
-					logAlways(`Preset ${key} is still fresh, skipping`)
-				}
-			} catch (error) {
-				logErrorAlways(`Failed to check staleness for preset ${key}:`, error)
-			}
-		}
-
-		if (stalePresets.length === 0) {
-			logAlways('No stale presets found, skipping update')
-			return
-		}
-
-		logAlways(`Found ${stalePresets.length} stale presets to update`)
-
-		// Process stale presets using batch processing
 		try {
+			// Step 1: Sync the sveltejs/svelte.dev repository to the master content table
+			logAlways('Syncing sveltejs/svelte.dev repository to master content table...')
+			await ContentSyncService.syncRepository('sveltejs', 'svelte.dev')
+			logAlways('Repository sync completed successfully')
+
+			// Step 2: Process all presets using the content from the database
+			// Filter regular (non-distilled) presets
+			const regularPresets = Object.entries(presets)
+				.filter(([_, preset]) => !preset.distilled)
+				.map(([key, config]) => ({ key, config }))
+
+			// Check which presets are stale
+			const stalePresets: Array<{ key: string; config: (typeof presets)[keyof typeof presets] }> = []
+
+			for (const { key, config } of regularPresets) {
+				try {
+					const isStale = await isPresetStale(key)
+					if (isStale) {
+						stalePresets.push({ key, config })
+						logAlways(`Preset ${key} is stale and will be updated`)
+					} else {
+						logAlways(`Preset ${key} is still fresh, skipping`)
+					}
+				} catch (error) {
+					logErrorAlways(`Failed to check staleness for preset ${key}:`, error)
+				}
+			}
+
+			if (stalePresets.length === 0) {
+				logAlways('No stale presets found, skipping update')
+				return
+			}
+
+			logAlways(`Found ${stalePresets.length} stale presets to update`)
+
+			// Process stale presets using batch processing (which will now use the database content)
 			const results = await fetchAndProcessMultiplePresetsWithDb(stalePresets)
 
 			logAlways(`Successfully updated ${results.size} presets`)
@@ -145,7 +152,7 @@ export class SchedulerService {
 				logAlways(`  - ${key}`)
 			}
 		} catch (error) {
-			logErrorAlways('Failed to update presets in batch:', error)
+			logErrorAlways('Failed to update presets:', error)
 		}
 
 		logAlways('Regular preset update job completed')

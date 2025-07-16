@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { createMcpHandler } from '@vercel/mcp-adapter'
 import { env } from '$env/dynamic/private'
-import { presets } from '$lib/presets'
+import { presets, getDefaultRepository } from '$lib/presets'
 import { fetchAndProcessMultiplePresetsWithDb } from '$lib/fetchMarkdown'
 import { log, logAlways, logErrorAlways } from '$lib/log'
 

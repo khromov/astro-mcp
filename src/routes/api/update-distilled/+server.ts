@@ -1,7 +1,7 @@
 import { error, json } from '@sveltejs/kit'
 import { env } from '$env/dynamic/private'
 import { dev } from '$app/environment'
-import { presets } from '$lib/presets'
+import { presets, getDefaultRepository } from '$lib/presets'
 import {
 	fetchMarkdownFiles,
 	minimizeContent,
@@ -80,8 +80,8 @@ export const GET: RequestHandler = async ({ url }) => {
 	let distillationJob: DbDistillationJob | null = null
 
 	try {
-		// Use the new batch processing approach
-		const { owner, repo } = distilledPreset
+		// Use the default repository
+		const { owner, repo } = getDefaultRepository()
 		const tarballBuffer = await fetchRepositoryTarball(owner, repo)
 
 		// Process the tarball to get files
