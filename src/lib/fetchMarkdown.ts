@@ -61,14 +61,6 @@ export async function fetchAndProcessMultiplePresetsWithDb(
 ): Promise<Map<string, string>> {
 	const results = new Map<string, string>()
 
-	// Check if content table is empty and sync if needed
-	const stats = await ContentSyncService.getContentStats()
-	if (stats.total_files === 0) {
-		logAlways('Content table is empty, syncing repository...')
-		const { owner, repo } = getDefaultRepository()
-		await ContentSyncService.syncRepository(owner, repo)
-	}
-
 	// Process all presets
 	for (const { config, key } of presets) {
 		logAlways(`Processing preset ${key}`)
