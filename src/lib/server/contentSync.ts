@@ -43,6 +43,7 @@ export class ContentSyncService {
 
 	/**
 	 * Sync a specific repository to the content table
+	 * Now handles deletions properly to maintain data consistency
 	 */
 	static async syncRepository(owner: string, repoName: string): Promise<void> {
 		const repoString = ContentDbService.getRepoString(owner, repoName)
@@ -70,7 +71,14 @@ export class ContentSyncService {
 
 			logAlways(`Found ${filesWithPaths.length} markdown files in ${repoString}`)
 
-			// Prepare content for batch insertion
+			// Get existing files in the database for this repository
+			const existingFiles = await ContentDbService.getContentByRepo(owner, repoName)
+			const existingPaths = new Set(existingFiles.map(file => file.path))
+			
+			// Track which files we found in this sync
+			const foundPaths = new Set(filesWithPaths.map(file => file.path))
+
+			// Prepare content for batch insertion/update
 			const contentInputs: CreateContentInput[] = []
 
 			for (const file of filesWithPaths) {
@@ -96,21 +104,34 @@ export class ContentSyncService {
 				}
 			}
 
-			if (contentInputs.length === 0) {
-				logAlways(`No changes detected for ${repoString}`)
-				return
+			// Handle additions and updates
+			if (contentInputs.length > 0) {
+				logAlways(`Upserting ${contentInputs.length} changed files for ${repoString}`)
+				await ContentDbService.batchUpsertContent(contentInputs)
+
+				// Mark all successfully synced content as processed
+				for (const input of contentInputs) {
+					await ContentDbService.markContentAsProcessed(owner, repoName, input.path, input.metadata)
+				}
+			} else {
+				logAlways(`No file content changes detected for ${repoString}`)
 			}
 
-			// Batch upsert the content
-			logAlways(`Upserting ${contentInputs.length} changed files for ${repoString}`)
-			await ContentDbService.batchUpsertContent(contentInputs)
-
-			// Mark all successfully synced content as processed
-			for (const input of contentInputs) {
-				await ContentDbService.markContentAsProcessed(owner, repoName, input.path, input.metadata)
+			// Handle deletions - find files in DB that are no longer in the repository
+			const deletedPaths = Array.from(existingPaths).filter(path => !foundPaths.has(path))
+			
+			if (deletedPaths.length > 0) {
+				logAlways(`Deleting ${deletedPaths.length} files that no longer exist in ${repoString}`)
+				
+				for (const deletedPath of deletedPaths) {
+					logAlways(`  Deleting: ${deletedPath}`)
+					await ContentDbService.deleteContent(owner, repoName, deletedPath)
+				}
+			} else {
+				logAlways(`No deleted files detected for ${repoString}`)
 			}
 
-			logAlways(`Successfully synced ${contentInputs.length} files for ${repoString}`)
+			logAlways(`Successfully synced ${repoString}: ${contentInputs.length} upserted, ${deletedPaths.length} deleted`)
 		} catch (error) {
 			logErrorAlways(`Failed to sync repository ${repoString}:`, error)
 			throw error
