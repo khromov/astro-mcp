@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { PresetDbService } from './presetDb'
+import { DistillablePreset } from '$lib/types/db'
 import * as db from './db'
 
 // Mock the database module
@@ -19,7 +20,7 @@ describe('PresetDbService', () => {
 				rows: [
 					{
 						id: 1,
-						preset_name: 'svelte-distilled',
+						preset_name: DistillablePreset.SVELTE_DISTILLED,
 						version: 'latest',
 						content: 'distilled content',
 						size_kb: 20,
@@ -35,7 +36,7 @@ describe('PresetDbService', () => {
 			})
 
 			const result = await PresetDbService.createDistillation({
-				preset_name: 'svelte-distilled',
+				preset_name: DistillablePreset.SVELTE_DISTILLED,
 				version: 'latest',
 				content: 'distilled content',
 				size_kb: 20,
@@ -43,7 +44,7 @@ describe('PresetDbService', () => {
 			})
 
 			expect(result).toBeDefined()
-			expect(result.preset_name).toBe('svelte-distilled')
+			expect(result.preset_name).toBe(DistillablePreset.SVELTE_DISTILLED)
 			expect(result.version).toBe('latest')
 
 			// Verify the query uses INSERT ... ON CONFLICT
