@@ -1,6 +1,6 @@
 services:
   mcp-server:
-    image: ghcr.io/khromov/safe-file-mcp:main
+    image: ghcr.io/khromov/context-coder:full
     ports:
       - "3001:3001"
     volumes:
