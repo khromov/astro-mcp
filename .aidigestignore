@@ -4,3 +4,12 @@ LICENSE
 outputs
 .claude
 .db
+.gitignore
+.mcp.json
+.npmrc
+.nvmrc
+.prettierignore
+.prettierrc
+CLAUDE.md
+eslint.config.js
+.vscode
