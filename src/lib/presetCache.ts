@@ -40,7 +40,11 @@ export async function getPresetContent(presetKey: string): Promise<string | null
 
 		// Format files with headers and preserve the order from database
 		// The files are already correctly ordered by glob pattern precedence
-		const files = filesWithPaths.map((f) => `## ${f.path}\n\n${f.content}`)
+		// Strip the "apps/svelte.dev/content/" prefix to match the old format
+		const files = filesWithPaths.map((f) => {
+			const cleanPath = f.path.replace('apps/svelte.dev/content/', '')
+			return `## ${cleanPath}\n\n${f.content}`
+		})
 		
 		// DO NOT sort - files are already in correct glob pattern order from ContentSyncService
 		const content = files.join('\n\n')
