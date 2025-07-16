@@ -11,7 +11,6 @@ import { logAlways, logErrorAlways } from '$lib/log'
 
 /**
  * Service for managing distillation-related database operations
- * Note: Preset table operations have been removed as presets are now generated on-demand from the content table
  */
 export class PresetDbService {
 	// Distillation methods

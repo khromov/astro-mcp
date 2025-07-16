@@ -2,12 +2,18 @@ export interface QueryConfig {
 	debug?: boolean
 }
 
+// Enum for distillable preset names
+export enum DistillablePreset {
+	SVELTE_DISTILLED = 'svelte-distilled',
+	SVELTEKIT_DISTILLED = 'sveltekit-distilled',
+	SVELTE_COMPLETE_DISTILLED = 'svelte-complete-distilled'
+}
+
 // Database table types
-// Note: DbPreset type has been removed as presets are now generated on-demand from the content table
 
 export interface DbDistillation {
 	id: number
-	preset_name: 'svelte-distilled' | 'sveltekit-distilled' | 'svelte-complete-distilled'
+	preset_name: DistillablePreset
 	version: string // 'latest' or '2024-01-15'
 	content: string
 	size_kb: number
@@ -73,10 +79,9 @@ export interface DbContent {
 }
 
 // Input types for creating/updating records
-// Note: CreatePresetInput and UpdatePresetInput have been removed
 
 export interface CreateDistillationInput {
-	preset_name: 'svelte-distilled' | 'sveltekit-distilled' | 'svelte-complete-distilled'
+	preset_name: DistillablePreset
 	version: string
 	content: string
 	size_kb: number

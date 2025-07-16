@@ -9,6 +9,7 @@
 	} from '$lib/presets'
 	import PresetListItem from '$lib/components/PresetListItem.svelte'
 	import { SITE_URL } from '$lib/constants'
+	import { DistillablePreset } from '$lib/types/db'
 	import toast from 'svelte-french-toast'
 	import { logErrorAlways } from '$lib/log'
 
@@ -27,15 +28,15 @@
 	const svelteKitPresetsFormatted = transformAndSortPresets(svelteKitPresets)
 	const otherPresetsFormatted = transformAndSortPresets(otherPresets)
 
-	// Define virtual distilled presets
+	// Define virtual distilled presets using the enum
 	const svelteDistilledPreset = {
-		key: 'svelte-distilled',
+		key: DistillablePreset.SVELTE_DISTILLED,
 		title: '🔮 Svelte (LLM Distilled)',
 		description: 'AI-condensed version of just the Svelte 5 docs'
 	}
 
 	const svelteKitDistilledPreset = {
-		key: 'sveltekit-distilled',
+		key: DistillablePreset.SVELTEKIT_DISTILLED,
 		title: '🔮 SvelteKit (LLM Distilled)',
 		description: 'AI-condensed version of just the SvelteKit docs'
 	}
@@ -48,9 +49,9 @@
 	}
 
 	let distilledVersions = $state<Record<string, DistilledVersion[]>>({
-		'svelte-complete-distilled': [],
-		'svelte-distilled': [],
-		'sveltekit-distilled': []
+		[DistillablePreset.SVELTE_COMPLETE_DISTILLED]: [],
+		[DistillablePreset.SVELTE_DISTILLED]: [],
+		[DistillablePreset.SVELTEKIT_DISTILLED]: []
 	})
 	let loadingVersions = $state(true)
 	let distilledError = $state<string | null>(null)
@@ -364,8 +365,8 @@
 			{#each combinedPresetsFormatted as preset}
 				<PresetListItem
 					{...preset}
-					distilledVersions={preset.key === 'svelte-complete-distilled'
-						? distilledVersions['svelte-complete-distilled']
+					distilledVersions={preset.key === DistillablePreset.SVELTE_COMPLETE_DISTILLED
+						? distilledVersions[DistillablePreset.SVELTE_COMPLETE_DISTILLED]
 						: undefined}
 					{loadingVersions}
 					{distilledError}
@@ -382,7 +383,7 @@
 			<!-- Add the Svelte-only distilled preset at the top of the Svelte section -->
 			<PresetListItem
 				{...svelteDistilledPreset}
-				distilledVersions={distilledVersions['svelte-distilled']}
+				distilledVersions={distilledVersions[DistillablePreset.SVELTE_DISTILLED]}
 				{loadingVersions}
 				{distilledError}
 			/>
@@ -401,7 +402,7 @@
 			<!-- Add the SvelteKit-only distilled preset at the top of the SvelteKit section -->
 			<PresetListItem
 				{...svelteKitDistilledPreset}
-				distilledVersions={distilledVersions['sveltekit-distilled']}
+				distilledVersions={distilledVersions[DistillablePreset.SVELTEKIT_DISTILLED]}
 				{loadingVersions}
 				{distilledError}
 			/>

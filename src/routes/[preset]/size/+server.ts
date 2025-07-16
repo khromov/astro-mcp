@@ -3,16 +3,17 @@ import { error } from '@sveltejs/kit'
 import { presets } from '$lib/presets'
 import { getPresetSizeKb } from '$lib/presetCache'
 import { PresetDbService } from '$lib/server/presetDb'
+import { DistillablePreset } from '$lib/types/db'
 import { logAlways, logErrorAlways } from '$lib/log'
 
-// Virtual distilled presets that aren't in the presets object
-const VIRTUAL_DISTILLED_PRESETS = ['svelte-distilled', 'sveltekit-distilled']
+// Virtual distilled presets that aren't in the presets object - now using enum values
+const VIRTUAL_DISTILLED_PRESETS = [DistillablePreset.SVELTE_DISTILLED, DistillablePreset.SVELTEKIT_DISTILLED]
 
 export const GET: RequestHandler = async ({ params }) => {
 	const presetKey = params.preset
 
 	// Handle both regular presets and virtual distilled presets
-	const isVirtualPreset = VIRTUAL_DISTILLED_PRESETS.includes(presetKey)
+	const isVirtualPreset = VIRTUAL_DISTILLED_PRESETS.includes(presetKey as DistillablePreset)
 	const isRegularPreset = presetKey in presets
 	const isDistilledPreset = isVirtualPreset || presets[presetKey]?.distilled
 

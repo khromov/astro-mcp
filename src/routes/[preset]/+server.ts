@@ -7,10 +7,11 @@ import { presets } from '$lib/presets'
 import { dev } from '$app/environment'
 import { getPresetContent } from '$lib/presetCache'
 import { PresetDbService } from '$lib/server/presetDb'
+import { DistillablePreset } from '$lib/types/db'
 import { logAlways, logErrorAlways } from '$lib/log'
 
-// Valid virtual presets that aren't in the presets object
-const VIRTUAL_DISTILLED_PRESETS = ['svelte-distilled', 'sveltekit-distilled']
+// Valid virtual presets that aren't in the presets object - now using enum values
+const VIRTUAL_DISTILLED_PRESETS = [DistillablePreset.SVELTE_DISTILLED, DistillablePreset.SVELTEKIT_DISTILLED]
 
 export const GET: RequestHandler = async ({ params, url }) => {
 	const presetNames = params.preset.split(',').map((p) => p.trim())
@@ -19,7 +20,7 @@ export const GET: RequestHandler = async ({ params, url }) => {
 
 	// Validate all preset names first
 	const invalidPresets = presetNames.filter(
-		(name) => !(name in presets) && !VIRTUAL_DISTILLED_PRESETS.includes(name)
+		(name) => !(name in presets) && !VIRTUAL_DISTILLED_PRESETS.includes(name as DistillablePreset)
 	)
 
 	if (invalidPresets.length > 0) {
@@ -32,10 +33,10 @@ export const GET: RequestHandler = async ({ params, url }) => {
 
 		// Separate distilled and regular presets
 		const distilledPresetNames = presetNames.filter(
-			(name) => presets[name]?.distilled || VIRTUAL_DISTILLED_PRESETS.includes(name)
+			(name) => presets[name]?.distilled || VIRTUAL_DISTILLED_PRESETS.includes(name as DistillablePreset)
 		)
 		const regularPresetNames = presetNames.filter(
-			(name) => !presets[name]?.distilled && !VIRTUAL_DISTILLED_PRESETS.includes(name)
+			(name) => !presets[name]?.distilled && !VIRTUAL_DISTILLED_PRESETS.includes(name as DistillablePreset)
 		)
 
 		const contentMap = new Map<string, string>()
@@ -91,7 +92,7 @@ export const GET: RequestHandler = async ({ params, url }) => {
 			// (distilled presets already have the prompt added)
 			const finalContent =
 				!presets[presetKey]?.distilled &&
-				!VIRTUAL_DISTILLED_PRESETS.includes(presetKey) &&
+				!VIRTUAL_DISTILLED_PRESETS.includes(presetKey as DistillablePreset) &&
 				presets[presetKey]?.prompt
 					? `${content}\n\nInstructions for LLMs: <s>${presets[presetKey].prompt}</s>`
 					: content

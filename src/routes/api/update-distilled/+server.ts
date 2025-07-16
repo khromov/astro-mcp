@@ -11,6 +11,7 @@ import {
 import type { RequestHandler } from './$types'
 import { AnthropicProvider, type AnthropicBatchRequest } from '$lib/anthropic'
 import { PresetDbService } from '$lib/server/presetDb'
+import { DistillablePreset } from '$lib/types/db'
 import type { DbDistillationJob } from '$lib/types/db'
 import { logAlways, logErrorAlways } from '$lib/log'
 
@@ -50,10 +51,6 @@ IMPORTANT: Because of changes in Svelte 5 syntax, do not include content from yo
 Here is the documentation you must condense:
 
 `
-
-// Virtual preset basenames for the split content
-const SVELTE_DISTILLED_BASENAME = 'svelte-distilled'
-const SVELTEKIT_DISTILLED_BASENAME = 'sveltekit-distilled'
 
 export const GET: RequestHandler = async ({ url }) => {
 	// Check secret key
@@ -312,7 +309,7 @@ export const GET: RequestHandler = async ({ url }) => {
 		try {
 			// Store combined version
 			await PresetDbService.createDistillation({
-				preset_name: 'svelte-complete-distilled',
+				preset_name: DistillablePreset.SVELTE_COMPLETE_DISTILLED,
 				version: 'latest',
 				content: finalContent,
 				size_kb: Math.floor(new TextEncoder().encode(finalContent).length / 1024),
@@ -321,7 +318,7 @@ export const GET: RequestHandler = async ({ url }) => {
 			})
 
 			await PresetDbService.createDistillation({
-				preset_name: 'svelte-complete-distilled',
+				preset_name: DistillablePreset.SVELTE_COMPLETE_DISTILLED,
 				version: dateStr,
 				content: finalContent,
 				size_kb: Math.floor(new TextEncoder().encode(finalContent).length / 1024),
@@ -331,7 +328,7 @@ export const GET: RequestHandler = async ({ url }) => {
 
 			// Store Svelte-only version
 			await PresetDbService.createDistillation({
-				preset_name: SVELTE_DISTILLED_BASENAME as any,
+				preset_name: DistillablePreset.SVELTE_DISTILLED,
 				version: 'latest',
 				content: finalSvelteContent,
 				size_kb: Math.floor(new TextEncoder().encode(finalSvelteContent).length / 1024),
@@ -340,7 +337,7 @@ export const GET: RequestHandler = async ({ url }) => {
 			})
 
 			await PresetDbService.createDistillation({
-				preset_name: SVELTE_DISTILLED_BASENAME as any,
+				preset_name: DistillablePreset.SVELTE_DISTILLED,
 				version: dateStr,
 				content: finalSvelteContent,
 				size_kb: Math.floor(new TextEncoder().encode(finalSvelteContent).length / 1024),
@@ -350,7 +347,7 @@ export const GET: RequestHandler = async ({ url }) => {
 
 			// Store SvelteKit-only version
 			await PresetDbService.createDistillation({
-				preset_name: SVELTEKIT_DISTILLED_BASENAME as any,
+				preset_name: DistillablePreset.SVELTEKIT_DISTILLED,
 				version: 'latest',
 				content: finalSvelteKitContent,
 				size_kb: Math.floor(new TextEncoder().encode(finalSvelteKitContent).length / 1024),
@@ -359,7 +356,7 @@ export const GET: RequestHandler = async ({ url }) => {
 			})
 
 			await PresetDbService.createDistillation({
-				preset_name: SVELTEKIT_DISTILLED_BASENAME as any,
+				preset_name: DistillablePreset.SVELTEKIT_DISTILLED,
 				version: dateStr,
 				content: finalSvelteKitContent,
 				size_kb: Math.floor(new TextEncoder().encode(finalSvelteKitContent).length / 1024),

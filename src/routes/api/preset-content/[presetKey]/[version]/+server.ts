@@ -1,20 +1,17 @@
 import { error } from '@sveltejs/kit'
 import type { RequestHandler } from './$types'
 import { PresetDbService } from '$lib/server/presetDb'
+import { DistillablePreset } from '$lib/types/db'
 import { logErrorAlways } from '$lib/log'
 
-// Valid basenames for distilled content
-const VALID_DISTILLED_BASENAMES = [
-	'svelte-complete-distilled',
-	'svelte-distilled',
-	'sveltekit-distilled'
-]
+// Valid basenames for distilled content - now using the enum values
+const VALID_DISTILLED_BASENAMES = Object.values(DistillablePreset)
 
 export const GET: RequestHandler = async ({ params }) => {
 	const { presetKey, version } = params
 
 	// Validate the preset key
-	if (!VALID_DISTILLED_BASENAMES.includes(presetKey)) {
+	if (!VALID_DISTILLED_BASENAMES.includes(presetKey as DistillablePreset)) {
 		throw error(404, 'Preset not found')
 	}
 
