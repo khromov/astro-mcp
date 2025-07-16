@@ -2,7 +2,7 @@ import { fetchRepositoryTarball, processMarkdownFromTarball, minimizeContent } f
 import { ContentDbService } from '$lib/server/contentDb'
 import type { CreateContentInput } from '$lib/types/db'
 import { presets, getDefaultRepository } from '$lib/presets'
-import { logAlways, logErrorAlways } from '$lib/log'
+import { logAlways, logErrorAlways, log } from '$lib/log'
 
 /**
  * Sync content from GitHub repositories to the content table
@@ -153,18 +153,35 @@ export class ContentSyncService {
 				return null // No content in database yet
 			}
 
+			log(`Checking ${allContent.length} files against glob patterns for preset ${presetKey}`)
+			log(`Glob patterns: ${JSON.stringify(preset.glob)}`)
+			log(`Ignore patterns: ${JSON.stringify(preset.ignore || [])}`)
+
 			// Filter content based on glob patterns
 			const { minimatch } = await import('minimatch')
 			const matchedContent: Array<{ path: string; content: string }> = []
 
 			for (const content of allContent) {
 				// Check if file should be ignored
-				const shouldIgnore = preset.ignore?.some((pattern) => minimatch(content.path, pattern))
+				const shouldIgnore = preset.ignore?.some((pattern) => {
+					const matches = minimatch(content.path, pattern)
+					if (matches) {
+						log(`  File ${content.path} ignored by pattern: ${pattern}`)
+					}
+					return matches
+				})
 				if (shouldIgnore) continue
 
 				// Check if file matches any glob pattern
-				const matches = preset.glob.some((pattern) => minimatch(content.path, pattern))
-				if (matches) {
+				const matchingPattern = preset.glob.find((pattern) => {
+					const matches = minimatch(content.path, pattern)
+					if (matches) {
+						log(`  File ${content.path} matched by pattern: ${pattern}`)
+					}
+					return matches
+				})
+				
+				if (matchingPattern) {
 					// Apply minimize options if specified in the preset
 					let processedContent = content.content
 					if (preset.minimize && Object.keys(preset.minimize).length > 0) {
@@ -179,6 +196,15 @@ export class ContentSyncService {
 			}
 
 			logAlways(`Found ${matchedContent.length} files matching preset ${presetKey} from database`)
+			
+			// Log a few sample paths if we found matches
+			if (matchedContent.length > 0) {
+				log(`Sample matched paths:`)
+				matchedContent.slice(0, 5).forEach(file => {
+					log(`  - ${file.path}`)
+				})
+			}
+			
 			return matchedContent
 		} catch (error) {
 			logErrorAlways(`Failed to get preset content from database for ${presetKey}:`, error)

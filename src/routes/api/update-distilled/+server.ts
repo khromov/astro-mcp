@@ -269,9 +269,13 @@ export const GET: RequestHandler = async ({ url }) => {
 		// Filter successful responses
 		const successfulResults = processedResults.filter((result) => result.content)
 
-		// Split results into Svelte and SvelteKit categories
-		const svelteResults = successfulResults.filter((result) => result.path.includes('docs/svelte/'))
-		const svelteKitResults = successfulResults.filter((result) => result.path.includes('docs/kit/'))
+		// Split results into Svelte and SvelteKit categories based on the new path structure
+		const svelteResults = successfulResults.filter((result) => 
+			result.path.includes('apps/svelte.dev/content/docs/svelte/')
+		)
+		const svelteKitResults = successfulResults.filter((result) => 
+			result.path.includes('apps/svelte.dev/content/docs/kit/')
+		)
 
 		// Create content for each category
 		const createContentFromResults = (results: typeof successfulResults) => {

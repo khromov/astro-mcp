@@ -28,9 +28,9 @@ export const combinedPresets: Record<string, PresetConfig> = {
 		description: 'AI-condensed version of the docs focused on code examples and key concepts',
 		glob: [
 			// Svelte
-			'**/apps/svelte.dev/content/docs/svelte/**/*.md',
+			'apps/svelte.dev/content/docs/svelte/**/*.md',
 			// SvelteKit
-			'**/apps/svelte.dev/content/docs/kit/**/*.md'
+			'apps/svelte.dev/content/docs/kit/**/*.md'
 		],
 		minimize: {
 			normalizeWhitespace: false,
@@ -44,23 +44,23 @@ export const combinedPresets: Record<string, PresetConfig> = {
 		},
 		ignore: [
 			// Svelte ignores (same as medium preset)
-			'**/apps/svelte.dev/content/docs/svelte/07-misc/04-custom-elements.md',
-			'**/apps/svelte.dev/content/docs/svelte/07-misc/06-v4-migration-guide.md',
-			'**/apps/svelte.dev/content/docs/svelte/07-misc/07-v5-migration-guide.md',
-			'**/apps/svelte.dev/content/docs/svelte/07-misc/99-faq.md',
-			'**/apps/svelte.dev/content/docs/svelte/07-misc/xx-reactivity-indepth.md',
-			'**/apps/svelte.dev/content/docs/svelte/98-reference/21-svelte-legacy.md',
-			'**/apps/svelte.dev/content/docs/svelte/99-legacy/**/*.md',
-			'**/apps/svelte.dev/content/docs/svelte/98-reference/**/*.md',
+			'**/07-misc/04-custom-elements.md',
+			'**/07-misc/06-v4-migration-guide.md',
+			'**/07-misc/07-v5-migration-guide.md',
+			'**/07-misc/99-faq.md',
+			'**/07-misc/xx-reactivity-indepth.md',
+			'**/98-reference/21-svelte-legacy.md',
+			'**/99-legacy/**/*.md',
+			'**/98-reference/**/*.md',
 			'**/xx-*.md',
 			// SvelteKit ignores (same as medium preset)
-			'**/apps/svelte.dev/content/docs/kit/25-build-and-deploy/*adapter-*.md',
-			'**/apps/svelte.dev/content/docs/kit/25-build-and-deploy/99-writing-adapters.md',
-			'**/apps/svelte.dev/content/docs/kit/30-advanced/70-packaging.md',
-			'**/apps/svelte.dev/content/docs/kit/40-best-practices/05-performance.md',
-			'**/apps/svelte.dev/content/docs/kit/40-best-practices/10-accessibility.md',
-			'**/apps/svelte.dev/content/docs/kit/60-appendix/**/*.md',
-			'**/apps/svelte.dev/content/docs/kit/98-reference/**/*.md',
+			'**/25-build-and-deploy/*adapter-*.md',
+			'**/25-build-and-deploy/99-writing-adapters.md',
+			'**/30-advanced/70-packaging.md',
+			'**/40-best-practices/05-performance.md',
+			'**/40-best-practices/10-accessibility.md',
+			'**/60-appendix/**/*.md',
+			'**/98-reference/**/*.md',
 			'**/xx-*.md'
 		],
 		prompt: SVELTE_5_PROMPT,
@@ -73,31 +73,31 @@ export const combinedPresets: Record<string, PresetConfig> = {
 			'Complete Svelte + SvelteKit docs excluding certain advanced sections, legacy, notes and migration docs',
 		glob: [
 			// Svelte
-			'**/apps/svelte.dev/content/docs/svelte/**/*.md',
+			'apps/svelte.dev/content/docs/svelte/**/*.md',
 			// SvelteKit
-			'**/apps/svelte.dev/content/docs/kit/**/*.md'
+			'apps/svelte.dev/content/docs/kit/**/*.md'
 		],
 		ignore: [
 			// Svelte ignores
-			'**/apps/svelte.dev/content/docs/svelte/07-misc/04-custom-elements.md',
-			'**/apps/svelte.dev/content/docs/svelte/07-misc/06-v4-migration-guide.md',
-			'**/apps/svelte.dev/content/docs/svelte/07-misc/07-v5-migration-guide.md',
-			'**/apps/svelte.dev/content/docs/svelte/07-misc/99-faq.md',
-			'**/apps/svelte.dev/content/docs/svelte/07-misc/xx-reactivity-indepth.md',
-			'**/apps/svelte.dev/content/docs/svelte/98-reference/21-svelte-legacy.md',
-			'**/apps/svelte.dev/content/docs/svelte/99-legacy/**/*.md',
-			'**/apps/svelte.dev/content/docs/svelte/98-reference/30-runtime-errors.md',
-			'**/apps/svelte.dev/content/docs/svelte/98-reference/30-runtime-warnings.md',
-			'**/apps/svelte.dev/content/docs/svelte/98-reference/30-compiler-errors.md',
-			'**/apps/svelte.dev/content/docs/svelte/98-reference/30-compiler-warnings.md',
+			'**/07-misc/04-custom-elements.md',
+			'**/07-misc/06-v4-migration-guide.md',
+			'**/07-misc/07-v5-migration-guide.md',
+			'**/07-misc/99-faq.md',
+			'**/07-misc/xx-reactivity-indepth.md',
+			'**/98-reference/21-svelte-legacy.md',
+			'**/99-legacy/**/*.md',
+			'**/98-reference/30-runtime-errors.md',
+			'**/98-reference/30-runtime-warnings.md',
+			'**/98-reference/30-compiler-errors.md',
+			'**/98-reference/30-compiler-warnings.md',
 			'**/xx-*.md',
 			// SvelteKit ignores
-			'**/apps/svelte.dev/content/docs/kit/25-build-and-deploy/*adapter-*.md',
-			'**/apps/svelte.dev/content/docs/kit/25-build-and-deploy/99-writing-adapters.md',
-			'**/apps/svelte.dev/content/docs/kit/30-advanced/70-packaging.md',
-			'**/apps/svelte.dev/content/docs/kit/40-best-practices/05-performance.md',
-			'**/apps/svelte.dev/content/docs/kit/40-best-practices/10-accessibility.md', // May the a11y gods have mercy on our souls
-			'**/apps/svelte.dev/content/docs/kit/60-appendix/**/*.md',
+			'**/25-build-and-deploy/*adapter-*.md',
+			'**/25-build-and-deploy/99-writing-adapters.md',
+			'**/30-advanced/70-packaging.md',
+			'**/40-best-practices/05-performance.md',
+			'**/40-best-practices/10-accessibility.md', // May the a11y gods have mercy on our souls
+			'**/60-appendix/**/*.md',
 			'**/xx-*.md'
 		],
 		prompt: SVELTE_5_PROMPT,
@@ -114,8 +114,8 @@ export const combinedPresets: Record<string, PresetConfig> = {
 		title: 'Svelte + SvelteKit (Large preset)',
 		description: 'Complete Svelte + SvelteKit docs excluding legacy, notes and migration docs',
 		glob: [
-			'**/apps/svelte.dev/content/docs/svelte/**/*.md',
-			'**/apps/svelte.dev/content/docs/kit/**/*.md'
+			'apps/svelte.dev/content/docs/svelte/**/*.md',
+			'apps/svelte.dev/content/docs/kit/**/*.md'
 		],
 		ignore: [],
 		prompt: SVELTE_5_PROMPT,
@@ -132,8 +132,8 @@ export const combinedPresets: Record<string, PresetConfig> = {
 		title: 'Svelte + SvelteKit (Tiny preset)',
 		description: 'Tutorial content only',
 		glob: [
-			'**/apps/svelte.dev/content/tutorial/**/*.md',
-			'**/apps/svelte.dev/content/docs/svelte/02-runes/**/*.md'
+			'apps/svelte.dev/content/tutorial/**/*.md',
+			'apps/svelte.dev/content/docs/svelte/02-runes/**/*.md'
 		],
 		ignore: [],
 		prompt: SVELTE_5_PROMPT,
@@ -151,9 +151,9 @@ export const combinedPresets: Record<string, PresetConfig> = {
 		description: 'Only Svelte + SvelteKit docs for migrating ',
 		glob: [
 			// Svelte
-			'**/apps/svelte.dev/content/docs/svelte/07-misc/07-v5-migration-guide.md',
+			'apps/svelte.dev/content/docs/svelte/07-misc/07-v5-migration-guide.md',
 			// SvelteKit
-			'**/apps/svelte.dev/content/docs/kit/60-appendix/30-migrating-to-sveltekit-2.md'
+			'apps/svelte.dev/content/docs/kit/60-appendix/30-migrating-to-sveltekit-2.md'
 		],
 		ignore: [],
 		prompt: SVELTE_5_PROMPT,
@@ -172,7 +172,7 @@ export const sveltePresets: Record<string, PresetConfig> = {
 	svelte: {
 		title: 'Svelte (Full)',
 		description: 'Complete documentation including legacy and reference',
-		glob: ['**/apps/svelte.dev/content/docs/svelte/**/*.md'],
+		glob: ['apps/svelte.dev/content/docs/svelte/**/*.md'],
 		ignore: [],
 		prompt: SVELTE_5_PROMPT,
 		minimize: {}
@@ -180,20 +180,20 @@ export const sveltePresets: Record<string, PresetConfig> = {
 	'svelte-medium': {
 		title: 'Svelte (Medium)',
 		description: 'Complete documentation including legacy and reference',
-		glob: ['**/apps/svelte.dev/content/docs/svelte/**/*.md'],
+		glob: ['apps/svelte.dev/content/docs/svelte/**/*.md'],
 		ignore: [
 			// Svelte ignores
-			'**/apps/svelte.dev/content/docs/svelte/07-misc/04-custom-elements.md',
-			'**/apps/svelte.dev/content/docs/svelte/07-misc/06-v4-migration-guide.md',
-			'**/apps/svelte.dev/content/docs/svelte/07-misc/07-v5-migration-guide.md',
-			'**/apps/svelte.dev/content/docs/svelte/07-misc/99-faq.md',
-			'**/apps/svelte.dev/content/docs/svelte/07-misc/xx-reactivity-indepth.md',
-			'**/apps/svelte.dev/content/docs/svelte/98-reference/21-svelte-legacy.md',
-			'**/apps/svelte.dev/content/docs/svelte/99-legacy/**/*.md',
-			'**/apps/svelte.dev/content/docs/svelte/98-reference/30-runtime-errors.md',
-			'**/apps/svelte.dev/content/docs/svelte/98-reference/30-runtime-warnings.md',
-			'**/apps/svelte.dev/content/docs/svelte/98-reference/30-compiler-errors.md',
-			'**/apps/svelte.dev/content/docs/svelte/98-reference/30-compiler-warnings.md'
+			'**/07-misc/04-custom-elements.md',
+			'**/07-misc/06-v4-migration-guide.md',
+			'**/07-misc/07-v5-migration-guide.md',
+			'**/07-misc/99-faq.md',
+			'**/07-misc/xx-reactivity-indepth.md',
+			'**/98-reference/21-svelte-legacy.md',
+			'**/99-legacy/**/*.md',
+			'**/98-reference/30-runtime-errors.md',
+			'**/98-reference/30-runtime-warnings.md',
+			'**/98-reference/30-compiler-errors.md',
+			'**/98-reference/30-compiler-warnings.md'
 		],
 		prompt: SVELTE_5_PROMPT,
 		minimize: {
@@ -212,14 +212,14 @@ export const svelteKitPresets: Record<string, PresetConfig> = {
 		title: 'SvelteKit (Full)',
 		description: 'Complete documentation including legacy and reference',
 		prompt: SVELTE_5_PROMPT,
-		glob: ['**/apps/svelte.dev/content/docs/kit/**/*.md'],
+		glob: ['apps/svelte.dev/content/docs/kit/**/*.md'],
 		minimize: {}
 	},
 	'sveltekit-medium': {
 		title: 'SvelteKit (Medium)',
 		description: 'Complete documentation including legacy and reference',
 		prompt: SVELTE_5_PROMPT,
-		glob: ['**/apps/svelte.dev/content/docs/kit/**/*.md'],
+		glob: ['apps/svelte.dev/content/docs/kit/**/*.md'],
 		minimize: {
 			removeLegacy: true,
 			removePlaygroundLinks: true,
@@ -230,12 +230,12 @@ export const svelteKitPresets: Record<string, PresetConfig> = {
 		},
 		ignore: [
 			// SvelteKit ignores
-			'**/apps/svelte.dev/content/docs/kit/25-build-and-deploy/*adapter-*.md',
-			'**/apps/svelte.dev/content/docs/kit/25-build-and-deploy/99-writing-adapters.md',
-			'**/apps/svelte.dev/content/docs/kit/30-advanced/70-packaging.md',
-			'**/apps/svelte.dev/content/docs/kit/40-best-practices/05-performance.md',
-			'**/apps/svelte.dev/content/docs/kit/40-best-practices/10-accessibility.md', // May the a11y gods have mercy on our souls
-			'**/apps/svelte.dev/content/docs/kit/60-appendix/**/*.md',
+			'**/25-build-and-deploy/*adapter-*.md',
+			'**/25-build-and-deploy/99-writing-adapters.md',
+			'**/30-advanced/70-packaging.md',
+			'**/40-best-practices/05-performance.md',
+			'**/40-best-practices/10-accessibility.md', // May the a11y gods have mercy on our souls
+			'**/60-appendix/**/*.md',
 			'**/xx-*.md'
 		]
 	}
@@ -244,7 +244,7 @@ export const svelteKitPresets: Record<string, PresetConfig> = {
 export const otherPresets: Record<string, PresetConfig> = {
 	'svelte-cli': {
 		title: 'Svelte CLI - npx sv',
-		glob: ['**/apps/svelte.dev/content/docs/cli/**/*.md'],
+		glob: ['apps/svelte.dev/content/docs/cli/**/*.md'],
 		ignore: [],
 		minimize: {}
 	}

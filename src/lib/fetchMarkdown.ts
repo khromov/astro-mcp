@@ -7,6 +7,7 @@ import { minimatch } from 'minimatch'
 import { getPresetContent } from './presetCache'
 import { CacheDbService } from '$lib/server/cacheDb'
 import { ContentSyncService } from '$lib/server/contentSync'
+import { getDefaultRepository } from '$lib/presets'
 import { log, logAlways, logErrorAlways } from '$lib/log'
 
 // Database cache service instance
@@ -38,36 +39,13 @@ export async function fetchAndProcessMarkdownWithDb(
 	presetKey: string
 ): Promise<string> {
 	try {
-		// Get content from the master content table
-		const filesWithPaths = await ContentSyncService.getPresetContentFromDb(presetKey)
+		// Use the centralized getPresetContent which handles GitHub fallback
+		const content = await getPresetContent(presetKey)
 		
-		if (filesWithPaths) {
-			// Content exists in the master table, use it
-			const files = filesWithPaths.map((f) => `## ${f.path}\n\n${f.content}`)
-
-			logAlways(`Fetched ${files.length} files for ${presetKey} from master content table`)
-
-			// Sort files
-			const sortedFiles = sortFilesWithinGroup(files)
-			const content = sortedFiles.join('\n\n')
-
-			return content
+		if (!content) {
+			throw new Error(`Failed to get content for preset ${presetKey}`)
 		}
-
-		// If no content in master table, fall back to fetching from GitHub
-		logAlways(`No content in master table for ${presetKey}, falling back to GitHub fetch`)
-		const githubFilesWithPaths = (await fetchMarkdownFiles(preset, true)) as Array<{
-			path: string
-			content: string
-		}>
-		const files = githubFilesWithPaths.map((f) => `## ${f.path}\n\n${f.content}`)
-
-		logAlways(`Fetched ${files.length} files for ${presetKey} from GitHub`)
-
-		// Sort files
-		const sortedFiles = sortFilesWithinGroup(files)
-		const content = sortedFiles.join('\n\n')
-
+		
 		return content
 	} catch (error) {
 		logErrorAlways(`Error processing preset ${presetKey}:`, error)
@@ -83,33 +61,27 @@ export async function fetchAndProcessMultiplePresetsWithDb(
 ): Promise<Map<string, string>> {
 	const results = new Map<string, string>()
 
-	// Since we're now using a single repository (sveltejs/svelte.dev), 
-	// we can process all presets from the master content table
+	// Check if content table is empty and sync if needed
+	const stats = await ContentSyncService.getContentStats()
+	if (stats.total_files === 0) {
+		logAlways('Content table is empty, syncing repository...')
+		const { owner, repo } = getDefaultRepository()
+		await ContentSyncService.syncRepository(owner, repo)
+	}
 
+	// Process all presets
 	for (const { config, key } of presets) {
 		logAlways(`Processing preset ${key}`)
 
 		try {
-			// Try to get content from the master content table
-			const filesWithPaths = await ContentSyncService.getPresetContentFromDb(key)
-
-			if (!filesWithPaths) {
-				logErrorAlways(`No content found in master table for preset ${key}`)
-				// Fall back to direct fetch
-				const content = await fetchAndProcessMarkdownWithDb(config, key)
-				results.set(key, content)
+			// Use the centralized getPresetContent which generates content on-demand
+			const content = await getPresetContent(key)
+			
+			if (!content) {
+				logErrorAlways(`No content generated for preset ${key}`)
 				continue
 			}
 
-			const files = filesWithPaths.map((f) => `## ${f.path}\n\n${f.content}`)
-
-			logAlways(`Processed ${files.length} files for ${key} from master content table`)
-
-			// Sort files
-			const sortedFiles = sortFilesWithinGroup(files)
-			const content = sortedFiles.join('\n\n')
-
-			// Store in results
 			results.set(key, content)
 		} catch (error) {
 			logErrorAlways(`Error processing preset ${key}:`, error)
@@ -211,12 +183,12 @@ export async function processMarkdownFromTarball(
 					let content = ''
 					stream.on('data', (chunk) => (content += chunk.toString()))
 					stream.on('end', () => {
-						// Remove the repo directory prefix and apps/svelte.dev/content
+						// Remove only the repo directory prefix (first segment)
+						// Keep the rest of the path intact
 						const cleanPath = header.name
 							.split('/')
 							.slice(1) // Remove repo directory
 							.join('/')
-							.replace('apps/svelte.dev/content/', '') // Remove the fixed prefix
 
 						// Minimize the content if needed
 						const processedContent = minimizeContent(content, minimize)

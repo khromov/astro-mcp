@@ -65,7 +65,11 @@ export const GET: RequestHandler = async ({ params, url }) => {
 			const content = await getPresetContent(presetKey)
 			
 			if (!content) {
-				throw new Error(`No content found for ${presetKey}. Make sure the repository has been synced.`)
+				// This should rarely happen now that we have automatic syncing
+				logErrorAlways(`Failed to generate content for ${presetKey}`)
+				throw new Error(
+					`Failed to generate content for ${presetKey}. The repository may still be syncing, please try again in a few moments.`
+				)
 			}
 
 			contentMap.set(presetKey, content)
@@ -101,7 +105,8 @@ export const GET: RequestHandler = async ({ params, url }) => {
 		logAlways(`Final combined response length: ${response.length}`)
 
 		const headers: HeadersInit = {
-			'Content-Type': 'text/plain; charset=utf-8'
+			'Content-Type': 'text/plain; charset=utf-8',
+			'Cache-Control': 'no-cache' // Ensure fresh content on each request
 		}
 
 		// Serve as a download if not in development mode
@@ -115,6 +120,7 @@ export const GET: RequestHandler = async ({ params, url }) => {
 		})
 	} catch (e) {
 		logErrorAlways(`Error fetching documentation for presets [${presetNames.join(', ')}]:`, e)
-		error(500, `Failed to fetch documentation for presets "${presetNames.join(', ')}"`)
+		const errorMessage = e instanceof Error ? e.message : 'An unexpected error occurred'
+		error(500, errorMessage)
 	}
 }

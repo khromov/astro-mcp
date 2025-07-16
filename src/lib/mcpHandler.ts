@@ -13,11 +13,12 @@ interface DocumentSection {
 
 function parseDocumentSections(doc: string): DocumentSection[] {
 	const sections: DocumentSection[] = []
-	// Split only on headers that start with "docs/"
-	const parts = doc.split(/\n\n## (docs\/[^\n]+)/g)
+	// Split on headers that contain the doc paths
+	// TODO: Switch this to pure DB searches
+	const parts = doc.split(/\n\n## (apps\/svelte\.dev\/content\/docs\/[^\n]+)/g)
 
 	for (let i = 1; i < parts.length; i += 2) {
-		const filePath = parts[i] // The captured group (docs/...)
+		const filePath = parts[i] // The captured group
 		const content = '## ' + filePath + '\n' + (parts[i + 1] || '') // The content after the header
 		const title = extractFrontmatterTitle(content) || extractTitleFromPath(filePath)
 
