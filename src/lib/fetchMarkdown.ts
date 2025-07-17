@@ -278,26 +278,6 @@ function shouldIncludeFile(filename: string, glob: string, ignore: string[] = []
 	return minimatch(filename, glob)
 }
 
-// Fetch markdown files using GitHub's tarball API
-// This function is now only used for backward compatibility or specific use cases
-export async function fetchMarkdownFiles(
-	preset: PresetConfig,
-	includePathInfo = false
-): Promise<string[] | { path: string; content: string }[]> {
-	// Get the default repository since all presets now use the same repository
-	const { owner, repo } = getDefaultRepository()
-	
-	// Fetch the tarball
-	const tarballBuffer = await fetchRepositoryTarball(owner, repo)
-
-	// Process the tarball
-	return processMarkdownFromTarball(
-		tarballBuffer,
-		preset,
-		includePathInfo
-	)
-}
-
 /**
  * Clear repository cache (useful for forcing fresh downloads)
  */
