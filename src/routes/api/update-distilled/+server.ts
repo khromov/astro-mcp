@@ -3,7 +3,6 @@ import { env } from '$env/dynamic/private'
 import { dev } from '$app/environment'
 import { presets, getDefaultRepository } from '$lib/presets'
 import {
-	fetchMarkdownFiles,
 	minimizeContent,
 	fetchRepositoryTarball,
 	processMarkdownFromTarball
