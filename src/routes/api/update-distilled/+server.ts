@@ -130,7 +130,7 @@ export const GET: RequestHandler = async ({ url }) => {
 
 		// Create distillation job in database
 		distillationJob = await PresetDbService.createDistillationJob({
-			preset_name: 'svelte-complete-distilled',
+			preset_name: DistillablePreset.SVELTE_COMPLETE_DISTILLED,
 			status: 'pending',
 			model_used: anthropic.getModelIdentifier(),
 			total_files: filesToProcess.length,
