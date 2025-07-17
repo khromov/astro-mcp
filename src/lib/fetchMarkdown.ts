@@ -6,8 +6,6 @@ import { createGunzip } from 'zlib'
 import { minimatch } from 'minimatch'
 import { getPresetContent } from './presetCache'
 import { CacheDbService } from '$lib/server/cacheDb'
-import { ContentSyncService } from '$lib/server/contentSync'
-import { getDefaultRepository } from '$lib/presets'
 import { log, logAlways, logErrorAlways } from '$lib/log'
 
 // Database cache service instance
