@@ -1,6 +1,5 @@
 import { ContentSyncService } from '$lib/server/contentSync'
 import { presets, getDefaultRepository } from '$lib/presets'
-import { fetchRepositoryTarball, processMarkdownFromTarball } from '$lib/fetchMarkdown'
 import { log, logAlways, logErrorAlways } from '$lib/log'
 
 // Maximum age of cached content in milliseconds (24 hours)
