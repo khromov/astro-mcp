@@ -13,7 +13,7 @@ export interface AnthropicBatchRequest {
 			role: 'user' | 'assistant'
 			content: string | { type: string; text: string }[]
 		}[]
-		[key: string]: unknown // Other optional parameters
+		[key: string]: unknown
 	}
 }
 
@@ -77,15 +77,10 @@ export class AnthropicProvider implements LLMProvider {
 		}
 		this.apiKey = apiKey
 		this.client = new Anthropic({ apiKey, timeout: 900000 })
-		this.modelId = modelId || this.availableModels[0] // Default to claude-3-7-sonnet
+		this.modelId = modelId || this.availableModels[0]
 		this.baseUrl = 'https://api.anthropic.com/v1'
 	}
 
-	/**
-	 * Generate code from a prompt using Anthropic Claude
-	 * @param prompt The prompt to send to the LLM
-	 * @returns The generated code
-	 */
 	async generateResponse(prompt: string, temperature?: number): Promise<string> {
 		try {
 			const completion = await this.client.messages.create({
@@ -115,27 +110,14 @@ export class AnthropicProvider implements LLMProvider {
 		}
 	}
 
-	/**
-	 * Get all available models for this provider
-	 * @returns Array of model identifiers
-	 */
 	getModels(): string[] {
 		return [...this.availableModels]
 	}
 
-	/**
-	 * Get the model identifier that was used for generation
-	 * @returns The model identifier string
-	 */
 	getModelIdentifier(): string {
 		return this.modelId
 	}
 
-	/**
-	 * Create a new batch of requests
-	 * @param requests Array of batch requests
-	 * @returns The batch response
-	 */
 	async createBatch(requests: AnthropicBatchRequest[]): Promise<AnthropicBatchResponse> {
 		try {
 			const response = await fetch(`${this.baseUrl}/messages/batches`, {
@@ -165,11 +147,7 @@ export class AnthropicProvider implements LLMProvider {
 	}
 
 	/**
-	 * Get the status of a batch
-	 * @param batchId The ID of the batch
-	 * @param maxRetries Maximum number of retry attempts (default: 10)
-	 * @param retryDelay Delay between retries in milliseconds (default: 30000)
-	 * @returns The batch status
+	 * Get the status of a batch with automatic retry logic
 	 */
 	async getBatchStatus(
 		batchId: string,
@@ -200,7 +178,6 @@ export class AnthropicProvider implements LLMProvider {
 				retryCount++
 
 				if (retryCount > maxRetries) {
-					// If we've exceeded the maximum number of retries, log the error and throw
 					logErrorAlways(
 						`Error getting batch status for ${batchId} after ${maxRetries} retries:`,
 						error
@@ -212,14 +189,12 @@ export class AnthropicProvider implements LLMProvider {
 					)
 				}
 
-				// Log retry attempt
 				logWarningAlways(
 					`Error getting batch status for ${batchId} (attempt ${retryCount}/${maxRetries}):`,
 					error
 				)
 				log(`Retrying in ${retryDelay / 1000} seconds...`)
 
-				// Wait for the specified delay before retrying
 				await new Promise((resolve) => setTimeout(resolve, retryDelay))
 			}
 		}
@@ -228,11 +203,6 @@ export class AnthropicProvider implements LLMProvider {
 		throw new Error(`Failed to get batch status for ${batchId} after ${maxRetries} retries`)
 	}
 
-	/**
-	 * Get the results of a batch
-	 * @param resultsUrl The URL to fetch results from
-	 * @returns Array of batch results
-	 */
 	async getBatchResults(resultsUrl: string): Promise<AnthropicBatchResult[]> {
 		try {
 			const response = await fetch(resultsUrl, {

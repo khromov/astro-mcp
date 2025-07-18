@@ -14,7 +14,6 @@ import { logAlways, logErrorAlways } from '$lib/log'
  * Note: This endpoint always performs cleanup and always returns stats in the response.
  */
 export const GET: RequestHandler = async ({ url }) => {
-	// Check secret key
 	const secretKey = url.searchParams.get('secret_key')
 	const envSecretKey = env.CONTENT_SYNC_SECRET_KEY || env.DISTILL_SECRET_KEY
 
@@ -30,7 +29,6 @@ export const GET: RequestHandler = async ({ url }) => {
 		const { owner, repo } = DEFAULT_REPOSITORY
 		logAlways(`Starting content sync for ${owner}/${repo} repository`)
 		
-		// Use ContentSyncService.syncRepository with cleanup and stats enabled
 		const result = await ContentSyncService.syncRepository({
 			performCleanup: true,
 			returnStats: true
@@ -39,7 +37,7 @@ export const GET: RequestHandler = async ({ url }) => {
 		return json({
 			success: true,
 			message: `Successfully synced ${owner}/${repo} repository`,
-			...result // This includes stats, sync_details, cleanup_details, and timestamp
+			...result
 		})
 	} catch (e) {
 		logErrorAlways('Content sync failed:', e)

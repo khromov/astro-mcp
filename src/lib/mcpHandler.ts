@@ -22,9 +22,6 @@ function cleanPath(path: string): string {
 	return path
 }
 
-/**
- * Safely extract title from metadata, ensuring it's a string
- */
 function getTitleFromMetadata(
 	metadata: Record<string, unknown> | undefined,
 	fallbackPath: string
@@ -39,44 +36,37 @@ export const listSectionsHandler = async () => {
 	logAlways('Listing sections from database')
 
 	try {
-		// Query the database for all content in the docs directory
 		const allContent = await ContentDbService.getContentByFilter({
 			owner: 'sveltejs',
 			repo_name: 'svelte.dev',
 			path_pattern: 'apps/svelte.dev/content/docs/%'
 		})
 
-		// Filter and transform content into sections
 		const sections: DocumentSection[] = []
 
 		for (const item of allContent) {
-			// Skip files that are too small
 			if (item.content.length < 100) {
 				log(`Filtered out section: "${item.path}" (${item.content.length} chars)`)
 				continue
 			}
 
-			// Extract title from metadata or filename with proper type safety
 			const title = getTitleFromMetadata(item.metadata, item.path)
 
-			// Clean the path to remove the "apps/svelte.dev/content/" prefix
 			const cleanedPath = cleanPath(item.path)
 
 			sections.push({
-				filePath: cleanedPath, // Use cleaned path instead of full path
+				filePath: cleanedPath,
 				title,
 				content: `## ${cleanedPath}\n\n${item.content}`
 			})
 		}
 
-		// Sort sections by path
 		sections.sort((a, b) => a.filePath.localeCompare(b.filePath))
 
 		// Group by Svelte vs SvelteKit using cleaned paths (without leading slash)
 		const svelteSections = sections.filter((s) => s.filePath.includes('docs/svelte/'))
 		const svelteKitSections = sections.filter((s) => s.filePath.includes('docs/kit/'))
 
-		// Format output
 		let output = ''
 
 		if (svelteSections.length > 0) {
@@ -146,14 +136,11 @@ export const getDocumentationHandler = async ({ section }: { section: string | s
 			// Remove trailing comma if present
 			const cleanSection = sectionName.replace(/,\s*$/, '')
 
-			// Search in database
 			const matchedContent = await searchSectionInDb(cleanSection)
 
 			if (matchedContent) {
-				// Clean the path to remove the "apps/svelte.dev/content/" prefix
 				const cleanedPath = cleanPath(matchedContent.path)
 				
-				// Format with cleaned path header
 				const formattedContent = `## ${cleanedPath}\n\n${matchedContent.content}`
 				const framework = matchedContent.path.includes('/docs/svelte/') ? 'Svelte' : 'SvelteKit'
 
@@ -165,7 +152,6 @@ export const getDocumentationHandler = async ({ section }: { section: string | s
 		}
 
 		if (results.length === 0) {
-			// No sections found
 			const sectionList = Array.isArray(section) ? section.join(', ') : section
 			return {
 				content: [
@@ -177,7 +163,6 @@ export const getDocumentationHandler = async ({ section }: { section: string | s
 			}
 		}
 
-		// Build response text
 		let responseText = results.join('\n\n---\n\n')
 
 		if (notFound.length > 0) {
@@ -209,7 +194,6 @@ export const getDocumentationHandler = async ({ section }: { section: string | s
 async function searchSectionInDb(query: string): Promise<DbContent | null> {
 	const lowerQuery = query.toLowerCase()
 
-	// Query database for all docs content
 	const allContent = await ContentDbService.getContentByFilter({
 		owner: 'sveltejs',
 		repo_name: 'svelte.dev',

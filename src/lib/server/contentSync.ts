@@ -22,14 +22,10 @@ function sortFilesWithinGroup(
 		if (bPath.startsWith(aPath.replace('/index.md', '/'))) return -1
 		if (aPath.startsWith(bPath.replace('/index.md', '/'))) return 1
 
-		// If not parent/child relationship, sort by path
 		return aPath.localeCompare(bPath)
 	})
 }
 
-/**
- * Sync content from the sveltejs/svelte.dev repository to the content table
- */
 export class ContentSyncService {
 	// Maximum age of content in milliseconds (24 hours)
 	static readonly MAX_CONTENT_AGE_MS = 24 * 60 * 60 * 1000
@@ -37,10 +33,6 @@ export class ContentSyncService {
 	/**
 	 * Sync the sveltejs/svelte.dev repository to the content table
 	 * Handles deletions properly to maintain data consistency
-	 * 
-	 * @param options.performCleanup Whether to perform cleanup after sync (default: true)
-	 * @param options.returnStats Whether to return comprehensive stats (default: true)
-	 * @returns Comprehensive sync results including stats, sync details, and cleanup details
 	 */
 	static async syncRepository(
 		options: { 
@@ -79,14 +71,10 @@ export class ContentSyncService {
 		let cleanupDeletedCount = 0
 
 		try {
-			// Step 1: Sync the repository
 			logAlways(`Step 1: Syncing repository ${repoString}`)
 			
-			// Fetch the repository tarball
 			const tarballBuffer = await fetchRepositoryTarball(owner, repoName)
 
-			// Process all markdown files from the tarball
-			// Using a broad glob pattern to get all markdown files
 			const filesWithPaths = (await processMarkdownFromTarball(
 				tarballBuffer,
 				{
@@ -103,24 +91,19 @@ export class ContentSyncService {
 
 			logAlways(`Found ${filesWithPaths.length} markdown files in ${repoString}`)
 
-			// Get existing files in the database for this repository
 			const existingFiles = await ContentDbService.getContentByRepo(owner, repoName)
 			const existingPaths = new Set(existingFiles.map((file) => file.path))
 
-			// Track which files we found in this sync
 			const foundPaths = new Set(filesWithPaths.map((file) => file.path))
 
-			// Prepare content for batch insertion/update
 			const contentInputs: CreateContentInput[] = []
 
 			for (const file of filesWithPaths) {
 				const filename = ContentDbService.extractFilename(file.path)
 				const sizeBytes = new TextEncoder().encode(file.content).length
 
-				// Extract frontmatter metadata
 				const metadata = ContentDbService.extractFrontmatter(file.content)
 
-				// Check if content has changed
 				const hasChanged = await ContentDbService.hasContentChanged(
 					owner,
 					repoName,
@@ -143,12 +126,10 @@ export class ContentSyncService {
 				}
 			}
 
-			// Handle additions and updates
 			if (contentInputs.length > 0) {
 				logAlways(`Upserting ${contentInputs.length} changed files for ${repoString}`)
 				await ContentDbService.batchUpsertContent(contentInputs)
 
-				// Mark all successfully synced content as processed
 				for (const input of contentInputs) {
 					await ContentDbService.markContentAsProcessed(owner, repoName, input.path, input.metadata)
 				}
@@ -172,7 +153,6 @@ export class ContentSyncService {
 				logAlways(`No deleted files detected for ${repoString}`)
 			}
 
-			// Step 2: Perform cleanup if requested
 			if (performCleanup) {
 				logAlways(`Step 2: Performing cleanup of unused content`)
 				cleanupDeletedCount = await ContentSyncService.cleanupUnusedContent()
@@ -180,7 +160,6 @@ export class ContentSyncService {
 				logAlways(`Step 2: Skipping cleanup (performCleanup = false)`)
 			}
 
-			// Step 3: Get final stats if requested
 			let stats
 			if (returnStats) {
 				logAlways(`Step 3: Collecting final statistics`)
@@ -222,21 +201,16 @@ export class ContentSyncService {
 		}
 	}
 
-	/**
-	 * Check if the sveltejs/svelte.dev repository content is stale and needs to be re-synced
-	 */
 	static async isRepositoryContentStale(): Promise<boolean> {
 		try {
 			const { owner, repo: repoName } = DEFAULT_REPOSITORY
 			const stats = await ContentDbService.getContentStats()
 			const repoKey = ContentDbService.getRepoString(owner, repoName)
 
-			// Check if repository exists in stats
 			if (!stats.by_repo[repoKey]) {
 				return true // No content for this repo, consider stale
 			}
 
-			// Check the age of the content
 			const lastUpdated = new Date(stats.last_updated)
 			const contentAge = Date.now() - lastUpdated.getTime()
 
@@ -271,35 +245,29 @@ export class ContentSyncService {
 		}
 
 		try {
-			// Use the default repository since we're standardizing on sveltejs/svelte.dev
 			const { owner, repo } = DEFAULT_REPOSITORY
 
-			// Get all content for the repository ONCE
 			const allContent = await ContentDbService.getContentByRepo(owner, repo)
 
 			if (allContent.length === 0) {
-				return null // No content in database yet
+				return null
 			}
 
 			log(`Checking ${allContent.length} files against glob patterns for preset ${presetKey}`)
 			log(`Glob patterns: ${JSON.stringify(preset.glob)}`)
 			log(`Ignore patterns: ${JSON.stringify(preset.ignore || [])}`)
 
-			// Import minimatch
 			const { minimatch } = await import('minimatch')
 
-			// Final result array that maintains glob pattern order
 			const orderedResults: Array<{ path: string; content: string }> = []
 
 			// Process one glob pattern at a time
 			for (const pattern of preset.glob) {
 				log(`\nProcessing glob pattern: ${pattern}`)
 
-				// Find all files matching this specific pattern
 				const matchingFiles: Array<{ path: string; content: string }> = []
 
 				for (const dbContent of allContent) {
-					// Check if file should be ignored
 					const shouldIgnore = preset.ignore?.some((ignorePattern) => {
 						const matches = minimatch(dbContent.path, ignorePattern)
 						if (matches) {
@@ -309,11 +277,9 @@ export class ContentSyncService {
 					})
 					if (shouldIgnore) continue
 
-					// Check if this file matches the current glob pattern
 					if (minimatch(dbContent.path, pattern)) {
 						log(`  File ${dbContent.path} matched`)
 
-						// Apply minimize options if specified in the preset
 						let processedContent = dbContent.content
 						if (preset.minimize && Object.keys(preset.minimize).length > 0) {
 							processedContent = minimizeContent(dbContent.content, preset.minimize)
@@ -326,7 +292,6 @@ export class ContentSyncService {
 					}
 				}
 
-				// Sort files within this glob pattern using the proper sorting logic
 				const sortedFiles = sortFilesWithinGroup(matchingFiles)
 
 				log(`  Found ${sortedFiles.length} files for pattern: ${pattern}`)
@@ -334,7 +299,6 @@ export class ContentSyncService {
 					log(`    ${i + 1}. ${file.path}`)
 				})
 
-				// Add all files from this pattern to the final result
 				orderedResults.push(...sortedFiles)
 			}
 
@@ -342,7 +306,6 @@ export class ContentSyncService {
 				`Found ${orderedResults.length} files matching preset ${presetKey} from database in natural glob order`
 			)
 
-			// Log the final order for verification
 			log('\nFinal file order:')
 			orderedResults.forEach((file, i) => {
 				log(`  ${i + 1}. ${file.path}`)
@@ -355,9 +318,6 @@ export class ContentSyncService {
 		}
 	}
 
-	/**
-	 * Get content statistics for monitoring
-	 */
 	static async getContentStats() {
 		return ContentDbService.getContentStats()
 	}
@@ -367,11 +327,9 @@ export class ContentSyncService {
 	 * Since we now use only one repository, this won't do much
 	 */
 	static async cleanupUnusedContent(): Promise<number> {
-		// Get the default repository
 		const { owner, repo } = DEFAULT_REPOSITORY
 		const defaultRepoString = ContentDbService.getRepoString(owner, repo)
 
-		// Get all repositories in the database
 		const stats = await ContentDbService.getContentStats()
 		const dbRepos = Object.keys(stats.by_repo)
 

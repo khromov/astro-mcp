@@ -9,31 +9,19 @@ import type {
 import { logAlways, logErrorAlways } from '$lib/log'
 
 export class ContentDbService {
-	/**
-	 * Extract filename from path
-	 */
 	static extractFilename(path: string): string {
 		return path.split('/').pop() || path
 	}
 
-	/**
-	 * Combine owner and repo_name into repo string
-	 */
 	static getRepoString(owner: string, repo_name: string): RepoString {
 		return `${owner}/${repo_name}` as RepoString
 	}
 
-	/**
-	 * Split repo string into owner and repo_name
-	 */
 	static splitRepoString(repo: RepoString): { owner: string; repo_name: string } {
 		const [owner, repo_name] = repo.split('/')
 		return { owner, repo_name }
 	}
 
-	/**
-	 * Create or update content
-	 */
 	static async upsertContent(input: CreateContentInput): Promise<DbContent> {
 		try {
 			const result = await query(
@@ -71,9 +59,6 @@ export class ContentDbService {
 		}
 	}
 
-	/**
-	 * Get content by owner, repo_name and path
-	 */
 	static async getContentByPath(
 		owner: string,
 		repo_name: string,
@@ -93,9 +78,6 @@ export class ContentDbService {
 		}
 	}
 
-	/**
-	 * Get all content for a repository
-	 */
 	static async getContentByRepo(owner: string, repo_name: string): Promise<DbContent[]> {
 		try {
 			const result = await query(
@@ -111,9 +93,6 @@ export class ContentDbService {
 		}
 	}
 
-	/**
-	 * Get content matching filter criteria
-	 */
 	static async getContentByFilter(filter: ContentFilter): Promise<DbContent[]> {
 		try {
 			const conditions: string[] = []
@@ -157,9 +136,6 @@ export class ContentDbService {
 		}
 	}
 
-	/**
-	 * Mark content as processed
-	 */
 	static async markContentAsProcessed(
 		owner: string,
 		repo_name: string,
@@ -191,12 +167,8 @@ export class ContentDbService {
 		}
 	}
 
-	/**
-	 * Get content statistics
-	 */
 	static async getContentStats(): Promise<ContentStats> {
 		try {
-			// Get total stats
 			const totalResult = await query(
 				`SELECT 
 					COUNT(*) as total_files,
@@ -205,7 +177,6 @@ export class ContentDbService {
 				FROM content`
 			)
 
-			// Get stats by repo
 			const repoResult = await query(
 				`SELECT 
 					owner || '/' || repo_name as repo,
@@ -238,9 +209,6 @@ export class ContentDbService {
 		}
 	}
 
-	/**
-	 * Delete content by owner, repo_name and path
-	 */
 	static async deleteContent(owner: string, repo_name: string, path: string): Promise<boolean> {
 		try {
 			const result = await query(
@@ -256,9 +224,6 @@ export class ContentDbService {
 		}
 	}
 
-	/**
-	 * Delete all content for a repository
-	 */
 	static async deleteRepoContent(owner: string, repo_name: string): Promise<number> {
 		try {
 			const result = await query('DELETE FROM content WHERE owner = $1 AND repo_name = $2', [
@@ -274,9 +239,6 @@ export class ContentDbService {
 		}
 	}
 
-	/**
-	 * Check if content has changed (comparing with existing content)
-	 */
 	static async hasContentChanged(
 		owner: string,
 		repo_name: string,
@@ -285,9 +247,8 @@ export class ContentDbService {
 	): Promise<boolean> {
 		try {
 			const existing = await ContentDbService.getContentByPath(owner, repo_name, path)
-			if (!existing) return true // New content
+			if (!existing) return true
 
-			// Simple comparison - you could also use hash comparison if needed
 			return existing.content !== newContent
 		} catch (error) {
 			logErrorAlways(`Failed to check content change for ${owner}/${repo_name}/${path}:`, error)
@@ -295,9 +256,6 @@ export class ContentDbService {
 		}
 	}
 
-	/**
-	 * Batch upsert content
-	 */
 	static async batchUpsertContent(contents: CreateContentInput[]): Promise<DbContent[]> {
 		try {
 			const results: DbContent[] = []
@@ -307,7 +265,6 @@ export class ContentDbService {
 			for (let i = 0; i < contents.length; i += chunkSize) {
 				const chunk = contents.slice(i, i + chunkSize)
 
-				// Use Promise.all for parallel processing within each chunk
 				const chunkResults = await Promise.all(
 					chunk.map((content) => ContentDbService.upsertContent(content))
 				)
@@ -325,9 +282,6 @@ export class ContentDbService {
 		}
 	}
 
-	/**
-	 * Extract frontmatter metadata from content
-	 */
 	static extractFrontmatter(content: string): Record<string, unknown> {
 		const metadata: Record<string, unknown> = {}
 
@@ -356,7 +310,6 @@ export class ContentDbService {
 				try {
 					metadata[key] = JSON.parse(cleanValue)
 				} catch {
-					// If not valid JSON, use as string
 					metadata[key] = cleanValue
 				}
 			}
