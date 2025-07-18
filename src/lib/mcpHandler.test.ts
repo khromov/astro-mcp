@@ -106,6 +106,7 @@ describe('MCP Handler Integration', () => {
 		const mockGetContentByFilter = vi.mocked(ContentDbService.getContentByFilter)
 		mockGetContentByFilter.mockResolvedValue(mockSvelteContent)
 	})
+
 	it('should list sections and successfully fetch each one using real MCP functions', async () => {
 		// Call the real listSectionsHandler
 		const listResult = await listSectionsHandler()
@@ -137,6 +138,57 @@ describe('MCP Handler Integration', () => {
 		)
 		expect(pathResult.content[0].text).not.toContain('❌')
 	}, 15000)
+
+	it('should properly clean paths and categorize sections correctly', async () => {
+		// This test would have caught the filtering bug!
+		const listResult = await listSectionsHandler()
+		const outputText = listResult.content[0].text
+
+		// Test path cleaning - should NOT contain the full database path prefix
+		expect(outputText).not.toContain('apps/svelte.dev/content/docs/svelte/')
+		expect(outputText).not.toContain('apps/svelte.dev/content/docs/kit/')
+
+		// Test path cleaning - should contain the cleaned paths
+		expect(outputText).toContain('docs/svelte/01-introduction.md')
+		expect(outputText).toContain('docs/svelte/02-runes.md')
+		expect(outputText).toContain('docs/kit/01-routing.md')
+
+		// Test categorization - should have both section headers
+		expect(outputText).toContain('# Svelte')
+		expect(outputText).toContain('# SvelteKit')
+
+		// Test that Svelte sections are under the Svelte header
+		const svelteHeaderIndex = outputText.indexOf('# Svelte')
+		const svelteKitHeaderIndex = outputText.indexOf('# SvelteKit')
+		const introductionIndex = outputText.indexOf('title: Introduction, path: docs/svelte/01-introduction.md')
+		const stateIndex = outputText.indexOf('title: $state, path: docs/svelte/02-runes.md')
+
+		expect(svelteHeaderIndex).toBeGreaterThan(-1)
+		expect(svelteKitHeaderIndex).toBeGreaterThan(-1)
+		expect(introductionIndex).toBeGreaterThan(svelteHeaderIndex)
+		expect(stateIndex).toBeGreaterThan(svelteHeaderIndex)
+		expect(introductionIndex).toBeLessThan(svelteKitHeaderIndex)
+
+		// Test that SvelteKit sections are under the SvelteKit header
+		const routingIndex = outputText.indexOf('title: Routing, path: docs/kit/01-routing.md')
+		expect(routingIndex).toBeGreaterThan(svelteKitHeaderIndex)
+
+		// Test exact output format
+		expect(outputText).toMatch(/\* title: Introduction, path: docs\/svelte\/01-introduction\.md/)
+		expect(outputText).toMatch(/\* title: \$state, path: docs\/svelte\/02-runes\.md/)
+		expect(outputText).toMatch(/\* title: Routing, path: docs\/kit\/01-routing\.md/)
+	})
+
+	it('should clean paths in documentation responses', async () => {
+		const result = await getDocumentationHandler({ section: '$state' })
+		const responseText = result.content[0].text
+
+		// Should contain cleaned path in the header
+		expect(responseText).toContain('## docs/svelte/02-runes.md')
+		
+		// Should NOT contain the full database path
+		expect(responseText).not.toContain('## apps/svelte.dev/content/docs/svelte/02-runes.md')
+	})
 
 	it('should handle trailing commas in search queries using real MCP functions', async () => {
 		// Test with trailing comma
@@ -219,4 +271,28 @@ describe('MCP Handler Integration', () => {
 		expect(result.content[0].text).toContain('---') // Should have separators
 		expect(result.content[0].text).not.toContain('❌')
 	}, 15000)
+
+	it('should handle empty sections gracefully when filtering is broken', async () => {
+		// This test specifically checks for the bug scenario
+		// If filtering logic is broken, we should get empty sections instead of proper categorization
+		const listResult = await listSectionsHandler()
+		const outputText = listResult.content[0].text
+
+		// If the filtering was broken, these sections would be missing entirely
+		// This test ensures that we actually have sections in both categories
+		const hasSvelteSection = outputText.includes('# Svelte') && 
+			outputText.match(/# Svelte\n[\s\S]*?\* title:/)
+		const hasSvelteKitSection = outputText.includes('# SvelteKit') && 
+			outputText.match(/# SvelteKit\n[\s\S]*?\* title:/)
+
+		expect(hasSvelteSection).toBeTruthy()
+		expect(hasSvelteKitSection).toBeTruthy()
+
+		// Should have at least one item in each section
+		const svelteMatches = outputText.match(/# Svelte\n([\s\S]*?)(?=# SvelteKit|$)/)
+		const svelteKitMatches = outputText.match(/# SvelteKit\n([\s\S]*)$/)
+
+		expect(svelteMatches?.[1]).toContain('* title:')
+		expect(svelteKitMatches?.[1]).toContain('* title:')
+	})
 })
