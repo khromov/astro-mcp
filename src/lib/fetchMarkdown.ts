@@ -60,7 +60,7 @@ export async function fetchAndProcessMultiplePresetsWithDb(
 	const results = new Map<string, string>()
 
 	// Process all presets
-	for (const { config, key } of presets) {
+	for (const { key } of presets) {
 		logAlways(`Processing preset ${key}`)
 
 		try {
@@ -140,10 +140,10 @@ export async function fetchRepositoryTarball(owner: string, repo: string): Promi
  */
 export async function processMarkdownFromTarball(
 	tarballBuffer: Buffer,
-	config: PresetConfig,
+	presetConfig: PresetConfig,
 	includePathInfo: boolean
 ): Promise<string[] | { path: string; content: string }[]> {
-	const { glob, ignore = [], minimize = undefined } = config
+	const { glob, ignore = [], minimize = undefined } = presetConfig
 
 	// Create a Map to store files for each glob pattern while maintaining order
 	const globResults = new Map<string, unknown[]>()

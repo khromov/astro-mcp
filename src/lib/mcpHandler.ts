@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { createMcpHandler } from '@vercel/mcp-adapter'
 import { env } from '$env/dynamic/private'
 import { ContentDbService } from '$lib/server/contentDb'
+import type { DbContent } from '$lib/types/db'
 import { log, logAlways, logErrorAlways } from '$lib/log'
 
 interface DocumentSection {
@@ -176,7 +177,7 @@ export const getDocumentationHandler = async ({ section }: { section: string | s
 	}
 }
 
-async function searchSectionInDb(query: string): Promise<any | null> {
+async function searchSectionInDb(query: string): Promise<DbContent | null> {
 	const lowerQuery = query.toLowerCase()
 
 	// Query database for all docs content

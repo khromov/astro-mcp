@@ -165,7 +165,7 @@ export class PresetDbService {
 			}
 
 			const updateFields: string[] = []
-			const values: any[] = []
+			const values: unknown[] = []
 			let paramCount = 1
 
 			for (const [key, value] of Object.entries(updates)) {

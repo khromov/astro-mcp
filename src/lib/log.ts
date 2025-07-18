@@ -1,31 +1,31 @@
 import { dev } from '$app/environment'
 
-export const log = (...props: any[]) => {
+export const log = (...props: unknown[]) => {
 	if (dev) {
 		console.log(...props)
 	}
 }
 
-export const logWarning = (...props: any[]) => {
+export const logWarning = (...props: unknown[]) => {
 	if (dev) {
 		console.warn(...props)
 	}
 }
 
-export const logError = (...props: any[]) => {
+export const logError = (...props: unknown[]) => {
 	if (dev) {
 		console.error(...props)
 	}
 }
 
-export const logAlways = (...props: any[]) => {
+export const logAlways = (...props: unknown[]) => {
 	console.log(...props)
 }
 
-export const logWarningAlways = (...props: any[]) => {
+export const logWarningAlways = (...props: unknown[]) => {
 	console.warn(...props)
 }
 
-export const logErrorAlways = (...props: any[]) => {
+export const logErrorAlways = (...props: unknown[]) => {
 	console.error(...props)
 }

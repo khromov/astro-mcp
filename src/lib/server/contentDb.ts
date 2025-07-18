@@ -2,7 +2,6 @@ import { query } from '$lib/server/db'
 import type {
 	DbContent,
 	CreateContentInput,
-	UpdateContentInput,
 	ContentFilter,
 	ContentStats,
 	RepoString
@@ -137,7 +136,7 @@ export class ContentDbService {
 	static async getContentByFilter(filter: ContentFilter): Promise<DbContent[]> {
 		try {
 			const conditions: string[] = []
-			const params: any[] = []
+			const params: unknown[] = []
 			let paramCount = 1
 
 			if (filter.owner) {
@@ -184,7 +183,7 @@ export class ContentDbService {
 		owner: string,
 		repo_name: string,
 		path: string,
-		metadata?: Record<string, any>
+		metadata?: Record<string, unknown>
 	): Promise<DbContent> {
 		try {
 			const result = await query(
@@ -348,8 +347,8 @@ export class ContentDbService {
 	/**
 	 * Extract frontmatter metadata from content
 	 */
-	static extractFrontmatter(content: string): Record<string, any> {
-		const metadata: Record<string, any> = {}
+	static extractFrontmatter(content: string): Record<string, unknown> {
+		const metadata: Record<string, unknown> = {}
 
 		if (!content.startsWith('---\n')) {
 			return metadata

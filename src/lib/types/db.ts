@@ -37,7 +37,7 @@ export interface DbDistillationJob {
 	started_at: Date | null
 	completed_at: Date | null
 	error_message: string | null
-	metadata: Record<string, any> // JSONB
+	metadata: Record<string, unknown> // JSONB
 	created_at: Date
 	updated_at: Date
 }
@@ -59,7 +59,7 @@ export interface DbContent {
 	size_bytes: number // Size of the content in bytes
 	is_processed: boolean // Whether content has been processed
 	processed_at: Date | null // When content was processed
-	metadata: Record<string, any> // Additional metadata (frontmatter, etc.)
+	metadata: Record<string, unknown> // Additional metadata (frontmatter, etc.)
 
 	// Timestamps
 	created_at: Date
@@ -84,7 +84,7 @@ export interface CreateDistillationJobInput {
 	model_used: string
 	total_files: number
 	minimize_applied?: boolean
-	metadata?: Record<string, any>
+	metadata?: Record<string, unknown>
 }
 
 export interface CreateContentInput {
@@ -94,7 +94,7 @@ export interface CreateContentInput {
 	filename: string
 	content: string
 	size_bytes: number
-	metadata?: Record<string, any>
+	metadata?: Record<string, unknown>
 }
 
 export interface UpdateContentInput {
@@ -102,7 +102,7 @@ export interface UpdateContentInput {
 	size_bytes: number
 	is_processed?: boolean
 	processed_at?: Date
-	metadata?: Record<string, any>
+	metadata?: Record<string, unknown>
 }
 
 export interface ContentFilter {

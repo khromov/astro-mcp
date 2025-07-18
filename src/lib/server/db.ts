@@ -21,7 +21,7 @@ export function maybeInitializePool(): Pool {
 
 export async function query(
 	incomingQuery: string,
-	params: any[] = [],
+	params: unknown[] = [],
 	config: QueryConfig = {}
 ): Promise<QueryResult> {
 	const pool = maybeInitializePool()

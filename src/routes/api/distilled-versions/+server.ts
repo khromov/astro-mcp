@@ -2,6 +2,7 @@ import { json, error } from '@sveltejs/kit'
 import type { RequestHandler } from './$types'
 import { PresetDbService } from '$lib/server/presetDb'
 import { DistillablePreset } from '$lib/types/db'
+import type { DbDistillation } from '$lib/types/db'
 import { logErrorAlways } from '$lib/log'
 
 // Valid basenames for distilled content - now using the enum values
@@ -10,7 +11,7 @@ const VALID_DISTILLED_BASENAMES = Object.values(DistillablePreset)
 /**
  * Transform database distillation to distilled version format
  */
-function transformDbDistillationToVersion(dbDistillation: any, presetKey: string) {
+function transformDbDistillationToVersion(dbDistillation: DbDistillation, presetKey: string) {
 	// Handle date format - version could be 'latest' or '2024-01-15'
 	const date =
 		dbDistillation.version === 'latest'
