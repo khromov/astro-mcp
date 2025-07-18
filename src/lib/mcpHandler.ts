@@ -1,9 +1,8 @@
 import { z } from 'zod'
-import { createMcpHandler } from '@vercel/mcp-adapter'
+import { createMcpHandler } from 'mcp-handler'
 import { env } from '$env/dynamic/private'
 import { listSectionsHandler } from '$lib/handlers/listSectionsHandler'
 import { getDocumentationHandler } from '$lib/handlers/getDocumentationHandler'
-import { dev } from '$app/environment'
 
 export const handler = createMcpHandler(
 	(server) => {

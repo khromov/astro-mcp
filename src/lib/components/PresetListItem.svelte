@@ -4,31 +4,68 @@
 	import CopyIcon from './CopyIcon.svelte'
 	import DownloadIcon from './DownloadIcon.svelte'
 
-	let { title, key, description, distilledVersions, loadingVersions, distilledError } = $props<{
+	let { title, key, description, presetSizePromise, distilledVersionsPromise } = $props<{
 		title: string
 		key: string
 		description?: string
-		distilledVersions?: Array<{ filename: string; date: string; path: string; sizeKb: number }>
-		loadingVersions?: boolean
-		distilledError?: string | null
+		presetSizePromise?: Promise<{ key: string; sizeKb: number | null; error?: string }>
+		distilledVersionsPromise?: Promise<{
+			key: string
+			versions: Array<{ filename: string; date: string; path: string; sizeKb: number }>
+			error?: string
+		}>
 	}>()
 
 	let sizeKb = $state<number | undefined>(undefined)
-	let sizeLoading = $state<boolean | undefined>(undefined)
+	let sizeLoading = $state<boolean>(true)
 	let sizeError = $state<string | undefined>(undefined)
 	let dialog = $state<HTMLDialogElement | null>(null)
 
+	// Distilled versions state
+	let distilledVersions = $state<
+		Array<{ filename: string; date: string; path: string; sizeKb: number }>
+	>([])
+	let loadingVersions = $state<boolean>(true)
+	let distilledError = $state<string | null>(null)
+
+	// Use the streamed promise from the server load function for size
 	onMount(async () => {
-		try {
-			sizeLoading = true
-			const response = await fetch(`/${key}/size`)
-			if (!response.ok) throw new Error('Failed to fetch size')
-			const data = await response.json()
-			sizeKb = data.sizeKb
-		} catch {
-			sizeError = 'Failed to load size'
-		} finally {
+		if (presetSizePromise) {
+			try {
+				const result = await presetSizePromise
+				if (result.error) {
+					sizeError = result.error
+				} else {
+					sizeKb = result.sizeKb || undefined
+				}
+			} catch (error) {
+				sizeError = 'Failed to load size'
+			} finally {
+				sizeLoading = false
+			}
+		} else {
+			// No promise provided - this shouldn't happen in normal operation
+			sizeError = 'Size data not available'
 			sizeLoading = false
+		}
+
+		// Use the streamed promise from the server load function for distilled versions
+		if (distilledVersionsPromise) {
+			try {
+				const result = await distilledVersionsPromise
+				if (result.error) {
+					distilledError = result.error
+				} else {
+					distilledVersions = result.versions
+				}
+			} catch (error) {
+				distilledError = error instanceof Error ? error.message : 'Failed to load versions'
+			} finally {
+				loadingVersions = false
+			}
+		} else {
+			// No promise provided - this preset doesn't have distilled versions
+			loadingVersions = false
 		}
 	})
 
@@ -106,7 +143,7 @@
 		</div>
 	</div>
 
-	{#if distilledVersions !== undefined}
+	{#if distilledVersionsPromise}
 		{#if loadingVersions}
 			<div class="versions-status"><em>Loading previous distilled versions...</em></div>
 		{:else if distilledError}
