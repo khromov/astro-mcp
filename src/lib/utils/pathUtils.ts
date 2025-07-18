@@ -36,6 +36,18 @@ export function cleanTarballPath(path: string): string {
  * @returns The extracted title
  */
 export function extractTitleFromPath(filePath: string): string {
-	const filename = filePath.split('/').pop() || filePath
+	if (!filePath) {
+		return ''
+	}
+	
+	const pathParts = filePath.split('/')
+	const filename = pathParts[pathParts.length - 1]
+	
+	// Handle empty filename (e.g., paths ending with '/')
+	if (!filename) {
+		return ''
+	}
+	
+	// Remove .md extension and numbered prefixes
 	return filename.replace('.md', '').replace(/^\d+-/, '')
 }
