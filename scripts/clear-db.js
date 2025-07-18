@@ -1,18 +1,12 @@
 #!/usr/bin/env node
 
 import PG from 'pg'
-import { migrate } from 'postgres-migrations'
-import path from 'path'
-import { fileURLToPath } from 'url'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
 
 // Hardcoded to match the default in src/lib/server/db.ts
 const DB_URL = 'postgres://admin:admin@localhost:5432/db'
 
-async function clearAndRecreateDatabase() {
-	console.log('🔄 Starting database reset...')
+async function clearDatabase() {
+	console.log('🔄 Starting database clear...')
 	console.log(`📡 Connecting to: ${DB_URL}`)
 
 	const client = new PG.Pool({
@@ -27,47 +21,17 @@ async function clearAndRecreateDatabase() {
 
 		console.log('🗑️  Dropping all tables...')
 		
-		// Drop all tables, sequences, functions, etc. in the public schema
+		// Just drop and recreate the public schema - no fancy permissions
 		await client.query(`
 			DROP SCHEMA IF EXISTS public CASCADE;
 			CREATE SCHEMA public;
-			GRANT ALL ON SCHEMA public TO public;
-			GRANT ALL ON SCHEMA public TO postgres;
 		`)
 
-		console.log('✅ All tables and schema objects dropped successfully')
-
-		console.log('🏗️  Running migrations...')
-		
-		// Determine migrations path
-		const migrationsPath = path.join(__dirname, '..', 'migrations')
-		console.log(`📁 Looking for migrations in: ${migrationsPath}`)
-		
-		// Run migrations
-		const migrations = await migrate({ client }, migrationsPath)
-		
-		if (migrations.length === 0) {
-			console.log('⚠️  No migrations found or applied')
-		} else {
-			migrations.forEach((migration) => {
-				console.log(`✅ Applied migration: ${migration.fileName}`)
-			})
-		}
-
-		console.log('🎉 Database reset completed successfully!')
-		console.log('')
-		console.log('💡 Next steps:')
-		console.log('   • Run "npm run dev" to start the development server')
-		console.log('   • Visit http://localhost:5173/api/migrate to verify migrations')
-		console.log('   • Check http://localhost:5173/api/content-status for content table status')
+		console.log('✅ All tables dropped and schema recreated')
+		console.log('🎉 Database cleared!')
 
 	} catch (error) {
-		console.error('❌ Error resetting database:', error)
-		console.log('')
-		console.log('🔧 Troubleshooting tips:')
-		console.log('   • Make sure PostgreSQL is running (docker-compose up)')
-		console.log('   • Check that PostgreSQL is available on localhost:5432')
-		console.log('   • Verify database credentials (admin/admin) and permissions')
+		console.error('❌ Error clearing database:', error)
 		process.exit(1)
 	} finally {
 		await client.end()
@@ -76,10 +40,9 @@ async function clearAndRecreateDatabase() {
 
 // Add safety check for production
 if (process.env.NODE_ENV === 'production') {
-	console.error('❌ Database reset is not allowed in production!')
-	console.log('This command will destroy all data. Only run in development.')
+	console.error('❌ Database clear is not allowed in production!')
 	process.exit(1)
 }
 
 // Run the script
-clearAndRecreateDatabase()
+clearDatabase()
