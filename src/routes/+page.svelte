@@ -93,7 +93,7 @@
 </script>
 
 <main>
-	<HeroSection siteUrl={SITE_URL} />
+	<HeroSection />
 
 	<McpSection sseEndpoint={SSE_ENDPOINT} streamableEndpoint={STREAMABLE_ENDPOINT} />
 

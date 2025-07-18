@@ -1,6 +1,6 @@
 <script lang="ts">
-	import CopyIcon from '$lib/components/CopyIcon.svelte'
-	import toast from 'svelte-french-toast'
+	import McpClientButton from '$lib/components/mcp/McpClientButton.svelte'
+	import McpClientInstructions from '$lib/components/mcp/McpClientInstructions.svelte'
 
 	let { sseEndpoint, streamableEndpoint }: { sseEndpoint: string; streamableEndpoint: string } =
 		$props()
@@ -83,13 +83,8 @@
 		}
 	]
 
-	async function copyToClipboard(text: string) {
-		try {
-			await navigator.clipboard.writeText(text)
-			toast.success('Copied to clipboard!')
-		} catch {
-			toast.error('Failed to copy to clipboard')
-		}
+	function handleClientSelect(clientId: string) {
+		selectedClient = selectedClient === clientId ? null : clientId
 	}
 </script>
 
@@ -108,95 +103,20 @@
 	<div class="mcp-clients">
 		<div class="client-selector">
 			{#each mcpClients as client}
-				<button
-					class="client-button"
-					class:active={selectedClient === client.id}
-					onclick={() => (selectedClient = selectedClient === client.id ? null : client.id)}
-				>
-					<span class="client-icon">{client.icon}</span>
-					<span class="client-name">{client.name}</span>
-				</button>
+				<McpClientButton
+					id={client.id}
+					name={client.name}
+					icon={client.icon}
+					isActive={selectedClient === client.id}
+					onclick={() => handleClientSelect(client.id)}
+				/>
 			{/each}
 		</div>
 
 		{#if selectedClient}
 			{@const client = mcpClients.find((c) => c.id === selectedClient)}
 			{#if client}
-				<div class="client-instructions">
-					<div class="instruction-header">
-						<span class="client-icon-large">{client.icon}</span>
-						<div>
-							<h3>{client.name}</h3>
-							<p>{client.description}</p>
-						</div>
-					</div>
-
-					<div class="instruction-content">
-						{#if client.isDesktop}
-							<div class="desktop-instructions">
-								<div class="url-block">
-									<strong>MCP Server URL:</strong>
-									<code>{client.url}</code>
-									<button class="copy-btn" onclick={() => copyToClipboard(client.url)}>
-										<CopyIcon />
-										Copy
-									</button>
-								</div>
-								<div class="steps-block">
-									<strong>Setup Steps:</strong>
-									<ol class="setup-steps">
-										{#each client.steps as step}
-											<li>{step}</li>
-										{/each}
-									</ol>
-								</div>
-							</div>
-						{:else if client.isCommand}
-							<div class="code-block">
-								<code>{client.instruction}</code>
-								<button class="copy-btn" onclick={() => copyToClipboard(client.instruction)}>
-									<CopyIcon />
-									Copy
-								</button>
-							</div>
-						{:else if client.isConfig}
-							<div class="config-block">
-								<pre><code>{client.instruction}</code></pre>
-								<button class="copy-btn" onclick={() => copyToClipboard(client.instruction)}>
-									<CopyIcon />
-									Copy
-								</button>
-							</div>
-						{:else if client.isOthers}
-							<div class="others-endpoints">
-								{#each client.endpoints as endpoint}
-									<div class="endpoint-item">
-										<div class="endpoint-header">
-											<strong>{endpoint.type}</strong>
-											<span class="endpoint-description">{endpoint.description}</span>
-										</div>
-										<div class={endpoint.isCommand ? 'code-block' : 'url-block'}>
-											<code>{endpoint.value}</code>
-											<button class="copy-btn" onclick={() => copyToClipboard(endpoint.value)}>
-												<CopyIcon />
-												Copy
-											</button>
-										</div>
-									</div>
-								{/each}
-							</div>
-						{:else if client.url}
-							<div class="url-block">
-								<strong>URL:</strong>
-								<code>{client.url}</code>
-								<button class="copy-btn" onclick={() => copyToClipboard(client.url)}>
-									<CopyIcon />
-									Copy
-								</button>
-							</div>
-						{/if}
-					</div>
-				</div>
+				<McpClientInstructions {client} />
 			{/if}
 		{/if}
 	</div>
@@ -286,230 +206,6 @@
 		margin-bottom: 24px;
 	}
 
-	.client-button {
-		background: #f5f5f7;
-		border: 2px solid rgba(0, 0, 0, 0.08);
-		border-radius: 12px;
-		padding: 16px 12px;
-		cursor: pointer;
-		transition: all 0.2s ease;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 8px;
-		text-align: center;
-	}
-
-	.client-button:hover {
-		background: #eef7ff;
-		border-color: #007aff;
-		transform: translateY(-2px);
-		box-shadow: 0 4px 16px rgba(0, 122, 255, 0.15);
-	}
-
-	.client-button.active {
-		background: #007aff;
-		border-color: #007aff;
-		color: white;
-		transform: translateY(-2px);
-		box-shadow: 0 4px 16px rgba(0, 122, 255, 0.3);
-	}
-
-	.client-icon {
-		font-size: 24px;
-		line-height: 1;
-	}
-
-	.client-name {
-		font-weight: 600;
-		font-size: 14px;
-	}
-
-	.client-instructions {
-		background: #f8fafc;
-		border-radius: 12px;
-		padding: 24px;
-		border: 1px solid rgba(0, 0, 0, 0.06);
-		animation: fadeIn 0.3s ease;
-	}
-
-	@keyframes fadeIn {
-		from {
-			opacity: 0;
-			transform: translateY(10px);
-		}
-		to {
-			opacity: 1;
-			transform: translateY(0);
-		}
-	}
-
-	.instruction-header {
-		display: flex;
-		align-items: flex-start;
-		gap: 16px;
-		margin-bottom: 20px;
-	}
-
-	.client-icon-large {
-		font-size: 32px;
-		line-height: 1;
-	}
-
-	.instruction-header h3 {
-		font-size: 18px;
-		font-weight: 600;
-		margin: 0 0 4px 0;
-		color: #1d1d1f;
-	}
-
-	.instruction-header p {
-		margin: 0;
-		color: #6e6e73;
-		font-size: 14px;
-	}
-
-	.desktop-instructions {
-		display: flex;
-		flex-direction: column;
-		gap: 16px;
-	}
-
-	.steps-block {
-		background: white;
-		border-radius: 8px;
-		padding: 16px;
-		border: 1px solid rgba(0, 0, 0, 0.08);
-	}
-
-	.steps-block strong {
-		font-size: 14px;
-		color: #1d1d1f;
-		margin-bottom: 8px;
-		display: block;
-	}
-
-	.setup-steps {
-		margin: 0;
-		padding-left: 20px;
-		color: #6e6e73;
-	}
-
-	.setup-steps li {
-		margin: 8px 0;
-		line-height: 1.4;
-	}
-
-	.others-endpoints {
-		display: flex;
-		flex-direction: column;
-		gap: 16px;
-	}
-
-	.endpoint-item {
-		background: white;
-		border-radius: 8px;
-		padding: 16px;
-		border: 1px solid rgba(0, 0, 0, 0.08);
-	}
-
-	.endpoint-header {
-		display: flex;
-		align-items: baseline;
-		gap: 8px;
-		margin-bottom: 8px;
-	}
-
-	.endpoint-header strong {
-		font-size: 14px;
-		color: #1d1d1f;
-		min-width: 120px;
-		flex-shrink: 0;
-	}
-
-	.endpoint-description {
-		font-size: 13px;
-		color: #6e6e73;
-	}
-
-	.code-block,
-	.config-block,
-	.url-block {
-		background: #1e1e1e;
-		border-radius: 8px;
-		padding: 16px;
-		font-family:
-			'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
-		font-size: 13px;
-		position: relative;
-		border: 1px solid rgba(0, 0, 0, 0.1);
-	}
-
-	.code-block code,
-	.config-block code {
-		color: #e5e7eb;
-		display: block;
-		word-break: break-all;
-	}
-
-	.config-block pre {
-		margin: 0;
-		white-space: pre-wrap;
-	}
-
-	.url-block {
-		background: #f5f5f7;
-		display: flex;
-		align-items: center;
-		gap: 12px;
-		flex-wrap: wrap;
-	}
-
-	.url-block strong {
-		color: #1d1d1f;
-		font-size: 14px;
-	}
-
-	.url-block code {
-		color: #007aff;
-		font-size: 13px;
-		word-break: break-all;
-		flex: 1;
-		min-width: 200px;
-	}
-
-	.copy-btn {
-		position: absolute;
-		top: 12px;
-		right: 12px;
-		background: #374151;
-		color: white;
-		border: none;
-		border-radius: 6px;
-		padding: 8px 12px;
-		font-size: 12px;
-		font-weight: 500;
-		cursor: pointer;
-		transition: all 0.2s ease;
-		display: flex;
-		align-items: center;
-		gap: 6px;
-	}
-
-	.url-block .copy-btn {
-		position: static;
-		background: #f5f5f7;
-		color: #1d1d1f;
-		border: 1px solid rgba(0, 0, 0, 0.08);
-		white-space: nowrap;
-	}
-
-	.copy-btn:hover {
-		background: #007aff;
-		color: white;
-		transform: translateY(-1px);
-	}
-
 	@media (max-width: 768px) {
 		.mcp-section {
 			padding: 24px;
@@ -525,46 +221,12 @@
 			grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
 		}
 
-		.client-instructions .code-block,
-		.client-instructions .config-block {
-			padding-bottom: 10px;
-		}
-
-		.client-instructions .copy-btn {
-			position: static;
-			margin-top: 12px;
-			width: 100%;
-			justify-content: center;
-		}
-
 		.section-header h2 {
 			font-size: 24px;
 		}
 
 		.section-description {
 			font-size: 16px;
-		}
-
-		.url-block {
-			flex-direction: column;
-			align-items: flex-start;
-		}
-
-		.url-block code {
-			min-width: unset;
-			width: 100%;
-		}
-
-		.endpoint-header {
-			gap: 4px;
-		}
-
-		.desktop-instructions {
-			gap: 12px;
-		}
-
-		.setup-steps {
-			padding-left: 16px;
 		}
 	}
 </style>
