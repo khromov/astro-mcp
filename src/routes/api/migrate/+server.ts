@@ -22,9 +22,7 @@ export const GET: RequestHandler = async () => {
 			throw new Error('Failed to initialize database connection pool')
 		}
 
-		const migrationsPath = dev
-			? `${__dirname}/../../../../migrations`
-			: '/app/migrations'
+		const migrationsPath = dev ? `${__dirname}/../../../../migrations` : '/app/migrations'
 
 		const migrations = await migrate({ client }, migrationsPath)
 
