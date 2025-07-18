@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { createMcpHandler } from '@vercel/mcp-adapter'
+import { ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { env } from '$env/dynamic/private'
 import { ContentDbService } from '$lib/server/contentDb'
 import type { DbContent } from '$lib/types/db'
@@ -246,6 +247,56 @@ export const handler = createMcpHandler(
 					)
 			},
 			async ({ section }) => getDocumentationHandler({ section })
+		)
+
+		server.resource(
+			'svelte_doc',
+			// @ts-expect-error vercel is dumb
+			new ResourceTemplate('svelte-llm://{+slug}', {
+				list: async () => {
+					const documents = await ContentDbService.getContentByFilter({
+						owner: 'sveltejs',
+						repo_name: 'svelte.dev',
+						path_pattern: 'apps/svelte.dev/content/docs/%'
+					})
+					console.error(documents[0])
+					return {
+						resources: documents.map((doc) => {
+							return {
+								name: doc.filename,
+								uri: `svelte-llm://${doc.path}`
+							}
+						})
+					}
+				},
+				complete: {
+					slug: async (query) => {
+						const documents = await ContentDbService.getContentByFilter({
+							owner: 'sveltejs',
+							repo_name: 'svelte.dev',
+							path_pattern: `apps/svelte.dev/content/docs/${query}%`
+						})
+						console.error(documents[0], query)
+						return documents.map((doc) => doc.filename)
+					}
+				}
+			}),
+			// @ts-expect-error vercel is dumb
+			async (uri, { slug }) => {
+				const document = await ContentDbService.getContentByPath('sveltejs', 'svelte.dev', slug)
+				if (!document) {
+					throw new Error(`Document not found for slug: ${slug}`)
+				}
+				return {
+					contents: [
+						{
+							uri: uri.toString(),
+							type: 'text',
+							text: document?.content
+						}
+					]
+				}
+			}
 		)
 	},
 	{},
