@@ -24,7 +24,7 @@ export const GET: RequestHandler = async () => {
 
 		const migrationsPath = dev
 			? `${__dirname}/../../../../migrations`
-			: `${__dirname}/../../migrations`
+			: '/app/migrations'
 
 		const migrations = await migrate({ client }, migrationsPath)
 
