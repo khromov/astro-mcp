@@ -21,6 +21,7 @@
 		title,
 		description,
 		presets,
+		presetSizes,
 		distilledVersions = {},
 		loadingVersions = false,
 		distilledError = null,
@@ -29,6 +30,7 @@
 		title: string
 		description?: string
 		presets: PresetData[]
+		presetSizes?: Record<string, Promise<{ key: string; sizeKb: number | null; error?: string }>>
 		distilledVersions?: Record<string, DistilledVersion[]>
 		loadingVersions?: boolean
 		distilledError?: string | null
@@ -47,6 +49,7 @@
 		{#each extraPresets as preset}
 			<PresetListItem
 				{...preset}
+				presetSizePromise={presetSizes?.[preset.key]}
 				distilledVersions={distilledVersions[preset.key]}
 				{loadingVersions}
 				{distilledError}
@@ -55,6 +58,7 @@
 		{#each presets as preset}
 			<PresetListItem
 				{...preset}
+				presetSizePromise={presetSizes?.[preset.key]}
 				distilledVersions={preset.key in distilledVersions
 					? distilledVersions[preset.key]
 					: undefined}

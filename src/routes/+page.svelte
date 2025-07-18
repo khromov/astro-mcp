@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte'
+	import type { PageData } from './$types'
 	import {
 		combinedPresets,
 		sveltePresets,
@@ -17,6 +18,9 @@
 	import PresetSection from '$lib/components/home/PresetSection.svelte'
 	import IntegrationSection from '$lib/components/home/IntegrationSection.svelte'
 	import SiteFooter from '$lib/components/home/SiteFooter.svelte'
+
+	// Get the streamed data from the load function
+	let { data }: { data: PageData } = $props()
 
 	const SSE_ENDPOINT = 'https://svelte-llm.khromov.se/mcp/sse'
 	const STREAMABLE_ENDPOINT = 'https://svelte-llm.khromov.se/mcp/mcp'
@@ -103,6 +107,7 @@
 		title="Combined presets"
 		description="Hand-picked combinations of the Svelte 5 + SvelteKit docs in a variety of sizes to fit different LLMs."
 		presets={combinedPresetsFormatted}
+		presetSizes={data.presetSizes}
 		{distilledVersions}
 		{loadingVersions}
 		{distilledError}
@@ -112,6 +117,7 @@
 		title="Svelte 5"
 		presets={sveltePresetsFormatted}
 		extraPresets={[svelteDistilledPreset]}
+		presetSizes={data.presetSizes}
 		{distilledVersions}
 		{loadingVersions}
 		{distilledError}
@@ -121,12 +127,13 @@
 		title="SvelteKit"
 		presets={svelteKitPresetsFormatted}
 		extraPresets={[svelteKitDistilledPreset]}
+		presetSizes={data.presetSizes}
 		{distilledVersions}
 		{loadingVersions}
 		{distilledError}
 	/>
 
-	<PresetSection title="Other" presets={otherPresetsFormatted} />
+	<PresetSection title="Other" presets={otherPresetsFormatted} presetSizes={data.presetSizes} />
 
 	<section class="presets-section">
 		<div class="section-header">

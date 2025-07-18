@@ -4,30 +4,47 @@
 	import CopyIcon from './CopyIcon.svelte'
 	import DownloadIcon from './DownloadIcon.svelte'
 
-	let { title, key, description, distilledVersions, loadingVersions, distilledError } = $props<{
+	let { 
+		title, 
+		key, 
+		description, 
+		presetSizePromise,
+		distilledVersions, 
+		loadingVersions, 
+		distilledError 
+	} = $props<{
 		title: string
 		key: string
 		description?: string
+		presetSizePromise?: Promise<{ key: string; sizeKb: number | null; error?: string }>
 		distilledVersions?: Array<{ filename: string; date: string; path: string; sizeKb: number }>
 		loadingVersions?: boolean
 		distilledError?: string | null
 	}>()
 
 	let sizeKb = $state<number | undefined>(undefined)
-	let sizeLoading = $state<boolean | undefined>(undefined)
+	let sizeLoading = $state<boolean>(true)
 	let sizeError = $state<string | undefined>(undefined)
 	let dialog = $state<HTMLDialogElement | null>(null)
 
+	// Use the streamed promise from the server load function
 	onMount(async () => {
-		try {
-			sizeLoading = true
-			const response = await fetch(`/${key}/size`)
-			if (!response.ok) throw new Error('Failed to fetch size')
-			const data = await response.json()
-			sizeKb = data.sizeKb
-		} catch {
-			sizeError = 'Failed to load size'
-		} finally {
+		if (presetSizePromise) {
+			try {
+				const result = await presetSizePromise
+				if (result.error) {
+					sizeError = result.error
+				} else {
+					sizeKb = result.sizeKb || undefined
+				}
+			} catch (error) {
+				sizeError = 'Failed to load size'
+			} finally {
+				sizeLoading = false
+			}
+		} else {
+			// No promise provided - this shouldn't happen in normal operation
+			sizeError = 'Size data not available'
 			sizeLoading = false
 		}
 	})
