@@ -55,7 +55,9 @@
 		{#each presets as preset}
 			<PresetListItem
 				{...preset}
-				distilledVersions={preset.key in distilledVersions ? distilledVersions[preset.key] : undefined}
+				distilledVersions={preset.key in distilledVersions
+					? distilledVersions[preset.key]
+					: undefined}
 				{loadingVersions}
 				{distilledError}
 			/>
