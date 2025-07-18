@@ -14,7 +14,8 @@
 		"format": "prettier --write .",
 		"test:unit": "vitest",
 		"test": "npm run test:unit -- --run",
-		"mcp": "DANGEROUSLY_OMIT_AUTH=true npx @modelcontextprotocol/inspector"
+		"mcp": "DANGEROUSLY_OMIT_AUTH=true npx @modelcontextprotocol/inspector",
+		"clear-db": "node scripts/clear-db.js"
 	},
 	"devDependencies": {
 		"@octokit/rest": "^21.1.1",
