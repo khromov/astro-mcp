@@ -168,15 +168,15 @@ describe('pathUtils', () => {
 		it('should work together for typical documentation workflow', () => {
 			// Simulate a typical path from tarball to display
 			const tarballPath = 'svelte.dev-main/apps/svelte.dev/content/docs/svelte/01-introduction.md'
-			
+
 			// Clean tarball path
 			const cleanedFromTarball = cleanTarballPath(tarballPath)
 			expect(cleanedFromTarball).toBe('apps/svelte.dev/content/docs/svelte/01-introduction.md')
-			
+
 			// This would be stored in DB and later cleaned for display
 			const cleanedForDisplay = cleanDocumentationPath(cleanedFromTarball)
 			expect(cleanedForDisplay).toBe('docs/svelte/01-introduction.md')
-			
+
 			// Extract title for metadata
 			const title = extractTitleFromPath(cleanedFromTarball)
 			expect(title).toBe('introduction')
@@ -184,26 +184,29 @@ describe('pathUtils', () => {
 
 		it('should handle SvelteKit paths through full workflow', () => {
 			const tarballPath = 'svelte.dev-main/apps/svelte.dev/content/docs/kit/01-routing.md'
-			
+
 			const cleanedFromTarball = cleanTarballPath(tarballPath)
 			expect(cleanedFromTarball).toBe('apps/svelte.dev/content/docs/kit/01-routing.md')
-			
+
 			const cleanedForDisplay = cleanDocumentationPath(cleanedFromTarball)
 			expect(cleanedForDisplay).toBe('docs/kit/01-routing.md')
-			
+
 			const title = extractTitleFromPath(cleanedFromTarball)
 			expect(title).toBe('routing')
 		})
 
 		it('should handle tutorial paths through full workflow', () => {
-			const tarballPath = 'svelte.dev-main/apps/svelte.dev/content/tutorial/01-introduction/01-hello-world.md'
-			
+			const tarballPath =
+				'svelte.dev-main/apps/svelte.dev/content/tutorial/01-introduction/01-hello-world.md'
+
 			const cleanedFromTarball = cleanTarballPath(tarballPath)
-			expect(cleanedFromTarball).toBe('apps/svelte.dev/content/tutorial/01-introduction/01-hello-world.md')
-			
+			expect(cleanedFromTarball).toBe(
+				'apps/svelte.dev/content/tutorial/01-introduction/01-hello-world.md'
+			)
+
 			const cleanedForDisplay = cleanDocumentationPath(cleanedFromTarball)
 			expect(cleanedForDisplay).toBe('tutorial/01-introduction/01-hello-world.md')
-			
+
 			const title = extractTitleFromPath(cleanedFromTarball)
 			expect(title).toBe('hello-world')
 		})

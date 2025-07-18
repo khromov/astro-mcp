@@ -4,7 +4,7 @@
 	let secretKey = $state('')
 
 	const endpoints = {
-		'sync': '/api/sync-content',
+		sync: '/api/sync-content',
 		'update-distilled': '/api/update-distilled'
 	}
 
@@ -71,7 +71,9 @@
 			<div class="endpoint" class:disabled={!secretKey.trim()}>
 				<span class="method">GET</span>
 				<a href={buildUrl(endpoints['sync'])}>{getDisplayText(endpoints['sync'])}</a>
-				<span class="description">Sync sveltejs/svelte.dev repository content (always includes cleanup and stats)</span>
+				<span class="description"
+					>Sync sveltejs/svelte.dev repository content (always includes cleanup and stats)</span
+				>
 			</div>
 
 			<div class="endpoint">
