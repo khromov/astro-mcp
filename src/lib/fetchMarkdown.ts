@@ -266,6 +266,7 @@ function removeDiffMarkersFromContent(content: string): string {
 	let inCodeBlock = false
 	const lines = content.split('\n')
 	const processedLines = lines.map((line) => {
+		// Track if we're entering or leaving a code block
 		// eslint-disable-next-line no-useless-escape
 		if (line.trim().startsWith('\`\`\`')) {
 			inCodeBlock = !inCodeBlock
@@ -273,15 +274,20 @@ function removeDiffMarkersFromContent(content: string): string {
 		}
 
 		if (inCodeBlock) {
+			// Handle lines that end with --- or +++ with possible whitespace after
 			// eslint-disable-next-line no-useless-escape
 			line = line.replace(/(\+{3}|\-{3})[\s]*$/g, '')
 
+			// Handle triple markers at start while preserving indentation
+			// This captures the whitespace before the marker and adds it back
 			// eslint-disable-next-line no-useless-escape
 			line = line.replace(/^(\s*)(\+{3}|\-{3})\s*/g, '$1')
 
+			// Handle single + or - markers at start while preserving indentation
 			// eslint-disable-next-line no-useless-escape
 			line = line.replace(/^(\s*)[\+\-](\s)/g, '$1')
 
+			// Handle multi-line diff blocks where --- or +++ might be in the middle of line
 			// eslint-disable-next-line no-useless-escape
 			line = line.replace(/[\s]*(\+{3}|\-{3})[\s]*/g, '')
 		}
@@ -316,6 +322,7 @@ export function minimizeContent(content: string, options?: Partial<MinimizeOptio
 	}
 
 	if (settings.removePlaygroundLinks) {
+		// Replace playground URLs with /[link] but keep the original link text
 		minimized = minimized.replace(/\[([^\]]+)\]\(\/playground[^)]+\)/g, '[$1](/REMOVED)')
 	}
 
@@ -327,6 +334,7 @@ export function minimizeContent(content: string, options?: Partial<MinimizeOptio
 	}
 
 	if (settings.removeHtmlComments) {
+		// Replace all HTML comments (including multi-line) with empty string
 		minimized = minimized.replace(/<!--[\s\S]*?-->/g, '')
 	}
 
