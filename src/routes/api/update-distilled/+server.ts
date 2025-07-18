@@ -1,7 +1,7 @@
 import { error, json } from '@sveltejs/kit'
 import { env } from '$env/dynamic/private'
 import { dev } from '$app/environment'
-import { presets, getDefaultRepository } from '$lib/presets'
+import { presets, DEFAULT_REPOSITORY } from '$lib/presets'
 import {
 	minimizeContent,
 	fetchRepositoryTarball,
@@ -77,7 +77,7 @@ export const GET: RequestHandler = async ({ url }) => {
 
 	try {
 		// Use the default repository
-		const { owner, repo } = getDefaultRepository()
+		const { owner, repo } = DEFAULT_REPOSITORY
 		const tarballBuffer = await fetchRepositoryTarball(owner, repo)
 
 		// Process the tarball to get files

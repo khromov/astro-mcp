@@ -2,6 +2,7 @@ import { json, error } from '@sveltejs/kit'
 import type { RequestHandler } from './$types'
 import { env } from '$env/dynamic/private'
 import { ContentSyncService } from '$lib/server/contentSync'
+import { DEFAULT_REPOSITORY } from '$lib/presets'
 import { logAlways, logErrorAlways } from '$lib/log'
 
 /**
@@ -26,7 +27,8 @@ export const GET: RequestHandler = async ({ url }) => {
 	}
 
 	try {
-		logAlways('Starting content sync for sveltejs/svelte.dev repository')
+		const { owner, repo } = DEFAULT_REPOSITORY
+		logAlways(`Starting content sync for ${owner}/${repo} repository`)
 		
 		// Use ContentSyncService.syncRepository with cleanup and stats enabled
 		const result = await ContentSyncService.syncRepository({
@@ -36,7 +38,7 @@ export const GET: RequestHandler = async ({ url }) => {
 
 		return json({
 			success: true,
-			message: 'Successfully synced sveltejs/svelte.dev repository',
+			message: `Successfully synced ${owner}/${repo} repository`,
 			...result // This includes stats, sync_details, cleanup_details, and timestamp
 		})
 	} catch (e) {

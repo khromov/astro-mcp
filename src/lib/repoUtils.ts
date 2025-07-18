@@ -1,5 +1,5 @@
 import type { PresetConfig } from '$lib/presets'
-import { presets, getDefaultRepository } from '$lib/presets'
+import { presets, DEFAULT_REPOSITORY } from '$lib/presets'
 
 export interface Repository {
 	owner: string
@@ -19,7 +19,7 @@ export interface PresetsByRepository {
  * Get the default repository (now the only repository used)
  */
 export function getUniqueRepositories(): Repository[] {
-	const { owner, repo } = getDefaultRepository()
+	const { owner, repo } = DEFAULT_REPOSITORY
 	return [
 		{
 			owner,
@@ -33,7 +33,7 @@ export function getUniqueRepositories(): Repository[] {
  * Group presets by repository (all presets use the same repository now)
  */
 export function groupPresetsByRepository(): PresetsByRepository[] {
-	const { owner, repo } = getDefaultRepository()
+	const { owner, repo } = DEFAULT_REPOSITORY
 	const repository = {
 		owner,
 		repo,
@@ -55,7 +55,7 @@ export function getPresetsForRepository(
 	owner: string,
 	repo: string
 ): Array<{ key: string; config: PresetConfig }> {
-	const defaultRepo = getDefaultRepository()
+	const defaultRepo = DEFAULT_REPOSITORY
 
 	// Check if the requested repository matches our default
 	if (owner === defaultRepo.owner && repo === defaultRepo.repo) {
@@ -80,7 +80,7 @@ export function getRepositoryStats(): {
 	totalPresets: number
 	presetsPerRepository: Record<string, number>
 } {
-	const { owner, repo } = getDefaultRepository()
+	const { owner, repo } = DEFAULT_REPOSITORY
 	const repoKey = `${owner}/${repo}`
 
 	return {

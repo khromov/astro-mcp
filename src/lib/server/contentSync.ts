@@ -5,7 +5,7 @@ import {
 } from '$lib/fetchMarkdown'
 import { ContentDbService } from '$lib/server/contentDb'
 import type { CreateContentInput } from '$lib/types/db'
-import { presets, getDefaultRepository } from '$lib/presets'
+import { presets, DEFAULT_REPOSITORY } from '$lib/presets'
 import { logAlways, logErrorAlways, log } from '$lib/log'
 
 /**
@@ -68,7 +68,7 @@ export class ContentSyncService {
 		timestamp: string
 	}> {
 		const { performCleanup = true, returnStats = true } = options
-		const { owner, repo: repoName } = getDefaultRepository()
+		const { owner, repo: repoName } = DEFAULT_REPOSITORY
 		const repoString = ContentDbService.getRepoString(owner, repoName)
 		
 		logAlways(`Starting sync for repository: ${repoString}`)
@@ -227,7 +227,7 @@ export class ContentSyncService {
 	 */
 	static async isRepositoryContentStale(): Promise<boolean> {
 		try {
-			const { owner, repo: repoName } = getDefaultRepository()
+			const { owner, repo: repoName } = DEFAULT_REPOSITORY
 			const stats = await ContentDbService.getContentStats()
 			const repoKey = ContentDbService.getRepoString(owner, repoName)
 
@@ -250,7 +250,7 @@ export class ContentSyncService {
 
 			return isStale
 		} catch (error) {
-			const { owner, repo: repoName } = getDefaultRepository()
+			const { owner, repo: repoName } = DEFAULT_REPOSITORY
 			logErrorAlways(`Error checking repository staleness for ${owner}/${repoName}:`, error)
 			return true // On error, assume stale
 		}
@@ -272,7 +272,7 @@ export class ContentSyncService {
 
 		try {
 			// Use the default repository since we're standardizing on sveltejs/svelte.dev
-			const { owner, repo } = getDefaultRepository()
+			const { owner, repo } = DEFAULT_REPOSITORY
 
 			// Get all content for the repository ONCE
 			const allContent = await ContentDbService.getContentByRepo(owner, repo)
@@ -368,7 +368,7 @@ export class ContentSyncService {
 	 */
 	static async cleanupUnusedContent(): Promise<number> {
 		// Get the default repository
-		const { owner, repo } = getDefaultRepository()
+		const { owner, repo } = DEFAULT_REPOSITORY
 		const defaultRepoString = ContentDbService.getRepoString(owner, repo)
 
 		// Get all repositories in the database

@@ -1,7 +1,7 @@
 import type { RequestHandler } from './$types'
 import { json } from '@sveltejs/kit'
 import { ContentSyncService } from '$lib/server/contentSync'
-import { getDefaultRepository } from '$lib/presets'
+import { DEFAULT_REPOSITORY } from '$lib/presets'
 import { logErrorAlways } from '$lib/log'
 
 /**
@@ -10,7 +10,7 @@ import { logErrorAlways } from '$lib/log'
 export const GET: RequestHandler = async () => {
 	try {
 		const stats = await ContentSyncService.getContentStats()
-		const { owner, repo } = getDefaultRepository()
+		const { owner, repo } = DEFAULT_REPOSITORY
 		const isStale = await ContentSyncService.isRepositoryContentStale()
 
 		return json({
