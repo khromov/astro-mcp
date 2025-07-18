@@ -52,7 +52,7 @@
 	},
 	"type": "module",
 	"dependencies": {
-		"@anthropic-ai/sdk": "^0.39.0"
+		"@anthropic-ai/sdk": "^0.56.0"
 	},
 	"overrides": {
 		"svelte-french-toast": {
