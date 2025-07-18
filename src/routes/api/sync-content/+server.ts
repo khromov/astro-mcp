@@ -10,7 +10,7 @@ import { logAlways, logErrorAlways } from '$lib/log'
  *
  * Usage:
  * - GET /api/sync-content?secret_key=YOUR_KEY - Sync the sveltejs/svelte.dev repository
- * 
+ *
  * Note: This endpoint always performs cleanup and always returns stats in the response.
  */
 export const GET: RequestHandler = async ({ url }) => {
@@ -28,7 +28,7 @@ export const GET: RequestHandler = async ({ url }) => {
 	try {
 		const { owner, repo } = DEFAULT_REPOSITORY
 		logAlways(`Starting content sync for ${owner}/${repo} repository`)
-		
+
 		const result = await ContentSyncService.syncRepository({
 			performCleanup: true,
 			returnStats: true

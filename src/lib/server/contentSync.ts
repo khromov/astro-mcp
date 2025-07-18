@@ -35,9 +35,9 @@ export class ContentSyncService {
 	 * Handles deletions properly to maintain data consistency
 	 */
 	static async syncRepository(
-		options: { 
-			performCleanup?: boolean 
-			returnStats?: boolean 
+		options: {
+			performCleanup?: boolean
+			returnStats?: boolean
 		} = {}
 	): Promise<{
 		success: boolean
@@ -62,7 +62,7 @@ export class ContentSyncService {
 		const { performCleanup = true, returnStats = true } = options
 		const { owner, repo: repoName } = DEFAULT_REPOSITORY
 		const repoString = ContentDbService.getRepoString(owner, repoName)
-		
+
 		logAlways(`Starting sync for repository: ${repoString}`)
 
 		let upsertedFiles = 0
@@ -72,7 +72,7 @@ export class ContentSyncService {
 
 		try {
 			logAlways(`Step 1: Syncing repository ${repoString}`)
-			
+
 			const tarballBuffer = await fetchRepositoryTarball(owner, repoName)
 
 			const filesWithPaths = (await processMarkdownFromTarball(
@@ -194,7 +194,6 @@ export class ContentSyncService {
 				},
 				timestamp: new Date().toISOString()
 			}
-
 		} catch (error) {
 			logErrorAlways(`Failed to sync repository ${repoString}:`, error)
 			throw error

@@ -140,7 +140,7 @@ export const getDocumentationHandler = async ({ section }: { section: string | s
 
 			if (matchedContent) {
 				const cleanedPath = cleanPath(matchedContent.path)
-				
+
 				const formattedContent = `## ${cleanedPath}\n\n${matchedContent.content}`
 				const framework = matchedContent.path.includes('/docs/svelte/') ? 'Svelte' : 'SvelteKit'
 

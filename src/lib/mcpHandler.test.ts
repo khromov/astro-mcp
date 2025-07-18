@@ -160,7 +160,9 @@ describe('MCP Handler Integration', () => {
 		// Test that Svelte sections are under the Svelte header
 		const svelteHeaderIndex = outputText.indexOf('# Svelte')
 		const svelteKitHeaderIndex = outputText.indexOf('# SvelteKit')
-		const introductionIndex = outputText.indexOf('title: Introduction, path: docs/svelte/01-introduction.md')
+		const introductionIndex = outputText.indexOf(
+			'title: Introduction, path: docs/svelte/01-introduction.md'
+		)
 		const stateIndex = outputText.indexOf('title: $state, path: docs/svelte/02-runes.md')
 
 		expect(svelteHeaderIndex).toBeGreaterThan(-1)
@@ -185,7 +187,7 @@ describe('MCP Handler Integration', () => {
 
 		// Should contain cleaned path in the header
 		expect(responseText).toContain('## docs/svelte/02-runes.md')
-		
+
 		// Should NOT contain the full database path
 		expect(responseText).not.toContain('## apps/svelte.dev/content/docs/svelte/02-runes.md')
 	})
@@ -280,10 +282,10 @@ describe('MCP Handler Integration', () => {
 
 		// If the filtering was broken, these sections would be missing entirely
 		// This test ensures that we actually have sections in both categories
-		const hasSvelteSection = outputText.includes('# Svelte') && 
-			outputText.match(/# Svelte\n[\s\S]*?\* title:/)
-		const hasSvelteKitSection = outputText.includes('# SvelteKit') && 
-			outputText.match(/# SvelteKit\n[\s\S]*?\* title:/)
+		const hasSvelteSection =
+			outputText.includes('# Svelte') && outputText.match(/# Svelte\n[\s\S]*?\* title:/)
+		const hasSvelteKitSection =
+			outputText.includes('# SvelteKit') && outputText.match(/# SvelteKit\n[\s\S]*?\* title:/)
 
 		expect(hasSvelteSection).toBeTruthy()
 		expect(hasSvelteKitSection).toBeTruthy()

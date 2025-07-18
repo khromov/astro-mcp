@@ -17,7 +17,7 @@ describe('/+page.svelte', () => {
 	beforeEach(() => {
 		// Mock fetch globally
 		vi.stubGlobal('fetch', mockFetch)
-		
+
 		// Mock successful responses for distilled versions API by default
 		mockFetch.mockResolvedValue({
 			ok: true,
@@ -52,18 +52,19 @@ describe('/+page.svelte', () => {
 		// Mock the fetch to return some mock distilled versions
 		mockFetch.mockResolvedValueOnce({
 			ok: true,
-			json: () => Promise.resolve([
-				{
-					filename: 'svelte-complete-distilled-2024-01-15.md',
-					date: '2024-01-15',
-					path: '/api/preset-content/svelte-complete-distilled/2024-01-15',
-					sizeKb: 150
-				}
-			])
+			json: () =>
+				Promise.resolve([
+					{
+						filename: 'svelte-complete-distilled-2024-01-15.md',
+						date: '2024-01-15',
+						path: '/api/preset-content/svelte-complete-distilled/2024-01-15',
+						sizeKb: 150
+					}
+				])
 		})
 
 		render(Page)
-		
+
 		// The component should render without throwing errors
 		expect(screen.getByText('Combined presets')).toBeInTheDocument()
 	})
@@ -73,7 +74,7 @@ describe('/+page.svelte', () => {
 		mockFetch.mockRejectedValue(new Error('API Error'))
 
 		render(Page)
-		
+
 		// The component should still render even if API calls fail
 		expect(screen.getByText('Combined presets')).toBeInTheDocument()
 		expect(screen.getByText('Svelte 5')).toBeInTheDocument()

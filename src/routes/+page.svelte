@@ -134,7 +134,9 @@
 			if (response.ok) {
 				return await response.json()
 			} else {
-				logErrorAlways(`Failed to load distilled versions for ${preset}: ${response.status} ${response.statusText}`)
+				logErrorAlways(
+					`Failed to load distilled versions for ${preset}: ${response.status} ${response.statusText}`
+				)
 				return []
 			}
 		} catch (e) {

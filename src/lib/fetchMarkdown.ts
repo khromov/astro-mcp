@@ -110,10 +110,7 @@ export async function processMarkdownFromTarball(
 					stream.on('data', (chunk) => (content += chunk.toString()))
 					stream.on('end', () => {
 						// Remove only the repo directory prefix (first segment)
-						const cleanPath = header.name
-							.split('/')
-							.slice(1)
-							.join('/')
+						const cleanPath = header.name.split('/').slice(1).join('/')
 
 						const processedContent = minimizeContent(content, minimize)
 
