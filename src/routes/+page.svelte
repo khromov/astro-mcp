@@ -92,17 +92,6 @@
 	})
 </script>
 
-<svelte:head>
-	<title>svelte-llm - Svelte 5 and SvelteKit Developer documentation in an LLM-ready format</title>
-	<meta
-		property="og:title"
-		content="svelte-llm - Svelte 5 and SvelteKit Developer documentation in an LLM-ready format"
-	/>
-	<meta property="og:type" content="website" />
-	<meta property="og:url" content={SITE_URL} />
-	<meta property="og:image" content="{SITE_URL}/og.jpg" />
-</svelte:head>
-
 <main>
 	<HeroSection siteUrl={SITE_URL} />
 
