@@ -4,14 +4,14 @@
 	import CopyIcon from './CopyIcon.svelte'
 	import DownloadIcon from './DownloadIcon.svelte'
 
-	let { 
-		title, 
-		key, 
-		description, 
+	let {
+		title,
+		key,
+		description,
 		presetSizePromise,
-		distilledVersions, 
-		loadingVersions, 
-		distilledError 
+		distilledVersions,
+		loadingVersions,
+		distilledError
 	} = $props<{
 		title: string
 		key: string

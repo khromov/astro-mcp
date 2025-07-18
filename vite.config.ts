@@ -8,7 +8,7 @@ export default defineConfig({
 		watch: { ignored: ['temp/**'] }
 	},
 	test: {
-		workspace: [
+		projects: [
 			{
 				extends: './vite.config.ts',
 				plugins: [svelteTesting()],
