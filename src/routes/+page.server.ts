@@ -3,6 +3,7 @@ import { presets } from '$lib/presets'
 import { getPresetSizeKb } from '$lib/presetCache'
 import { PresetDbService } from '$lib/server/presetDb'
 import { DistillablePreset } from '$lib/types/db'
+import type { DbDistillation } from '$lib/types/db'
 import { logAlways, logErrorAlways } from '$lib/log'
 
 // Virtual distilled presets that aren't in the presets object
@@ -14,6 +15,9 @@ const VIRTUAL_DISTILLED_PRESETS = [
 
 // Get all preset keys from both regular presets and virtual ones
 const ALL_PRESET_KEYS = [...Object.keys(presets), ...VIRTUAL_DISTILLED_PRESETS]
+
+// Valid basenames for distilled content - now using the enum values
+const VALID_DISTILLED_BASENAMES = Object.values(DistillablePreset)
 
 /**
  * Fetch size for a single preset
@@ -54,6 +58,63 @@ async function fetchPresetSize(
 	}
 }
 
+/**
+ * Transform database distillation to distilled version format
+ */
+function transformDbDistillationToVersion(dbDistillation: DbDistillation, presetKey: string) {
+	// Handle date format - version could be 'latest' or '2024-01-15'
+	const date =
+		dbDistillation.version === 'latest'
+			? new Date(dbDistillation.created_at).toISOString().split('T')[0]
+			: dbDistillation.version
+
+	// Generate filename from preset key and date
+	const filename = `${presetKey}-${date}.md`
+
+	return {
+		filename,
+		date,
+		path: `/api/preset-content/${presetKey}/${dbDistillation.version}`,
+		sizeKb: dbDistillation.size_kb
+	}
+}
+
+/**
+ * Fetch distilled versions for a single preset
+ */
+async function fetchDistilledVersions(
+	presetKey: string
+): Promise<{ key: string; versions: Array<{ filename: string; date: string; path: string; sizeKb: number }>; error?: string }> {
+	try {
+		// Validate the preset key
+		if (!VALID_DISTILLED_BASENAMES.includes(presetKey as DistillablePreset)) {
+			return { key: presetKey, versions: [] }
+		}
+
+		// Get all versions from database
+		const dbDistillations = await PresetDbService.getAllDistillationsForPreset(presetKey)
+
+		if (dbDistillations.length === 0) {
+			return { key: presetKey, versions: [] }
+		}
+
+		// Transform database distillations to version format
+		const versions = dbDistillations
+			.filter((d) => d.version !== 'latest') // Exclude 'latest' version from list
+			.map((dbDistillation) => transformDbDistillationToVersion(dbDistillation, presetKey))
+			.sort((a, b) => b.date.localeCompare(a.date)) // Sort newest first
+
+		return { key: presetKey, versions }
+	} catch (error) {
+		logErrorAlways(`Error fetching distilled versions for preset ${presetKey}:`, error)
+		return {
+			key: presetKey,
+			versions: [],
+			error: error instanceof Error ? error.message : 'Unknown error'
+		}
+	}
+}
+
 export const load: PageServerLoad = async () => {
 	logAlways(`Starting parallel fetch of sizes for ${ALL_PRESET_KEYS.length} presets`)
 
@@ -67,10 +128,23 @@ export const load: PageServerLoad = async () => {
 		{} as Record<string, Promise<{ key: string; sizeKb: number | null; error?: string }>>
 	)
 
-	logAlways('Returning streaming promises for preset sizes')
+	logAlways(`Starting parallel fetch of distilled versions for all presets`)
+
+	// Create streaming promises for all distilled versions
+	// These will resolve independently as each preset's versions are fetched
+	const distilledVersionsPromises = ALL_PRESET_KEYS.reduce(
+		(acc, presetKey) => {
+			acc[presetKey] = fetchDistilledVersions(presetKey)
+			return acc
+		},
+		{} as Record<string, Promise<{ key: string; versions: Array<{ filename: string; date: string; path: string; sizeKb: number }>; error?: string }>>
+	)
+
+	logAlways('Returning streaming promises for preset sizes and distilled versions')
 
 	// Return the promises directly - SvelteKit will stream them as they resolve
 	return {
-		presetSizes: presetSizePromises
+		presetSizes: presetSizePromises,
+		distilledVersions: distilledVersionsPromises
 	}
 }

@@ -9,17 +9,13 @@
 		key,
 		description,
 		presetSizePromise,
-		distilledVersions,
-		loadingVersions,
-		distilledError
+		distilledVersionsPromise
 	} = $props<{
 		title: string
 		key: string
 		description?: string
 		presetSizePromise?: Promise<{ key: string; sizeKb: number | null; error?: string }>
-		distilledVersions?: Array<{ filename: string; date: string; path: string; sizeKb: number }>
-		loadingVersions?: boolean
-		distilledError?: string | null
+		distilledVersionsPromise?: Promise<{ key: string; versions: Array<{ filename: string; date: string; path: string; sizeKb: number }>; error?: string }>
 	}>()
 
 	let sizeKb = $state<number | undefined>(undefined)
@@ -27,7 +23,12 @@
 	let sizeError = $state<string | undefined>(undefined)
 	let dialog = $state<HTMLDialogElement | null>(null)
 
-	// Use the streamed promise from the server load function
+	// Distilled versions state
+	let distilledVersions = $state<Array<{ filename: string; date: string; path: string; sizeKb: number }>>([])
+	let loadingVersions = $state<boolean>(true)
+	let distilledError = $state<string | null>(null)
+
+	// Use the streamed promise from the server load function for size
 	onMount(async () => {
 		if (presetSizePromise) {
 			try {
@@ -46,6 +47,25 @@
 			// No promise provided - this shouldn't happen in normal operation
 			sizeError = 'Size data not available'
 			sizeLoading = false
+		}
+
+		// Use the streamed promise from the server load function for distilled versions
+		if (distilledVersionsPromise) {
+			try {
+				const result = await distilledVersionsPromise
+				if (result.error) {
+					distilledError = result.error
+				} else {
+					distilledVersions = result.versions
+				}
+			} catch (error) {
+				distilledError = error instanceof Error ? error.message : 'Failed to load versions'
+			} finally {
+				loadingVersions = false
+			}
+		} else {
+			// No promise provided - this preset doesn't have distilled versions
+			loadingVersions = false
 		}
 	})
 
@@ -123,7 +143,7 @@
 		</div>
 	</div>
 
-	{#if distilledVersions !== undefined}
+	{#if distilledVersionsPromise}
 		{#if loadingVersions}
 			<div class="versions-status"><em>Loading previous distilled versions...</em></div>
 		{:else if distilledError}

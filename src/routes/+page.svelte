@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { onMount } from 'svelte'
 	import type { PageData } from './$types'
 	import {
 		combinedPresets,
@@ -10,7 +9,6 @@
 	} from '$lib/presets'
 	import { SITE_URL } from '$lib/constants'
 	import { DistillablePreset } from '$lib/types/db'
-	import { logErrorAlways } from '$lib/log'
 
 	import HeroSection from '$lib/components/home/HeroSection.svelte'
 	import McpSection from '$lib/components/home/McpSection.svelte'
@@ -41,59 +39,6 @@
 		title: '🔮 SvelteKit (LLM Distilled)',
 		description: 'AI-condensed version of just the SvelteKit docs'
 	}
-
-	type DistilledVersion = {
-		filename: string
-		date: string
-		path: string
-		sizeKb: number
-	}
-
-	let distilledVersions = $state<Record<string, DistilledVersion[]>>({
-		[DistillablePreset.SVELTE_COMPLETE_DISTILLED]: [],
-		[DistillablePreset.SVELTE_DISTILLED]: [],
-		[DistillablePreset.SVELTEKIT_DISTILLED]: []
-	})
-	let loadingVersions = $state(true)
-	let distilledError = $state<string | null>(null)
-
-	const loadVersions = async (preset: string): Promise<DistilledVersion[]> => {
-		try {
-			const response = await fetch(`/api/distilled-versions?preset=${preset}`)
-			if (response.ok) {
-				return await response.json()
-			} else {
-				logErrorAlways(
-					`Failed to load distilled versions for ${preset}: ${response.status} ${response.statusText}`
-				)
-				return []
-			}
-		} catch (e) {
-			logErrorAlways(`Failed to load distilled versions for ${preset}:`, e)
-			return [] // Return empty array instead of throwing
-		}
-	}
-
-	onMount(async () => {
-		try {
-			loadingVersions = true
-
-			// Load all versions in parallel - now all promises will resolve (never reject)
-			const presetKeys = Object.keys(distilledVersions)
-			const versionPromises = presetKeys.map((key) => loadVersions(key))
-			const allVersions = await Promise.all(versionPromises)
-
-			// Store results
-			presetKeys.forEach((key, index) => {
-				distilledVersions[key] = allVersions[index]
-			})
-		} catch (e) {
-			// This should not happen anymore since loadVersions doesn't throw
-			distilledError = `Error loading versions: ${e instanceof Error ? e.message : String(e)}`
-		} finally {
-			loadingVersions = false
-		}
-	})
 </script>
 
 <main>
@@ -108,9 +53,7 @@
 		description="Hand-picked combinations of the Svelte 5 + SvelteKit docs in a variety of sizes to fit different LLMs."
 		presets={combinedPresetsFormatted}
 		presetSizes={data.presetSizes}
-		{distilledVersions}
-		{loadingVersions}
-		{distilledError}
+		distilledVersionsPromises={data.distilledVersions}
 	/>
 
 	<PresetSection
@@ -118,9 +61,7 @@
 		presets={sveltePresetsFormatted}
 		extraPresets={[svelteDistilledPreset]}
 		presetSizes={data.presetSizes}
-		{distilledVersions}
-		{loadingVersions}
-		{distilledError}
+		distilledVersionsPromises={data.distilledVersions}
 	/>
 
 	<PresetSection
@@ -128,9 +69,7 @@
 		presets={svelteKitPresetsFormatted}
 		extraPresets={[svelteKitDistilledPreset]}
 		presetSizes={data.presetSizes}
-		{distilledVersions}
-		{loadingVersions}
-		{distilledError}
+		distilledVersionsPromises={data.distilledVersions}
 	/>
 
 	<PresetSection title="Other" presets={otherPresetsFormatted} presetSizes={data.presetSizes} />

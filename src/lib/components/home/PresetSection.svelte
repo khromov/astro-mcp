@@ -22,18 +22,14 @@
 		description,
 		presets,
 		presetSizes,
-		distilledVersions = {},
-		loadingVersions = false,
-		distilledError = null,
+		distilledVersionsPromises,
 		extraPresets = []
 	}: {
 		title: string
 		description?: string
 		presets: PresetData[]
 		presetSizes?: Record<string, Promise<{ key: string; sizeKb: number | null; error?: string }>>
-		distilledVersions?: Record<string, DistilledVersion[]>
-		loadingVersions?: boolean
-		distilledError?: string | null
+		distilledVersionsPromises?: Record<string, Promise<{ key: string; versions: DistilledVersion[]; error?: string }>>
 		extraPresets?: PresetData[]
 	} = $props()
 </script>
@@ -50,20 +46,14 @@
 			<PresetListItem
 				{...preset}
 				presetSizePromise={presetSizes?.[preset.key]}
-				distilledVersions={distilledVersions[preset.key]}
-				{loadingVersions}
-				{distilledError}
+				distilledVersionsPromise={distilledVersionsPromises?.[preset.key]}
 			/>
 		{/each}
 		{#each presets as preset}
 			<PresetListItem
 				{...preset}
 				presetSizePromise={presetSizes?.[preset.key]}
-				distilledVersions={preset.key in distilledVersions
-					? distilledVersions[preset.key]
-					: undefined}
-				{loadingVersions}
-				{distilledError}
+				distilledVersionsPromise={distilledVersionsPromises?.[preset.key]}
 			/>
 		{/each}
 	</div>
