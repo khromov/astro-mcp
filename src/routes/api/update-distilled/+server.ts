@@ -13,6 +13,7 @@ import { PresetDbService } from '$lib/server/presetDb'
 import { DistillablePreset } from '$lib/types/db'
 import type { DbDistillationJob } from '$lib/types/db'
 import { logAlways, logErrorAlways } from '$lib/log'
+import { cleanDocumentationPath } from '$lib/utils/pathUtils'
 
 const DISTILLATION_PROMPT = `
 You are an expert in web development, specifically Svelte 5 and SvelteKit. Your task is to condense and distill the Svelte documentation into a concise format while preserving the most important information.
@@ -234,7 +235,11 @@ export const GET: RequestHandler = async ({ url }) => {
 		)
 
 		const createContentFromResults = (results: typeof successfulResults) => {
-			const contentParts = results.map((result) => `## ${result.path}\n\n${result.content}`)
+			const contentParts = results.map((result) => {
+				// Use the unified path utility to clean paths for display
+				const cleanPath = cleanDocumentationPath(result.path)
+				return `## ${cleanPath}\n\n${result.content}`
+			})
 			return contentParts.join('\n\n')
 		}
 

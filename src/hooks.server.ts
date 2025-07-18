@@ -36,7 +36,7 @@ const logger: Handle = async ({ event, resolve }) => {
 		event.request.method,
 		event.url.pathname,
 		`- 🐇 ${Date.now() - requestStartTime} ms`,
-		`${response.status === 200 ? '✅' : '❌'} ${response.status}`
+		`${response.status >= 200 && response.status < 300 ? '✅' : '❌'} ${response.status}`
 	)
 	return response
 }

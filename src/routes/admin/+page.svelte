@@ -5,7 +5,6 @@
 
 	const endpoints = {
 		sync: '/api/sync-content',
-		'content-stats': '/api/content-status',
 		'update-distilled': '/api/update-distilled'
 	}
 
@@ -77,14 +76,10 @@
 				>
 			</div>
 
-			<div class="endpoint" class:disabled={!secretKey.trim()}>
+			<div class="endpoint">
 				<span class="method">GET</span>
-				<a href={buildUrl(endpoints['content-stats'])}
-					>{getDisplayText(endpoints['content-stats'])}</a
-				>
-				<span class="description"
-					>View content statistics and repository info (no secret required)</span
-				>
+				<a href="/api/content-status">/api/content-status</a>
+				<span class="description">View content statistics and repository info</span>
 			</div>
 		</div>
 	</section>
@@ -112,37 +107,19 @@
 			<div class="endpoint">
 				<span class="method">GET</span>
 				<a href="/api/migrate">/api/migrate</a>
-				<span class="description">Run database migrations (no secret required)</span>
+				<span class="description">Run database migrations</span>
 			</div>
 
 			<div class="endpoint">
 				<span class="method">GET</span>
 				<a href="/api/content-status">/api/content-status</a>
-				<span class="description">Check content table status (no secret required)</span>
+				<span class="description">Check content table status</span>
 			</div>
 
 			<div class="endpoint">
 				<span class="method">GET</span>
 				<a href="/api/scheduler-status">/api/scheduler-status</a>
-				<span class="description">Check background scheduler status (no secret required)</span>
-			</div>
-
-			<div class="endpoint">
-				<span class="method">GET</span>
-				<a href="/api/scheduler-status?update=true">/api/scheduler-status?update=true</a>
-				<span class="description">Trigger manual content sync (no secret required)</span>
-			</div>
-
-			<div class="endpoint">
-				<span class="method">GET</span>
-				<a href="/api/repo-cache-status">/api/repo-cache-status</a>
-				<span class="description">Check repository cache status (no secret required)</span>
-			</div>
-
-			<div class="endpoint">
-				<span class="method">GET</span>
-				<a href="/api/repo-cache-status?clear=true">/api/repo-cache-status?clear=true</a>
-				<span class="description">Clear repository cache (no secret required)</span>
+				<span class="description">Check background scheduler status</span>
 			</div>
 		</div>
 	</section>

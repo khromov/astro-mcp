@@ -1,6 +1,7 @@
 import { ContentSyncService } from '$lib/server/contentSync'
 import { presets, DEFAULT_REPOSITORY } from '$lib/presets'
 import { log, logAlways, logErrorAlways } from '$lib/log'
+import { cleanDocumentationPath } from '$lib/utils/pathUtils'
 
 // Maximum age of cached content in milliseconds (24 hours)
 export const MAX_CACHE_AGE_MS = 24 * 60 * 60 * 1000
@@ -38,9 +39,9 @@ export async function getPresetContent(presetKey: string): Promise<string | null
 
 		// Format files with headers and preserve the order from database
 		// The files are already correctly ordered by glob pattern precedence
-		// Strip the "apps/svelte.dev/content/" prefix to match the old format
+		// Use the unified path utility to clean paths
 		const files = filesWithPaths.map((f) => {
-			const cleanPath = f.path.replace('apps/svelte.dev/content/', '')
+			const cleanPath = cleanDocumentationPath(f.path)
 			return `## ${cleanPath}\n\n${f.content}`
 		})
 
