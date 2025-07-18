@@ -11,6 +11,16 @@ interface DocumentSection {
 	content: string
 }
 
+/**
+ * Safely extract title from metadata, ensuring it's a string
+ */
+function getTitleFromMetadata(metadata: Record<string, unknown> | undefined, fallbackPath: string): string {
+	if (metadata?.title && typeof metadata.title === 'string') {
+		return metadata.title
+	}
+	return extractTitleFromPath(fallbackPath)
+}
+
 export const listSectionsHandler = async () => {
 	logAlways('Listing sections from database')
 
@@ -32,8 +42,8 @@ export const listSectionsHandler = async () => {
 				continue
 			}
 
-			// Extract title from metadata or filename
-			const title = item.metadata?.title || extractTitleFromPath(item.path)
+			// Extract title from metadata or filename with proper type safety
+			const title = getTitleFromMetadata(item.metadata, item.path)
 
 			sections.push({
 				filePath: item.path,
@@ -127,8 +137,9 @@ export const getDocumentationHandler = async ({ section }: { section: string | s
 				const formattedContent = `## ${matchedContent.path}\n\n${matchedContent.content}`
 				const framework = matchedContent.path.includes('/docs/svelte/') ? 'Svelte' : 'SvelteKit'
 
+				const title = getTitleFromMetadata(matchedContent.metadata, matchedContent.path)
 				results.push(
-					`📖 ${framework} documentation (${matchedContent.metadata?.title || extractTitleFromPath(matchedContent.path)}):\n\n${formattedContent}`
+					`📖 ${framework} documentation (${title}):\n\n${formattedContent}`
 				)
 			} else {
 				notFound.push(cleanSection)
@@ -189,14 +200,14 @@ async function searchSectionInDb(query: string): Promise<DbContent | null> {
 
 	// First try exact title match
 	let match = allContent.find((item) => {
-		const title = item.metadata?.title || extractTitleFromPath(item.path)
+		const title = getTitleFromMetadata(item.metadata, item.path)
 		return title.toLowerCase() === lowerQuery
 	})
 	if (match) return match
 
 	// Then try partial title match
 	match = allContent.find((item) => {
-		const title = item.metadata?.title || extractTitleFromPath(item.path)
+		const title = getTitleFromMetadata(item.metadata, item.path)
 		return title.toLowerCase().includes(lowerQuery)
 	})
 	if (match) return match
