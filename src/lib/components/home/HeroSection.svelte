@@ -1,7 +1,3 @@
-<script lang="ts">
-	let { siteUrl }: { siteUrl: string } = $props()
-</script>
-
 <header class="hero">
 	<div class="hero-content">
 		<div class="logo">svelte-llm</div>
