@@ -3,6 +3,7 @@ import { createMcpHandler } from '@vercel/mcp-adapter'
 import { env } from '$env/dynamic/private'
 import { listSectionsHandler } from '$lib/handlers/listSectionsHandler'
 import { getDocumentationHandler } from '$lib/handlers/getDocumentationHandler'
+import { dev } from '$app/environment'
 
 export const handler = createMcpHandler(
 	(server) => {
@@ -30,7 +31,7 @@ export const handler = createMcpHandler(
 	{
 		maxDuration: 3600,
 		basePath: '/mcp',
-		verboseLogs: true,
+		verboseLogs: false,
 		redisUrl: env.REDIS_URL ? env.REDIS_URL : 'redis://127.0.0.1:6379'
 	}
 )
