@@ -48,7 +48,6 @@ export async function query(
 
 		return results
 	} catch (error) {
-		// Log the error for debugging
 		logErrorAlways('Database query error:', {
 			query: incomingQuery,
 			params,

@@ -7,15 +7,7 @@ import type {
 } from '$lib/types/db'
 import { logAlways, logErrorAlways } from '$lib/log'
 
-/**
- * Service for managing distillation-related database operations
- */
 export class PresetDbService {
-	// Distillation methods
-
-	/**
-	 * Create distillation version
-	 */
 	static async createDistillation(input: CreateDistillationInput): Promise<DbDistillation> {
 		try {
 			// Use INSERT ... ON CONFLICT to handle race conditions atomically
@@ -50,9 +42,6 @@ export class PresetDbService {
 		}
 	}
 
-	/**
-	 * Get distillation by preset name and version
-	 */
 	static async getDistillationByVersion(
 		presetName: string,
 		version: string
@@ -71,9 +60,6 @@ export class PresetDbService {
 		}
 	}
 
-	/**
-	 * Get latest distillation for a preset
-	 */
 	static async getLatestDistillation(presetName: string): Promise<DbDistillation | null> {
 		try {
 			const result = await query(
@@ -89,9 +75,6 @@ export class PresetDbService {
 		}
 	}
 
-	/**
-	 * Get all distillation versions for a preset
-	 */
 	static async getAllDistillationsForPreset(presetName: string): Promise<DbDistillation[]> {
 		try {
 			const result = await query(
@@ -107,9 +90,6 @@ export class PresetDbService {
 		}
 	}
 
-	/**
-	 * Create distillation job
-	 */
 	static async createDistillationJob(
 		input: CreateDistillationJobInput
 	): Promise<DbDistillationJob> {
@@ -143,9 +123,6 @@ export class PresetDbService {
 		}
 	}
 
-	/**
-	 * Update distillation job
-	 */
 	static async updateDistillationJob(
 		jobId: number,
 		updates: Partial<DbDistillationJob>
@@ -204,9 +181,6 @@ export class PresetDbService {
 		}
 	}
 
-	/**
-	 * Get distillation jobs for a preset
-	 */
 	static async getDistillationJobsForPreset(presetName: string): Promise<DbDistillationJob[]> {
 		try {
 			const result = await query(

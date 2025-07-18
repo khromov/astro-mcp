@@ -52,7 +52,6 @@ Here is the documentation you must condense:
 `
 
 export const GET: RequestHandler = async ({ url }) => {
-	// Check secret key
 	const secretKey = url.searchParams.get('secret_key')
 	const envSecretKey = env.DISTILL_SECRET_KEY
 
@@ -64,7 +63,6 @@ export const GET: RequestHandler = async ({ url }) => {
 		throw error(403, 'Invalid secret key')
 	}
 
-	// Find the distilled preset
 	const distilledPreset = Object.values(presets).find(
 		(preset) => preset.distilled && preset.distilledFilenameBase === 'svelte-complete-distilled'
 	)
@@ -76,11 +74,9 @@ export const GET: RequestHandler = async ({ url }) => {
 	let distillationJob: DbDistillationJob | null = null
 
 	try {
-		// Use the default repository
 		const { owner, repo } = DEFAULT_REPOSITORY
 		const tarballBuffer = await fetchRepositoryTarball(owner, repo)
 
-		// Process the tarball to get files
 		const filesWithPaths = (await processMarkdownFromTarball(
 			tarballBuffer,
 			distilledPreset,
@@ -90,7 +86,6 @@ export const GET: RequestHandler = async ({ url }) => {
 			content: string
 		}>
 
-		// Filter out short files, only keep normal files
 		const originalFileCount = filesWithPaths.length
 		let filesToProcess = filesWithPaths.filter((file) => file.content.length >= 200)
 		const shortFilesRemoved = originalFileCount - filesToProcess.length
@@ -107,12 +102,10 @@ export const GET: RequestHandler = async ({ url }) => {
 			)
 		}
 
-		// Apply the minimize config to each file's content if the preset has a minimize configuration
 		if (distilledPreset.minimize) {
 			logAlways(`Applying minimize configuration before LLM processing`)
 
 			filesToProcess = filesToProcess.map((fileObj) => {
-				// Apply minimization to the content
 				const minimized = minimizeContent(fileObj.content, distilledPreset.minimize)
 
 				return {
@@ -124,10 +117,8 @@ export const GET: RequestHandler = async ({ url }) => {
 			logAlways(`Content minimized according to preset configuration`)
 		}
 
-		// Initialize Anthropic client
 		const anthropic = new AnthropicProvider('claude-sonnet-4-20250514')
 
-		// Create distillation job in database
 		distillationJob = await PresetDbService.createDistillationJob({
 			preset_name: DistillablePreset.SVELTE_COMPLETE_DISTILLED,
 			status: 'pending',
@@ -140,7 +131,6 @@ export const GET: RequestHandler = async ({ url }) => {
 			}
 		})
 
-		// Prepare batch requests
 		const batchRequests: AnthropicBatchRequest[] = filesToProcess.map((fileObj, index) => {
 			const content = fileObj.content
 			const fullPrompt = DISTILLATION_PROMPT + content
@@ -161,10 +151,8 @@ export const GET: RequestHandler = async ({ url }) => {
 			}
 		})
 
-		// Create batch
 		const batchResponse = await anthropic.createBatch(batchRequests)
 
-		// Update job status to processing
 		try {
 			distillationJob = await PresetDbService.updateDistillationJob(distillationJob.id, {
 				status: 'processing',
@@ -174,7 +162,6 @@ export const GET: RequestHandler = async ({ url }) => {
 			logErrorAlways('Failed to update distillation job:', dbError)
 		}
 
-		// Poll for completion
 		let batchStatus = await anthropic.getBatchStatus(batchResponse.id)
 
 		while (batchStatus.processing_status === 'in_progress') {
@@ -185,7 +172,6 @@ export const GET: RequestHandler = async ({ url }) => {
 				`Batch status: ${batchStatus.processing_status}, Succeeded: ${batchStatus.request_counts.succeeded}, Processing: ${batchStatus.request_counts.processing}`
 			)
 
-			// Update job progress
 			try {
 				await PresetDbService.updateDistillationJob(distillationJob.id, {
 					processed_files:
@@ -197,14 +183,12 @@ export const GET: RequestHandler = async ({ url }) => {
 			}
 		}
 
-		// Get results
 		if (!batchStatus.results_url) {
 			throw error(500, 'Batch completed but no results URL available')
 		}
 
 		const results = await anthropic.getBatchResults(batchStatus.results_url)
 
-		// Process results and accumulate token counts
 		let totalInputTokens = 0
 		let totalOutputTokens = 0
 
@@ -225,7 +209,6 @@ export const GET: RequestHandler = async ({ url }) => {
 
 				const outputContent = result.result.message.content[0].text
 
-				// Accumulate token usage
 				if (result.result.message.usage) {
 					totalInputTokens += result.result.message.usage.input_tokens || 0
 					totalOutputTokens += result.result.message.usage.output_tokens || 0
@@ -238,10 +221,8 @@ export const GET: RequestHandler = async ({ url }) => {
 				}
 			})
 
-		// Sort by index to maintain original order
 		processedResults.sort((a, b) => a.index - b.index)
 
-		// Filter successful responses
 		const successfulResults = processedResults.filter((result) => result.content)
 
 		// Split results into Svelte and SvelteKit categories based on the new path structure
@@ -252,40 +233,31 @@ export const GET: RequestHandler = async ({ url }) => {
 			result.path.includes('apps/svelte.dev/content/docs/kit/')
 		)
 
-		// Create content for each category
 		const createContentFromResults = (results: typeof successfulResults) => {
 			const contentParts = results.map((result) => `## ${result.path}\n\n${result.content}`)
 			return contentParts.join('\n\n')
 		}
 
-		// Generate combined content
 		const distilledContent = createContentFromResults(successfulResults)
 
-		// Generate Svelte content
 		const svelteContent = createContentFromResults(svelteResults)
 
-		// Generate SvelteKit content
 		const svelteKitContent = createContentFromResults(svelteKitResults)
 
-		// Add prompt if it exists
 		const prompt = distilledPreset.prompt
 			? `\n\nInstructions for LLMs: <s>${distilledPreset.prompt}</s>`
 			: ''
 
-		// Finalize content with prompts
 		const finalContent = distilledContent + prompt
 		const finalSvelteContent = svelteContent + prompt
 		const finalSvelteKitContent = svelteKitContent + prompt
 
-		// Generate date string for versioning
 		const today = new Date()
 		const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(
 			today.getDate()
 		).padStart(2, '0')}`
 
-		// Store all distillations in database
 		try {
-			// Store combined version
 			await PresetDbService.createDistillation({
 				preset_name: DistillablePreset.SVELTE_COMPLETE_DISTILLED,
 				version: 'latest',
@@ -304,7 +276,6 @@ export const GET: RequestHandler = async ({ url }) => {
 				distillation_job_id: distillationJob?.id
 			})
 
-			// Store Svelte-only version
 			await PresetDbService.createDistillation({
 				preset_name: DistillablePreset.SVELTE_DISTILLED,
 				version: 'latest',
@@ -323,7 +294,6 @@ export const GET: RequestHandler = async ({ url }) => {
 				distillation_job_id: distillationJob?.id
 			})
 
-			// Store SvelteKit-only version
 			await PresetDbService.createDistillation({
 				preset_name: DistillablePreset.SVELTEKIT_DISTILLED,
 				version: 'latest',
@@ -342,7 +312,6 @@ export const GET: RequestHandler = async ({ url }) => {
 				distillation_job_id: distillationJob?.id
 			})
 
-			// Update distillation job as completed with token counts
 			await PresetDbService.updateDistillationJob(distillationJob.id, {
 				status: 'completed',
 				processed_files: filesToProcess.length,

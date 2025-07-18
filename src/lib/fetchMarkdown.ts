@@ -8,7 +8,6 @@ import { getPresetContent } from './presetCache'
 import { CacheDbService } from '$lib/server/cacheDb'
 import { log, logAlways, logErrorAlways } from '$lib/log'
 
-// Database cache service instance
 let cacheService: CacheDbService | null = null
 
 function getCacheService(): CacheDbService {
@@ -27,31 +26,24 @@ function sortFilesWithinGroup(files: string[]): string[] {
 		if (bPath.startsWith(aPath.replace('/index.md', '/'))) return -1
 		if (aPath.startsWith(bPath.replace('/index.md', '/'))) return 1
 
-		// If not parent/child relationship, sort by path
 		return aPath.localeCompare(bPath)
 	})
 }
 
-/**
- * Fetch repository tarball with caching
- */
 export async function fetchRepositoryTarball(owner: string, repo: string): Promise<Buffer> {
 	const cacheKey = `${owner}/${repo}`
 	const cache = getCacheService()
 
-	// Check database cache first
 	const cachedBuffer = await cache.get(cacheKey)
 	if (cachedBuffer) {
 		logAlways(`Using cached tarball for ${cacheKey} from database`)
 		return cachedBuffer
 	}
 
-	// Construct the tarball URL
 	const url = `https://api.github.com/repos/${owner}/${repo}/tarball`
 
 	logAlways(`Fetching tarball from: ${url}`)
 
-	// Fetch the tarball
 	const response = await fetch(url, {
 		headers: {
 			Authorization: `Bearer ${env.GITHUB_TOKEN}`,
@@ -67,7 +59,6 @@ export async function fetchRepositoryTarball(owner: string, repo: string): Promi
 		throw new Error('Response body is null')
 	}
 
-	// Read the response body into a buffer
 	const chunks: Uint8Array[] = []
 	const reader = response.body.getReader()
 
@@ -85,9 +76,6 @@ export async function fetchRepositoryTarball(owner: string, repo: string): Promi
 	return buffer
 }
 
-/**
- * Process markdown files from a tarball buffer
- */
 export async function processMarkdownFromTarball(
 	tarballBuffer: Buffer,
 	presetConfig: PresetConfig,
@@ -108,12 +96,10 @@ export async function processMarkdownFromTarball(
 	let processedFiles = 0
 	let matchedFiles = 0
 
-	// Process each file in the tarball
 	extractStream.on('entry', (header, stream, next) => {
 		processedFiles++
 		let matched = false
 
-		// Check each glob pattern in order
 		for (const pattern of glob) {
 			if (shouldIncludeFile(header.name, pattern, ignore)) {
 				matched = true
@@ -124,16 +110,10 @@ export async function processMarkdownFromTarball(
 					stream.on('data', (chunk) => (content += chunk.toString()))
 					stream.on('end', () => {
 						// Remove only the repo directory prefix (first segment)
-						// Keep the rest of the path intact
-						const cleanPath = header.name
-							.split('/')
-							.slice(1) // Remove repo directory
-							.join('/')
+						const cleanPath = header.name.split('/').slice(1).join('/')
 
-						// Minimize the content if needed
 						const processedContent = minimizeContent(content, minimize)
 
-						// Store with or without path info based on the parameter
 						if (includePathInfo) {
 							const files = globResults.get(pattern) || []
 							files.push({
@@ -142,23 +122,20 @@ export async function processMarkdownFromTarball(
 							})
 							globResults.set(pattern, files)
 						} else {
-							// Add the file header before the content
 							const contentWithHeader = `## ${cleanPath}\n\n${processedContent}`
 
-							// Add to the appropriate glob pattern's results
 							const files = globResults.get(pattern) || []
 							files.push(contentWithHeader)
 							globResults.set(pattern, files)
 						}
 
-						// Store the file path for logging
 						const paths = filePathsByPattern.get(pattern) || []
 						paths.push(cleanPath)
 						filePathsByPattern.set(pattern, paths)
 
 						next()
 					})
-					return // Exit after first match
+					return
 				}
 			}
 		}
@@ -169,21 +146,17 @@ export async function processMarkdownFromTarball(
 		}
 	})
 
-	// Create streams from the buffer
 	const tarballStream = Readable.from(tarballBuffer)
 	const gunzipStream = createGunzip()
 
-	// Pipe the tarball stream through gunzip to the extract stream
 	tarballStream.pipe(gunzipStream).pipe(extractStream)
 
-	// Wait for the extraction to complete
 	await new Promise<void>((resolve) => extractStream.on('finish', resolve))
 
 	logAlways(`Total files processed: ${processedFiles}`)
 	logAlways(`Files matching glob: ${matchedFiles}`)
 	log('\nFinal file order:')
 
-	// Log files in their final order
 	glob.forEach((pattern, index) => {
 		const paths = filePathsByPattern.get(pattern) || []
 		const sortedPaths = includePathInfo
@@ -203,10 +176,8 @@ export async function processMarkdownFromTarball(
 	for (const pattern of glob) {
 		const filesForPattern = globResults.get(pattern) || []
 		if (includePathInfo) {
-			// For path info mode, just add the objects directly
 			orderedResults.push(...filesForPattern)
 		} else {
-			// For normal mode, sort and add strings
 			orderedResults.push(...sortFilesWithinGroup(filesForPattern as string[]))
 		}
 	}
@@ -215,29 +186,21 @@ export async function processMarkdownFromTarball(
 }
 
 function shouldIncludeFile(filename: string, glob: string, ignore: string[] = []): boolean {
-	// First check if the file should be ignored
 	const shouldIgnore = ignore.some((pattern) => minimatch(filename, pattern))
 	if (shouldIgnore) {
 		logAlways(`❌ Ignored by pattern: ${filename}`)
 		return false
 	}
 
-	// Then check if the file matches the specific glob pattern
 	return minimatch(filename, glob)
 }
 
-/**
- * Clear repository cache (useful for forcing fresh downloads)
- */
 export async function clearRepositoryCache(): Promise<void> {
 	const cache = getCacheService()
 	await cache.clear()
 	logAlways('Repository cache cleared')
 }
 
-/**
- * Get repository cache status
- */
 export async function getRepositoryCacheStatus(): Promise<{
 	size: number
 	repositories: string[]
@@ -290,7 +253,6 @@ function removeQuoteBlocks(content: string, blockType: string): string {
 				return acc
 			}
 
-			// Only add the line if it's not being skipped
 			acc.push(line)
 			return acc
 		}, [])
@@ -308,7 +270,6 @@ function removeDiffMarkersFromContent(content: string): string {
 			return line
 		}
 
-		// Only process lines within code blocks
 		if (inCodeBlock) {
 			// Handle lines that end with --- or +++ with possible whitespace after
 			// eslint-disable-next-line no-useless-escape
@@ -335,7 +296,6 @@ function removeDiffMarkersFromContent(content: string): string {
 }
 
 export function minimizeContent(content: string, options?: Partial<MinimizeOptions>): string {
-	// Merge with defaults, but only for properties that are defined
 	const settings: MinimizeOptions = options ? { ...defaultOptions, ...options } : defaultOptions
 
 	let minimized = content

@@ -20,7 +20,7 @@ async function clearDatabase() {
 		console.log('✅ Database connection successful')
 
 		console.log('🗑️  Dropping all tables...')
-		
+
 		// Just drop and recreate the public schema - no fancy permissions
 		await client.query(`
 			DROP SCHEMA IF EXISTS public CASCADE;
@@ -29,7 +29,6 @@ async function clearDatabase() {
 
 		console.log('✅ All tables dropped and schema recreated')
 		console.log('🎉 Database cleared!')
-
 	} catch (error) {
 		console.error('❌ Error clearing database:', error)
 		process.exit(1)
