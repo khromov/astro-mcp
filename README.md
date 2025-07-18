@@ -1,6 +1,6 @@
 ## svelte-llm
 
-LLM presets for Svelte 5 and SvelteKit. Visit the site at [svelte-llm.khromov.se](https://svelte-llm.khromov.se).
+LLM presets and MCP for Svelte 5 and SvelteKit. Visit the site at [svelte-llm.khromov.se](https://svelte-llm.khromov.se).
 
 ## MCP Endpoint
 
@@ -20,17 +20,18 @@ OG image from https://dynamic-og-image-generator.vercel.app/
   ```
 - Create [a Classic GitHub token](https://github.com/settings/tokens). It must have `public_repo` permissions.
 - Enter this in the .env file.
-- Set up PostgreSQL (you can use the included docker-compose.yml)
-- Run database migrations: visit `/api/migrate` in your browser after starting the dev server
+- Run `docker-compose up`
+- Run:
 
-# llmctx
+```
+nvm use
+npm i
+npm run dev
+```
 
-llmctx transforms technical documentation into AI-ready formats. It provides a simple way to access condensed, LLM-friendly versions of popular framework and library documentation through preset URLs. This makes it easier for developers to use AI coding assistants like Cursor or Zed with accurate, up-to-date context from official documentation sources.
+- Run database migrations: visit http://localhost:5173/api/migrate in your browser after starting the dev server.
 
-- Preset URLs for quick access to LLM-optimized documentation
-- Regularly updated content from official documentation
-- Database-powered caching for fast response times
-- AI-distilled versions for more concise documentation
+You can also visit http://localhost:5173/admin to see all the "hidden" endpoints (default password = "secret")
 
 ## Supported presets
 
