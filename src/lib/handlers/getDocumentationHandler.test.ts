@@ -1,15 +1,7 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { listSectionsHandler, getDocumentationHandler } from './mcpHandler'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { getDocumentationHandler } from './getDocumentationHandler'
 import { ContentDbService } from '$lib/server/contentDb'
 import type { DbContent } from '$lib/types/db'
-
-// Mock environment variables
-vi.mock('$env/dynamic/private', () => ({
-	env: {
-		GITHUB_TOKEN: 'test-token',
-		REDIS_URL: undefined
-	}
-}))
 
 // Mock ContentDbService
 vi.mock('$lib/server/contentDb', () => ({
@@ -112,7 +104,7 @@ const mockSvelteContent: DbContent[] = [
 	}
 ]
 
-describe('MCP Handler Integration', () => {
+describe('getDocumentationHandler', () => {
 	beforeEach(() => {
 		// Reset mocks before each test
 		vi.clearAllMocks()
@@ -120,80 +112,6 @@ describe('MCP Handler Integration', () => {
 		// Setup default mock implementation
 		const mockGetContentByFilter = vi.mocked(ContentDbService.getContentByFilter)
 		mockGetContentByFilter.mockResolvedValue(mockSvelteContent)
-	})
-
-	it('should list sections and successfully fetch each one using real MCP functions', async () => {
-		// Call the real listSectionsHandler
-		const listResult = await listSectionsHandler()
-
-		expect(listResult.content).toBeDefined()
-		expect(listResult.content[0].type).toBe('text')
-		expect(listResult.content[0].text).toContain('Available documentation sections')
-
-		// Should contain our mock sections
-		expect(listResult.content[0].text).toContain('Introduction')
-		expect(listResult.content[0].text).toContain('$state')
-		expect(listResult.content[0].text).toContain('$derived')
-		expect(listResult.content[0].text).toContain('$effect')
-		expect(listResult.content[0].text).toContain('Routing')
-
-		// Test fetching by title
-		const stateResult = await getDocumentationHandler({ section: '$state' })
-		expect(stateResult.content[0].text).toContain(
-			'$state rune is used to create reactive state in Svelte 5'
-		)
-		expect(stateResult.content[0].text).not.toContain('❌')
-
-		// Test fetching by path
-		const pathResult = await getDocumentationHandler({
-			section: 'apps/svelte.dev/content/docs/svelte/02-runes.md'
-		})
-		expect(pathResult.content[0].text).toContain(
-			'$state rune is used to create reactive state in Svelte 5'
-		)
-		expect(pathResult.content[0].text).not.toContain('❌')
-	}, 15000)
-
-	it('should properly clean paths and categorize sections correctly', async () => {
-		// This test would have caught the filtering bug!
-		const listResult = await listSectionsHandler()
-		const outputText = listResult.content[0].text
-
-		// Test path cleaning - should NOT contain the full database path prefix
-		expect(outputText).not.toContain('apps/svelte.dev/content/docs/svelte/')
-		expect(outputText).not.toContain('apps/svelte.dev/content/docs/kit/')
-
-		// Test path cleaning - should contain the cleaned paths
-		expect(outputText).toContain('docs/svelte/01-introduction.md')
-		expect(outputText).toContain('docs/svelte/02-runes.md')
-		expect(outputText).toContain('docs/kit/01-routing.md')
-
-		// Test categorization - should have both section headers
-		expect(outputText).toContain('# Svelte')
-		expect(outputText).toContain('# SvelteKit')
-
-		// Test that Svelte sections are under the Svelte header
-		const svelteHeaderIndex = outputText.indexOf('# Svelte')
-		const svelteKitHeaderIndex = outputText.indexOf('# SvelteKit')
-		const introductionIndex = outputText.indexOf(
-			'title: Introduction, path: docs/svelte/01-introduction.md'
-		)
-		const stateIndex = outputText.indexOf('title: $state, path: docs/svelte/02-runes.md')
-
-		expect(svelteHeaderIndex).toBeGreaterThan(-1)
-		expect(svelteKitHeaderIndex).toBeGreaterThan(-1)
-		expect(introductionIndex).toBeGreaterThan(svelteHeaderIndex)
-		expect(stateIndex).toBeGreaterThan(svelteHeaderIndex)
-		expect(introductionIndex).toBeLessThan(svelteKitHeaderIndex)
-
-		// Test that SvelteKit sections are under the SvelteKit header
-		const routingIndex = outputText.indexOf('title: Routing, path: docs/kit/01-routing.md')
-		expect(routingIndex).toBeGreaterThan(svelteKitHeaderIndex)
-
-		// Test exact output format
-		expect(outputText).toMatch(/\* title: Introduction, path: docs\/svelte\/01-introduction\.md/)
-		expect(outputText).toMatch(/\* title: \$state, path: docs\/svelte\/02-runes\.md/)
-		expect(outputText).toMatch(/\* title: Routing, path: docs\/kit\/01-routing\.md/)
 	})
 
 	it('should clean paths in documentation responses', async () => {
@@ -207,7 +125,7 @@ describe('MCP Handler Integration', () => {
 		expect(responseText).not.toContain('## apps/svelte.dev/content/docs/svelte/02-runes.md')
 	})
 
-	it('should handle trailing commas in search queries using real MCP functions', async () => {
+	it('should handle trailing commas in search queries', async () => {
 		// Test with trailing comma
 		const resultWithComma = await getDocumentationHandler({ section: '$state,' })
 		expect(resultWithComma.content[0].text).toContain(
@@ -221,9 +139,9 @@ describe('MCP Handler Integration', () => {
 			'$state rune is used to create reactive state in Svelte 5'
 		)
 		expect(resultWithCommaSpace.content[0].text).not.toContain('❌')
-	}, 15000)
+	})
 
-	it('should search by both title and path using real MCP functions', async () => {
+	it('should search by both title and path', async () => {
 		// Search by title
 		const resultByTitle = await getDocumentationHandler({ section: '$derived' })
 		expect(resultByTitle.content[0].text).toContain(
@@ -239,12 +157,12 @@ describe('MCP Handler Integration', () => {
 			'$derived rune is used to create derived state that automatically updates'
 		)
 		expect(resultByPath.content[0].text).not.toContain('❌')
-	}, 15000)
+	})
 
-	it('should return error for non-existent sections using real MCP functions', async () => {
+	it('should return error for non-existent sections', async () => {
 		const result = await getDocumentationHandler({ section: 'non-existent-section-12345' })
 		expect(result.content[0].text).toContain('not found')
-	}, 15000)
+	})
 
 	it('should handle array of section names', async () => {
 		// Test with multiple valid sections
@@ -259,7 +177,7 @@ describe('MCP Handler Integration', () => {
 		expect(result.content[0].text).toContain('$effect')
 		expect(result.content[0].text).toContain('---') // Should have separators
 		expect(result.content[0].text).not.toContain('❌')
-	}, 15000)
+	})
 
 	it('should handle mixed valid and invalid sections in array', async () => {
 		// Test with mix of valid and invalid sections
@@ -273,7 +191,7 @@ describe('MCP Handler Integration', () => {
 		expect(result.content[0].text).toContain('$derived')
 		expect(result.content[0].text).toContain('not found')
 		expect(result.content[0].text).toContain('non-existent-section')
-	}, 15000)
+	})
 
 	it('should handle JSON string arrays from Claude', async () => {
 		// Test with JSON string array (like Claude sends)
@@ -287,29 +205,38 @@ describe('MCP Handler Integration', () => {
 		expect(result.content[0].text).toContain('$derived')
 		expect(result.content[0].text).toContain('---') // Should have separators
 		expect(result.content[0].text).not.toContain('❌')
-	}, 15000)
+	})
 
-	it('should handle empty sections gracefully when filtering is broken', async () => {
-		// This test specifically checks for the bug scenario
-		// If filtering logic is broken, we should get empty sections instead of proper categorization
-		const listResult = await listSectionsHandler()
-		const outputText = listResult.content[0].text
+	it('should handle malformed JSON arrays gracefully', async () => {
+		// Test with malformed JSON that should be treated as a single string
+		const result = await getDocumentationHandler({
+			section: '["$state", "$derived"'
+		})
 
-		// If the filtering was broken, these sections would be missing entirely
-		// This test ensures that we actually have sections in both categories
-		const hasSvelteSection =
-			outputText.includes('# Svelte') && outputText.match(/# Svelte\n[\s\S]*?\* title:/)
-		const hasSvelteKitSection =
-			outputText.includes('# SvelteKit') && outputText.match(/# SvelteKit\n[\s\S]*?\* title:/)
+		expect(result.content).toBeDefined()
+		expect(result.content[0].type).toBe('text')
+		expect(result.content[0].text).toContain('not found')
+	})
 
-		expect(hasSvelteSection).toBeTruthy()
-		expect(hasSvelteKitSection).toBeTruthy()
+	it('should handle empty section arrays', async () => {
+		const result = await getDocumentationHandler({
+			section: []
+		})
 
-		// Should have at least one item in each section
-		const svelteMatches = outputText.match(/# Svelte\n([\s\S]*?)(?=# SvelteKit|$)/)
-		const svelteKitMatches = outputText.match(/# SvelteKit\n([\s\S]*)$/)
+		expect(result.content).toBeDefined()
+		expect(result.content[0].type).toBe('text')
+		expect(result.content[0].text).toContain('not found')
+	})
 
-		expect(svelteMatches?.[1]).toContain('* title:')
-		expect(svelteKitMatches?.[1]).toContain('* title:')
+	it('should handle database errors gracefully', async () => {
+		// Mock database error
+		const mockGetContentByFilter = vi.mocked(ContentDbService.getContentByFilter)
+		mockGetContentByFilter.mockRejectedValue(new Error('Database error'))
+
+		const result = await getDocumentationHandler({ section: '$state' })
+
+		expect(result.content[0].type).toBe('text')
+		expect(result.content[0].text).toContain('❌ Error fetching documentation')
+		expect(result.content[0].text).toContain('Database error')
 	})
 })
