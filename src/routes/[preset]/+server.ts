@@ -5,43 +5,25 @@ import type { RequestHandler } from './$types'
 import { error } from '@sveltejs/kit'
 import { presets } from '$lib/presets'
 import { dev } from '$app/environment'
-import { fetchAndProcessMarkdown } from '$lib/fetchMarkdown'
-import { readFile } from 'fs/promises'
-import { getPresetFilePath, readCachedFile, isFileStale } from '$lib/fileCache'
+import { getPresetContent } from '$lib/presetCache'
+import { PresetDbService } from '$lib/server/presetDb'
+import { DistillablePreset } from '$lib/types/db'
+import { logAlways, logErrorAlways } from '$lib/log'
 
-// Valid virtual presets that aren't in the presets object
-const VIRTUAL_DISTILLED_PRESETS = ['svelte-distilled', 'sveltekit-distilled']
-
-/**
- * Trigger a background update for a preset without awaiting the result
- */
-function triggerBackgroundUpdate(presetKey: string): void {
-	const preset = presets[presetKey]
-	if (!preset) return
-
-	// Don't update distilled presets, they have their own update mechanism
-	if (preset.distilled) return
-
-	// Fire and forget - don't await this promise
-	fetchAndProcessMarkdown(preset, presetKey)
-		.then(() => {
-			if (dev) console.log(`Background update completed for ${presetKey}`)
-		})
-		.catch((err) => {
-			console.error(`Background update failed for ${presetKey}:`, err)
-		})
-}
+// Valid virtual presets that aren't in the presets object - now using enum values
+const VIRTUAL_DISTILLED_PRESETS = [
+	DistillablePreset.SVELTE_DISTILLED,
+	DistillablePreset.SVELTEKIT_DISTILLED
+]
 
 export const GET: RequestHandler = async ({ params, url }) => {
 	const presetNames = params.preset.split(',').map((p) => p.trim())
 
-	if (dev) {
-		console.log(`Received request for presets: ${presetNames.join(', ')}`)
-	}
+	logAlways(`Received request for presets: ${presetNames.join(', ')}`)
 
 	// Validate all preset names first
 	const invalidPresets = presetNames.filter(
-		(name) => !(name in presets) && !VIRTUAL_DISTILLED_PRESETS.includes(name)
+		(name) => !(name in presets) && !VIRTUAL_DISTILLED_PRESETS.includes(name as DistillablePreset)
 	)
 
 	if (invalidPresets.length > 0) {
@@ -50,84 +32,87 @@ export const GET: RequestHandler = async ({ params, url }) => {
 
 	try {
 		// Determine which version of the distilled doc to use
-		const version = url.searchParams.get('version')
+		const version = url.searchParams.get('version') || 'latest'
 
-		// Fetch all contents in parallel
-		const contentPromises = presetNames.map(async (presetKey) => {
-			if (dev) {
-				console.time('dataFetching')
-			}
+		// Separate distilled and regular presets
+		const distilledPresetNames = presetNames.filter(
+			(name) =>
+				presets[name]?.distilled || VIRTUAL_DISTILLED_PRESETS.includes(name as DistillablePreset)
+		)
+		const regularPresetNames = presetNames.filter(
+			(name) =>
+				!presets[name]?.distilled && !VIRTUAL_DISTILLED_PRESETS.includes(name as DistillablePreset)
+		)
 
-			let content
+		const contentMap = new Map<string, string>()
 
-			// Handle both regular distilled presets and virtual ones
-			if (presets[presetKey]?.distilled || VIRTUAL_DISTILLED_PRESETS.includes(presetKey)) {
-				// For virtual presets, use their basename directly
-				const baseFilename = presets[presetKey]?.distilledFilenameBase || presetKey
-				let filename
+		// Handle distilled presets individually (they come from the database)
+		for (const presetKey of distilledPresetNames) {
+			try {
+				const dbDistillation = await PresetDbService.getDistillationByVersion(presetKey, version)
 
-				if (version) {
-					// Use specific version if provided
-					filename = `outputs/${baseFilename}-${version}.md`
-				} else {
-					// Use latest version otherwise
-					filename = `outputs/${baseFilename}-latest.md`
-				}
-
-				try {
-					content = await readFile(filename, 'utf-8')
-				} catch (e) {
+				if (!dbDistillation || !dbDistillation.content) {
 					throw new Error(
-						`Failed to read distilled content: ${e instanceof Error ? e.message : String(e)}. Make sure to run the distillation process first.`
+						`Failed to read distilled content for ${presetKey} version ${version}. Make sure to run the distillation process first.`
 					)
 				}
-			} else {
-				// Regular preset processing with file-based caching
-				const filePath = getPresetFilePath(presetKey)
-				content = await readCachedFile(filePath)
 
-				if (content) {
-					// Check if the file is stale and needs a background update
-					const isStale = await isFileStale(filePath)
-					if (isStale) {
-						if (dev) console.log(`File for ${presetKey} is stale, triggering background update`)
-						triggerBackgroundUpdate(presetKey)
-					}
-				} else {
-					// If not in cache, fetch and process markdown (this will also save to disk)
-					content = await fetchAndProcessMarkdown(presets[presetKey], presetKey)
-				}
+				contentMap.set(presetKey, dbDistillation.content)
+			} catch (e) {
+				logErrorAlways(`Error fetching distilled preset ${presetKey}:`, e)
+				throw e
+			}
+		}
+
+		// Handle regular presets - generate on-demand from content table
+		for (const presetKey of regularPresetNames) {
+			logAlways(`Generating content for preset ${presetKey} on-demand`)
+
+			const content = await getPresetContent(presetKey)
+
+			if (!content) {
+				// This should rarely happen now that we have automatic syncing
+				logErrorAlways(`Failed to generate content for ${presetKey}`)
+				throw new Error(
+					`Failed to generate content for ${presetKey}. The repository may still be syncing, please try again in a few moments.`
+				)
 			}
 
-			if (dev) {
-				console.timeEnd('dataFetching')
-				console.log(`Content length for ${presetKey}: ${content.length}`)
-			}
+			contentMap.set(presetKey, content)
+		}
 
-			if (content.length === 0) {
+		// Build the final response in the order requested
+		const contents: string[] = []
+
+		for (const presetKey of presetNames) {
+			const content = contentMap.get(presetKey)
+
+			if (!content) {
 				throw new Error(`No content found for ${presetKey}`)
 			}
 
+			logAlways(`Content length for ${presetKey}: ${content.length}`)
+
 			// Add the prompt if it exists and we're not using a distilled preset
 			// (distilled presets already have the prompt added)
-			return !presets[presetKey]?.distilled &&
-				!VIRTUAL_DISTILLED_PRESETS.includes(presetKey) &&
+			const finalContent =
+				!presets[presetKey]?.distilled &&
+				!VIRTUAL_DISTILLED_PRESETS.includes(presetKey as DistillablePreset) &&
 				presets[presetKey]?.prompt
-				? `${content}\n\nInstructions for LLMs: <SYSTEM>${presets[presetKey].prompt}</SYSTEM>`
-				: content
-		})
+					? `${content}\n\nInstructions for LLMs: <s>${presets[presetKey].prompt}</s>`
+					: content
 
-		const contents = await Promise.all(contentPromises)
+			contents.push(finalContent)
+		}
 
 		// Join all contents with a delimiter
 		const response = contents.join('\n\n---\n\n')
 
-		if (dev) {
-			console.log(`Final combined response length: ${response.length}`)
-		}
+		logAlways(`Final combined response length: ${response.length}`)
 
 		const headers: HeadersInit = {
-			'Content-Type': 'text/plain; charset=utf-8'
+			'Content-Type': 'text/plain; charset=utf-8',
+			'Cache-Control': 'no-cache' // Ensure fresh content on each request
 		}
 
 		// Serve as a download if not in development mode
@@ -140,7 +125,8 @@ export const GET: RequestHandler = async ({ params, url }) => {
 			headers
 		})
 	} catch (e) {
-		console.error(`Error fetching documentation for presets [${presetNames.join(', ')}]:`, e)
-		error(500, `Failed to fetch documentation for presets "${presetNames.join(', ')}"`)
+		logErrorAlways(`Error fetching documentation for presets [${presetNames.join(', ')}]:`, e)
+		const errorMessage = e instanceof Error ? e.message : 'An unexpected error occurred'
+		error(500, errorMessage)
 	}
 }

@@ -8,33 +8,30 @@
 		transformAndSortPresets
 	} from '$lib/presets'
 	import PresetListItem from '$lib/components/PresetListItem.svelte'
+	import CopyIcon from '$lib/components/CopyIcon.svelte'
 	import { SITE_URL } from '$lib/constants'
+	import { DistillablePreset } from '$lib/types/db'
 	import toast from 'svelte-french-toast'
-	
+	import { logErrorAlways } from '$lib/log'
+
 	const SSE_ENDPOINT = 'https://svelte-llm.khromov.se/mcp/sse'
 	const STREAMABLE_ENDPOINT = 'https://svelte-llm.khromov.se/mcp/mcp'
 	const NPX_COMMAND = `npx mcp-remote ${STREAMABLE_ENDPOINT}`
-
-	// SVG icon strings to avoid duplication
-	const COPY_ICON = `<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-		<path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"/>
-		<path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"/>
-	</svg>`
 
 	const combinedPresetsFormatted = transformAndSortPresets(combinedPresets)
 	const sveltePresetsFormatted = transformAndSortPresets(sveltePresets)
 	const svelteKitPresetsFormatted = transformAndSortPresets(svelteKitPresets)
 	const otherPresetsFormatted = transformAndSortPresets(otherPresets)
 
-	// Define virtual distilled presets
+	// Define virtual distilled presets using the enum
 	const svelteDistilledPreset = {
-		key: 'svelte-distilled',
+		key: DistillablePreset.SVELTE_DISTILLED,
 		title: '🔮 Svelte (LLM Distilled)',
 		description: 'AI-condensed version of just the Svelte 5 docs'
 	}
 
 	const svelteKitDistilledPreset = {
-		key: 'sveltekit-distilled',
+		key: DistillablePreset.SVELTEKIT_DISTILLED,
 		title: '🔮 SvelteKit (LLM Distilled)',
 		description: 'AI-condensed version of just the SvelteKit docs'
 	}
@@ -47,9 +44,9 @@
 	}
 
 	let distilledVersions = $state<Record<string, DistilledVersion[]>>({
-		'svelte-complete-distilled': [],
-		'svelte-distilled': [],
-		'sveltekit-distilled': []
+		[DistillablePreset.SVELTE_COMPLETE_DISTILLED]: [],
+		[DistillablePreset.SVELTE_DISTILLED]: [],
+		[DistillablePreset.SVELTEKIT_DISTILLED]: []
 	})
 	let loadingVersions = $state(true)
 	let distilledError = $state<string | null>(null)
@@ -62,7 +59,8 @@
 			id: 'claude-code',
 			name: 'Claude Code',
 			icon: '🔧',
-			description: 'The official Anthropic command-line tool. Run this command to add the MCP server:',
+			description:
+				'The official Anthropic command-line tool. Run this command to add the MCP server:',
 			instruction: `claude mcp add --transport sse --scope user svelte-llm ${SSE_ENDPOINT}`,
 			isCommand: true
 		},
@@ -85,7 +83,8 @@
 			id: 'github-copilot',
 			name: 'GitHub Copilot',
 			icon: '🐙',
-			description: 'GitHub Copilot extension for VS Code - put this in .vscode/mcp.json inside a "servers" object.',
+			description:
+				'GitHub Copilot extension for VS Code - put this in .vscode/mcp.json inside a "servers" object.',
 			instruction: `{
   "svelte-llm": {
     "command": "npx",
@@ -99,7 +98,8 @@
 			name: 'Cline',
 			icon: '🧑‍💻',
 			url: SSE_ENDPOINT,
-			description: 'Add this URL to your Cline MCP settings. Name the MCP svelte-llm or whatever you like.',
+			description:
+				'Add this URL to your Cline MCP settings. Name the MCP svelte-llm or whatever you like.'
 		},
 		{
 			id: 'others',
@@ -137,7 +137,7 @@
 				throw new Error(`Failed to load versions: ${response.status} ${response.statusText}`)
 			}
 		} catch (e) {
-			console.error(`Failed to load distilled versions for ${preset}:`, e)
+			logErrorAlways(`Failed to load distilled versions for ${preset}:`, e)
 			throw e
 		}
 	}
@@ -174,13 +174,16 @@
 	const instructions = [
 		{
 			title: 'Cursor',
-			description: `Cursor supports adding context via URL using the <a href="https://docs.cursor.com/context/@-symbols/@-link#paste-links">Paste Links</a> feature.`,
+			description: 'Cursor supports adding context via URL using the Paste Links feature.',
+			descriptionLinkText: 'Paste Links',
+			descriptionLinkUrl: 'https://docs.cursor.com/context/@-symbols/@-link#paste-links',
 			command: `@${SITE_URL}/[preset]`
 		},
 		{
 			title: 'Zed',
-			description:
-				'You can use this project directly in Zed using a <a href="https://zed.dev/docs/assistant/commands">/fetch command</a>.',
+			description: 'You can use this project directly in Zed using a /fetch command.',
+			descriptionLinkText: '/fetch command',
+			descriptionLinkUrl: 'https://zed.dev/docs/assistant/commands',
 			command: `/fetch ${SITE_URL}/[preset]`
 		},
 		{
@@ -199,7 +202,7 @@
 			<p class="hero-description">
 				Connect your AI coding assistant directly to up-to-date Svelte 5 and SvelteKit documentation
 				via this <strong>Model Context Protocol (MCP) server</strong>, or download preset
-				documentation in llms.txt format and add the docs	 to your context.
+				documentation in llms.txt format and add the docs to your context.
 			</p>
 			<p class="hero-note">
 				Documentation is automatically fetched from the <a
@@ -256,7 +259,7 @@
 										<strong>MCP Server URL:</strong>
 										<code>{client.url}</code>
 										<button class="copy-btn" onclick={() => copyToClipboard(client.url)}>
-											{@html COPY_ICON}
+											<CopyIcon />
 											Copy
 										</button>
 									</div>
@@ -273,7 +276,7 @@
 								<div class="code-block">
 									<code>{client.instruction}</code>
 									<button class="copy-btn" onclick={() => copyToClipboard(client.instruction)}>
-										{@html COPY_ICON}
+										<CopyIcon />
 										Copy
 									</button>
 								</div>
@@ -281,7 +284,7 @@
 								<div class="config-block">
 									<pre><code>{client.instruction}</code></pre>
 									<button class="copy-btn" onclick={() => copyToClipboard(client.instruction)}>
-										{@html COPY_ICON}
+										<CopyIcon />
 										Copy
 									</button>
 								</div>
@@ -296,7 +299,7 @@
 											<div class={endpoint.isCommand ? 'code-block' : 'url-block'}>
 												<code>{endpoint.value}</code>
 												<button class="copy-btn" onclick={() => copyToClipboard(endpoint.value)}>
-													{@html COPY_ICON}
+													<CopyIcon />
 													Copy
 												</button>
 											</div>
@@ -308,7 +311,7 @@
 									<strong>URL:</strong>
 									<code>{client.url}</code>
 									<button class="copy-btn" onclick={() => copyToClipboard(client.url)}>
-										{@html COPY_ICON}
+										<CopyIcon />
 										Copy
 									</button>
 								</div>
@@ -360,8 +363,8 @@
 			{#each combinedPresetsFormatted as preset}
 				<PresetListItem
 					{...preset}
-					distilledVersions={preset.key === 'svelte-complete-distilled'
-						? distilledVersions['svelte-complete-distilled']
+					distilledVersions={preset.key === DistillablePreset.SVELTE_COMPLETE_DISTILLED
+						? distilledVersions[DistillablePreset.SVELTE_COMPLETE_DISTILLED]
 						: undefined}
 					{loadingVersions}
 					{distilledError}
@@ -378,7 +381,7 @@
 			<!-- Add the Svelte-only distilled preset at the top of the Svelte section -->
 			<PresetListItem
 				{...svelteDistilledPreset}
-				distilledVersions={distilledVersions['svelte-distilled']}
+				distilledVersions={distilledVersions[DistillablePreset.SVELTE_DISTILLED]}
 				{loadingVersions}
 				{distilledError}
 			/>
@@ -397,7 +400,7 @@
 			<!-- Add the SvelteKit-only distilled preset at the top of the SvelteKit section -->
 			<PresetListItem
 				{...svelteKitDistilledPreset}
-				distilledVersions={distilledVersions['sveltekit-distilled']}
+				distilledVersions={distilledVersions[DistillablePreset.SVELTEKIT_DISTILLED]}
 				{loadingVersions}
 				{distilledError}
 			/>
@@ -439,11 +442,20 @@
 		</div>
 
 		<div class="integration-grid">
-			{#each instructions as { title, description, command }}
+			{#each instructions as { title, description, descriptionLinkText, descriptionLinkUrl, command }}
 				<div class="integration-card">
 					<h3>{title}</h3>
-					<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-					<p>{@html description}</p>
+					<p>
+						{#if descriptionLinkText && descriptionLinkUrl}
+							{description.split(descriptionLinkText)[0]}<a
+								href={descriptionLinkUrl}
+								target="_blank"
+								rel="noopener noreferrer">{descriptionLinkText}</a
+							>{description.split(descriptionLinkText)[1] || ''}
+						{:else}
+							{description}
+						{/if}
+					</p>
 					<div class="code-block">
 						<code>{command}</code>
 					</div>
@@ -988,6 +1000,16 @@
 		color: #6e6e73;
 		margin: 0 0 16px 0;
 		line-height: 1.5;
+	}
+
+	.integration-card a {
+		color: #007aff;
+		text-decoration: none;
+	}
+
+	.integration-card a:hover {
+		color: #0056b3;
+		text-decoration: underline;
 	}
 
 	.integration-card .code-block {
