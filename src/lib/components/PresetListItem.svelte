@@ -4,18 +4,16 @@
 	import CopyIcon from './CopyIcon.svelte'
 	import DownloadIcon from './DownloadIcon.svelte'
 
-	let {
-		title,
-		key,
-		description,
-		presetSizePromise,
-		distilledVersionsPromise
-	} = $props<{
+	let { title, key, description, presetSizePromise, distilledVersionsPromise } = $props<{
 		title: string
 		key: string
 		description?: string
 		presetSizePromise?: Promise<{ key: string; sizeKb: number | null; error?: string }>
-		distilledVersionsPromise?: Promise<{ key: string; versions: Array<{ filename: string; date: string; path: string; sizeKb: number }>; error?: string }>
+		distilledVersionsPromise?: Promise<{
+			key: string
+			versions: Array<{ filename: string; date: string; path: string; sizeKb: number }>
+			error?: string
+		}>
 	}>()
 
 	let sizeKb = $state<number | undefined>(undefined)
@@ -24,7 +22,9 @@
 	let dialog = $state<HTMLDialogElement | null>(null)
 
 	// Distilled versions state
-	let distilledVersions = $state<Array<{ filename: string; date: string; path: string; sizeKb: number }>>([])
+	let distilledVersions = $state<
+		Array<{ filename: string; date: string; path: string; sizeKb: number }>
+	>([])
 	let loadingVersions = $state<boolean>(true)
 	let distilledError = $state<string | null>(null)
 

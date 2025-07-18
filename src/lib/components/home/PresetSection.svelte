@@ -29,7 +29,10 @@
 		description?: string
 		presets: PresetData[]
 		presetSizes?: Record<string, Promise<{ key: string; sizeKb: number | null; error?: string }>>
-		distilledVersionsPromises?: Record<string, Promise<{ key: string; versions: DistilledVersion[]; error?: string }>>
+		distilledVersionsPromises?: Record<
+			string,
+			Promise<{ key: string; versions: DistilledVersion[]; error?: string }>
+		>
 		extraPresets?: PresetData[]
 	} = $props()
 </script>

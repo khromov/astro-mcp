@@ -84,7 +84,11 @@ function transformDbDistillationToVersion(dbDistillation: DbDistillation, preset
  */
 async function fetchDistilledVersions(
 	presetKey: string
-): Promise<{ key: string; versions: Array<{ filename: string; date: string; path: string; sizeKb: number }>; error?: string }> {
+): Promise<{
+	key: string
+	versions: Array<{ filename: string; date: string; path: string; sizeKb: number }>
+	error?: string
+}> {
 	try {
 		// Validate the preset key
 		if (!VALID_DISTILLED_BASENAMES.includes(presetKey as DistillablePreset)) {
@@ -137,7 +141,14 @@ export const load: PageServerLoad = async () => {
 			acc[presetKey] = fetchDistilledVersions(presetKey)
 			return acc
 		},
-		{} as Record<string, Promise<{ key: string; versions: Array<{ filename: string; date: string; path: string; sizeKb: number }>; error?: string }>>
+		{} as Record<
+			string,
+			Promise<{
+				key: string
+				versions: Array<{ filename: string; date: string; path: string; sizeKb: number }>
+				error?: string
+			}>
+		>
 	)
 
 	logAlways('Returning streaming promises for preset sizes and distilled versions')

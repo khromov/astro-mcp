@@ -34,8 +34,8 @@ const mockDistilledVersions = {
 	'sveltekit-complete': Promise.resolve({ key: 'sveltekit-complete', versions: [] }),
 	'sveltekit-small': Promise.resolve({ key: 'sveltekit-small', versions: [] }),
 	'sveltekit-medium': Promise.resolve({ key: 'sveltekit-medium', versions: [] }),
-	'svelte-distilled': Promise.resolve({ 
-		key: 'svelte-distilled', 
+	'svelte-distilled': Promise.resolve({
+		key: 'svelte-distilled',
 		versions: [
 			{
 				filename: 'svelte-distilled-2024-01-15.md',
@@ -45,8 +45,8 @@ const mockDistilledVersions = {
 			}
 		]
 	}),
-	'sveltekit-distilled': Promise.resolve({ 
-		key: 'sveltekit-distilled', 
+	'sveltekit-distilled': Promise.resolve({
+		key: 'sveltekit-distilled',
 		versions: [
 			{
 				filename: 'sveltekit-distilled-2024-01-15.md',
@@ -56,8 +56,8 @@ const mockDistilledVersions = {
 			}
 		]
 	}),
-	'svelte-complete-distilled': Promise.resolve({ 
-		key: 'svelte-complete-distilled', 
+	'svelte-complete-distilled': Promise.resolve({
+		key: 'svelte-complete-distilled',
 		versions: [
 			{
 				filename: 'svelte-complete-distilled-2024-01-15.md',
