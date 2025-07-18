@@ -11,7 +11,10 @@ import { DistillablePreset } from '$lib/types/db'
 import { logAlways, logErrorAlways } from '$lib/log'
 
 // Valid virtual presets that aren't in the presets object - now using enum values
-const VIRTUAL_DISTILLED_PRESETS = [DistillablePreset.SVELTE_DISTILLED, DistillablePreset.SVELTEKIT_DISTILLED]
+const VIRTUAL_DISTILLED_PRESETS = [
+	DistillablePreset.SVELTE_DISTILLED,
+	DistillablePreset.SVELTEKIT_DISTILLED
+]
 
 export const GET: RequestHandler = async ({ params, url }) => {
 	const presetNames = params.preset.split(',').map((p) => p.trim())
@@ -33,10 +36,12 @@ export const GET: RequestHandler = async ({ params, url }) => {
 
 		// Separate distilled and regular presets
 		const distilledPresetNames = presetNames.filter(
-			(name) => presets[name]?.distilled || VIRTUAL_DISTILLED_PRESETS.includes(name as DistillablePreset)
+			(name) =>
+				presets[name]?.distilled || VIRTUAL_DISTILLED_PRESETS.includes(name as DistillablePreset)
 		)
 		const regularPresetNames = presetNames.filter(
-			(name) => !presets[name]?.distilled && !VIRTUAL_DISTILLED_PRESETS.includes(name as DistillablePreset)
+			(name) =>
+				!presets[name]?.distilled && !VIRTUAL_DISTILLED_PRESETS.includes(name as DistillablePreset)
 		)
 
 		const contentMap = new Map<string, string>()
@@ -62,9 +67,9 @@ export const GET: RequestHandler = async ({ params, url }) => {
 		// Handle regular presets - generate on-demand from content table
 		for (const presetKey of regularPresetNames) {
 			logAlways(`Generating content for preset ${presetKey} on-demand`)
-			
+
 			const content = await getPresetContent(presetKey)
-			
+
 			if (!content) {
 				// This should rarely happen now that we have automatic syncing
 				logErrorAlways(`Failed to generate content for ${presetKey}`)

@@ -19,9 +19,10 @@ export const GET: RequestHandler = async () => {
 			stats,
 			isStale,
 			isEmpty: stats.total_files === 0,
-			message: stats.total_files === 0 
-				? 'Content table is empty. Content will be synced automatically on first preset request.'
-				: `Content table contains ${stats.total_files} files`,
+			message:
+				stats.total_files === 0
+					? 'Content table is empty. Content will be synced automatically on first preset request.'
+					: `Content table contains ${stats.total_files} files`,
 			timestamp: new Date().toISOString()
 		})
 	} catch (error) {

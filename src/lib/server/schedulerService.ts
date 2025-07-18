@@ -109,15 +109,15 @@ export class SchedulerService {
 		try {
 			// Get the default repository
 			const { owner, repo } = getDefaultRepository()
-			
+
 			// Check if content is stale before syncing
 			const isStale = await ContentSyncService.isRepositoryContentStale(owner, repo)
-			
+
 			if (!isStale) {
 				logAlways(`Repository ${owner}/${repo} content is fresh, skipping sync`)
 				return
 			}
-			
+
 			// Sync the repository to the master content table
 			logAlways(`Syncing ${owner}/${repo} repository to master content table...`)
 			await ContentSyncService.syncRepository(owner, repo)

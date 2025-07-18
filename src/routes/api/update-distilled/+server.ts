@@ -245,10 +245,10 @@ export const GET: RequestHandler = async ({ url }) => {
 		const successfulResults = processedResults.filter((result) => result.content)
 
 		// Split results into Svelte and SvelteKit categories based on the new path structure
-		const svelteResults = successfulResults.filter((result) => 
+		const svelteResults = successfulResults.filter((result) =>
 			result.path.includes('apps/svelte.dev/content/docs/svelte/')
 		)
-		const svelteKitResults = successfulResults.filter((result) => 
+		const svelteKitResults = successfulResults.filter((result) =>
 			result.path.includes('apps/svelte.dev/content/docs/kit/')
 		)
 

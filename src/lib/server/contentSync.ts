@@ -1,4 +1,8 @@
-import { fetchRepositoryTarball, processMarkdownFromTarball, minimizeContent } from '$lib/fetchMarkdown'
+import {
+	fetchRepositoryTarball,
+	processMarkdownFromTarball,
+	minimizeContent
+} from '$lib/fetchMarkdown'
 import { ContentDbService } from '$lib/server/contentDb'
 import type { CreateContentInput } from '$lib/types/db'
 import { presets, getDefaultRepository } from '$lib/presets'
@@ -7,7 +11,9 @@ import { logAlways, logErrorAlways, log } from '$lib/log'
 /**
  * Sort files within a group using the same logic as the original sortFilesWithinGroup
  */
-function sortFilesWithinGroup(files: Array<{ path: string; content: string }>): Array<{ path: string; content: string }> {
+function sortFilesWithinGroup(
+	files: Array<{ path: string; content: string }>
+): Array<{ path: string; content: string }> {
 	return files.sort((a, b) => {
 		const aPath = a.path
 		const bPath = b.path
@@ -36,7 +42,7 @@ export class ContentSyncService {
 	static async syncAllRepositories(): Promise<void> {
 		// We now use a single repository for all content
 		const { owner, repo } = getDefaultRepository()
-		
+
 		logAlways(`Syncing repository: ${owner}/${repo}`)
 		await ContentSyncService.syncRepository(owner, repo)
 	}
@@ -73,10 +79,10 @@ export class ContentSyncService {
 
 			// Get existing files in the database for this repository
 			const existingFiles = await ContentDbService.getContentByRepo(owner, repoName)
-			const existingPaths = new Set(existingFiles.map(file => file.path))
-			
+			const existingPaths = new Set(existingFiles.map((file) => file.path))
+
 			// Track which files we found in this sync
-			const foundPaths = new Set(filesWithPaths.map(file => file.path))
+			const foundPaths = new Set(filesWithPaths.map((file) => file.path))
 
 			// Prepare content for batch insertion/update
 			const contentInputs: CreateContentInput[] = []
@@ -89,7 +95,12 @@ export class ContentSyncService {
 				const metadata = ContentDbService.extractFrontmatter(file.content)
 
 				// Check if content has changed
-				const hasChanged = await ContentDbService.hasContentChanged(owner, repoName, file.path, file.content)
+				const hasChanged = await ContentDbService.hasContentChanged(
+					owner,
+					repoName,
+					file.path,
+					file.content
+				)
 
 				if (hasChanged) {
 					contentInputs.push({
@@ -118,11 +129,11 @@ export class ContentSyncService {
 			}
 
 			// Handle deletions - find files in DB that are no longer in the repository
-			const deletedPaths = Array.from(existingPaths).filter(path => !foundPaths.has(path))
-			
+			const deletedPaths = Array.from(existingPaths).filter((path) => !foundPaths.has(path))
+
 			if (deletedPaths.length > 0) {
 				logAlways(`Deleting ${deletedPaths.length} files that no longer exist in ${repoString}`)
-				
+
 				for (const deletedPath of deletedPaths) {
 					logAlways(`  Deleting: ${deletedPath}`)
 					await ContentDbService.deleteContent(owner, repoName, deletedPath)
@@ -131,7 +142,9 @@ export class ContentSyncService {
 				logAlways(`No deleted files detected for ${repoString}`)
 			}
 
-			logAlways(`Successfully synced ${repoString}: ${contentInputs.length} upserted, ${deletedPaths.length} deleted`)
+			logAlways(
+				`Successfully synced ${repoString}: ${contentInputs.length} upserted, ${deletedPaths.length} deleted`
+			)
 		} catch (error) {
 			logErrorAlways(`Failed to sync repository ${repoString}:`, error)
 			throw error
@@ -145,7 +158,7 @@ export class ContentSyncService {
 		try {
 			const stats = await ContentDbService.getContentStats()
 			const repoKey = ContentDbService.getRepoString(owner, repoName)
-			
+
 			// Check if repository exists in stats
 			if (!stats.by_repo[repoKey]) {
 				return true // No content for this repo, consider stale
@@ -154,13 +167,15 @@ export class ContentSyncService {
 			// Check the age of the content
 			const lastUpdated = new Date(stats.last_updated)
 			const contentAge = Date.now() - lastUpdated.getTime()
-			
+
 			const isStale = contentAge > ContentSyncService.MAX_CONTENT_AGE_MS
-			
+
 			if (isStale) {
-				logAlways(`Repository ${repoKey} content is stale (age: ${Math.floor(contentAge / 1000 / 60)} minutes)`)
+				logAlways(
+					`Repository ${repoKey} content is stale (age: ${Math.floor(contentAge / 1000 / 60)} minutes)`
+				)
 			}
-			
+
 			return isStale
 		} catch (error) {
 			logErrorAlways(`Error checking repository staleness for ${owner}/${repoName}:`, error)
@@ -185,7 +200,7 @@ export class ContentSyncService {
 		try {
 			// Use the default repository since we're standardizing on sveltejs/svelte.dev
 			const { owner, repo } = getDefaultRepository()
-			
+
 			// Get all content for the repository ONCE
 			const allContent = await ContentDbService.getContentByRepo(owner, repo)
 
@@ -206,10 +221,10 @@ export class ContentSyncService {
 			// Process one glob pattern at a time
 			for (const pattern of preset.glob) {
 				log(`\nProcessing glob pattern: ${pattern}`)
-				
+
 				// Find all files matching this specific pattern
 				const matchingFiles: Array<{ path: string; content: string }> = []
-				
+
 				for (const dbContent of allContent) {
 					// Check if file should be ignored
 					const shouldIgnore = preset.ignore?.some((ignorePattern) => {
@@ -224,7 +239,7 @@ export class ContentSyncService {
 					// Check if this file matches the current glob pattern
 					if (minimatch(dbContent.path, pattern)) {
 						log(`  File ${dbContent.path} matched`)
-						
+
 						// Apply minimize options if specified in the preset
 						let processedContent = dbContent.content
 						if (preset.minimize && Object.keys(preset.minimize).length > 0) {
@@ -240,7 +255,7 @@ export class ContentSyncService {
 
 				// Sort files within this glob pattern using the proper sorting logic
 				const sortedFiles = sortFilesWithinGroup(matchingFiles)
-				
+
 				log(`  Found ${sortedFiles.length} files for pattern: ${pattern}`)
 				sortedFiles.forEach((file, i) => {
 					log(`    ${i + 1}. ${file.path}`)
@@ -250,14 +265,16 @@ export class ContentSyncService {
 				orderedResults.push(...sortedFiles)
 			}
 
-			logAlways(`Found ${orderedResults.length} files matching preset ${presetKey} from database in natural glob order`)
-			
+			logAlways(
+				`Found ${orderedResults.length} files matching preset ${presetKey} from database in natural glob order`
+			)
+
 			// Log the final order for verification
 			log('\nFinal file order:')
 			orderedResults.forEach((file, i) => {
 				log(`  ${i + 1}. ${file.path}`)
 			})
-			
+
 			return orderedResults
 		} catch (error) {
 			logErrorAlways(`Failed to get preset content from database for ${presetKey}:`, error)
@@ -286,7 +303,7 @@ export class ContentSyncService {
 		const dbRepos = Object.keys(stats.by_repo)
 
 		// Find repositories that aren't the default repository
-		const unusedRepos = dbRepos.filter(repo => repo !== defaultRepoString)
+		const unusedRepos = dbRepos.filter((repo) => repo !== defaultRepoString)
 
 		let deletedCount = 0
 		for (const repo of unusedRepos) {

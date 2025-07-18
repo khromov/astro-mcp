@@ -19,18 +19,18 @@ export async function getPresetContent(presetKey: string): Promise<string | null
 
 		// Try to get files from the content table first
 		let filesWithPaths = await ContentSyncService.getPresetContentFromDb(presetKey)
-		
+
 		// If no content in database, fetch from GitHub and sync
 		if (!filesWithPaths || filesWithPaths.length === 0) {
 			logAlways(`No content in database for preset ${presetKey}, fetching from GitHub...`)
-			
+
 			// Sync the repository first
 			const { owner, repo } = getDefaultRepository()
 			await ContentSyncService.syncRepository(owner, repo)
-			
+
 			// Try again from database
 			filesWithPaths = await ContentSyncService.getPresetContentFromDb(presetKey)
-			
+
 			if (!filesWithPaths || filesWithPaths.length === 0) {
 				log(`Still no content found for preset: ${presetKey} after sync`)
 				return null
@@ -44,7 +44,7 @@ export async function getPresetContent(presetKey: string): Promise<string | null
 			const cleanPath = f.path.replace('apps/svelte.dev/content/', '')
 			return `## ${cleanPath}\n\n${f.content}`
 		})
-		
+
 		// DO NOT sort - files are already in correct glob pattern order from ContentSyncService
 		const content = files.join('\n\n')
 
@@ -132,7 +132,7 @@ export async function getPresetMetadata(presetKey: string): Promise<{
 		// Get the files again to count them (this will use cached data)
 		const filesWithPaths = await ContentSyncService.getPresetContentFromDb(presetKey)
 		const documentCount = filesWithPaths?.length || 0
-		
+
 		const sizeKb = Math.floor(new TextEncoder().encode(content).length / 1024)
 		const isStale = await isPresetStale(presetKey)
 

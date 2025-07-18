@@ -7,7 +7,10 @@ import { DistillablePreset } from '$lib/types/db'
 import { logAlways, logErrorAlways } from '$lib/log'
 
 // Virtual distilled presets that aren't in the presets object - now using enum values
-const VIRTUAL_DISTILLED_PRESETS = [DistillablePreset.SVELTE_DISTILLED, DistillablePreset.SVELTEKIT_DISTILLED]
+const VIRTUAL_DISTILLED_PRESETS = [
+	DistillablePreset.SVELTE_DISTILLED,
+	DistillablePreset.SVELTEKIT_DISTILLED
+]
 
 export const GET: RequestHandler = async ({ params }) => {
 	const presetKey = params.preset

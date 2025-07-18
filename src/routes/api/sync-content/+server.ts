@@ -6,7 +6,7 @@ import { logAlways, logErrorAlways } from '$lib/log'
 
 /**
  * API endpoint to sync content from GitHub to the database
- * 
+ *
  * Usage:
  * - GET /api/sync-content?secret_key=YOUR_KEY - Sync all repositories
  * - GET /api/sync-content?secret_key=YOUR_KEY&owner=sveltejs&repo=svelte - Sync specific repository
@@ -60,7 +60,7 @@ export const GET: RequestHandler = async ({ url }) => {
 	// Check for specific repository sync
 	const owner = url.searchParams.get('owner')
 	const repoName = url.searchParams.get('repo')
-	
+
 	try {
 		if (owner && repoName) {
 			// Sync specific repository

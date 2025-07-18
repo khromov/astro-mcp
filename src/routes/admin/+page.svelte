@@ -85,13 +85,16 @@
 
 			<div class="endpoint" class:disabled={!secretKey.trim()}>
 				<span class="method">GET</span>
-				<a href={buildUrl(endpoints['sync-cleanup'])}>{getDisplayText(endpoints['sync-cleanup'])}</a>
+				<a href={buildUrl(endpoints['sync-cleanup'])}>{getDisplayText(endpoints['sync-cleanup'])}</a
+				>
 				<span class="description">Remove unused content from database</span>
 			</div>
 
 			<div class="endpoint" class:disabled={!secretKey.trim()}>
 				<span class="method">GET</span>
-				<a href={buildUrl(endpoints['sync-specific'])}>{getDisplayText(endpoints['sync-specific'])}</a>
+				<a href={buildUrl(endpoints['sync-specific'])}
+					>{getDisplayText(endpoints['sync-specific'])}</a
+				>
 				<span class="description">Sync sveltejs/svelte.dev repository only</span>
 			</div>
 		</div>
@@ -104,7 +107,9 @@
 		<div class="endpoint-group">
 			<div class="endpoint" class:disabled={!secretKey.trim()}>
 				<span class="method">GET</span>
-				<a href={buildUrl(endpoints['update-distilled'])}>{getDisplayText(endpoints['update-distilled'])}</a>
+				<a href={buildUrl(endpoints['update-distilled'])}
+					>{getDisplayText(endpoints['update-distilled'])}</a
+				>
 				<span class="description">Run AI distillation process (expensive operation)</span>
 			</div>
 		</div>

@@ -21,11 +21,13 @@ export interface PresetsByRepository {
  */
 export function getUniqueRepositories(): Repository[] {
 	const { owner, repo } = getDefaultRepository()
-	return [{
-		owner,
-		repo,
-		key: `${owner}/${repo}`
-	}]
+	return [
+		{
+			owner,
+			repo,
+			key: `${owner}/${repo}`
+		}
+	]
 }
 
 /**
@@ -40,10 +42,12 @@ export function groupPresetsByRepository(): PresetsByRepository[] {
 		key: `${owner}/${repo}`
 	}
 
-	return [{
-		repository,
-		presets: Object.entries(presets).map(([key, config]) => ({ key, config }))
-	}]
+	return [
+		{
+			repository,
+			presets: Object.entries(presets).map(([key, config]) => ({ key, config }))
+		}
+	]
 }
 
 /**
@@ -55,12 +59,12 @@ export function getPresetsForRepository(
 	repo: string
 ): Array<{ key: string; config: PresetConfig }> {
 	const defaultRepo = getDefaultRepository()
-	
+
 	// Check if the requested repository matches our default
 	if (owner === defaultRepo.owner && repo === defaultRepo.repo) {
 		return Object.entries(presets).map(([key, config]) => ({ key, config }))
 	}
-	
+
 	return []
 }
 
@@ -83,7 +87,7 @@ export function getRepositoryStats(): {
 } {
 	const { owner, repo } = getDefaultRepository()
 	const repoKey = `${owner}/${repo}`
-	
+
 	return {
 		totalRepositories: 1,
 		totalPresets: Object.keys(presets).length,

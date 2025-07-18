@@ -255,7 +255,7 @@ export function transformAndSortPresets(presetsObject: Record<string, PresetConf
 			key: key.toLowerCase(),
 			...value
 		}))
-		.sort();
+		.sort()
 }
 
 /**

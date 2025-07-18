@@ -39,11 +39,11 @@ export async function fetchAndProcessMarkdownWithDb(
 	try {
 		// Use the centralized getPresetContent which handles GitHub fallback
 		const content = await getPresetContent(presetKey)
-		
+
 		if (!content) {
 			throw new Error(`Failed to get content for preset ${presetKey}`)
 		}
-		
+
 		return content
 	} catch (error) {
 		logErrorAlways(`Error processing preset ${presetKey}:`, error)
@@ -66,7 +66,7 @@ export async function fetchAndProcessMultiplePresetsWithDb(
 		try {
 			// Use the centralized getPresetContent which generates content on-demand
 			const content = await getPresetContent(key)
-			
+
 			if (!content) {
 				logErrorAlways(`No content generated for preset ${key}`)
 				continue

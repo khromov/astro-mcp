@@ -2,7 +2,7 @@ name: Test
 
 on:
   push:
-    branches: [ main-custom ]
+    branches: [main-custom]
   pull_request:
 
 jobs:

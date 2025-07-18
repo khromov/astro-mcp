@@ -130,7 +130,7 @@ export class PresetDbService {
 					input.metadata ? JSON.stringify(input.metadata) : '{}',
 					input.status === 'processing' ? new Date() : null,
 					0, // total_input_tokens - initialize to 0
-					0  // total_output_tokens - initialize to 0
+					0 // total_output_tokens - initialize to 0
 				]
 			)
 

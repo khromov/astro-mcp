@@ -29,7 +29,7 @@ export class ContentDbService {
 	 * Extract file extension from filename or path
 	 */
 	static extractExtension(filenameOrPath: string): string {
-		const filename = filenameOrPath.includes('/') 
+		const filename = filenameOrPath.includes('/')
 			? ContentDbService.extractFilename(filenameOrPath)
 			: filenameOrPath
 		const parts = filename.split('.')
@@ -81,7 +81,10 @@ export class ContentDbService {
 			logAlways(`Upserted content for ${input.owner}/${input.repo_name}/${input.path}`)
 			return result.rows[0] as DbContent
 		} catch (error) {
-			logErrorAlways(`Failed to upsert content for ${input.owner}/${input.repo_name}/${input.path}:`, error)
+			logErrorAlways(
+				`Failed to upsert content for ${input.owner}/${input.repo_name}/${input.path}:`,
+				error
+			)
 			throw new Error(
 				`Failed to upsert content: ${error instanceof Error ? error.message : String(error)}`
 			)
@@ -91,7 +94,11 @@ export class ContentDbService {
 	/**
 	 * Get content by owner, repo_name and path
 	 */
-	static async getContentByPath(owner: string, repo_name: string, path: string): Promise<DbContent | null> {
+	static async getContentByPath(
+		owner: string,
+		repo_name: string,
+		path: string
+	): Promise<DbContent | null> {
 		try {
 			const result = await query(
 				'SELECT * FROM content WHERE owner = $1 AND repo_name = $2 AND path = $3',
@@ -274,10 +281,10 @@ export class ContentDbService {
 	 */
 	static async deleteRepoContent(owner: string, repo_name: string): Promise<number> {
 		try {
-			const result = await query(
-				'DELETE FROM content WHERE owner = $1 AND repo_name = $2',
-				[owner, repo_name]
-			)
+			const result = await query('DELETE FROM content WHERE owner = $1 AND repo_name = $2', [
+				owner,
+				repo_name
+			])
 			return result.rowCount ?? 0
 		} catch (error) {
 			logErrorAlways(`Failed to delete content for repo ${owner}/${repo_name}:`, error)
@@ -290,7 +297,12 @@ export class ContentDbService {
 	/**
 	 * Check if content has changed (comparing with existing content)
 	 */
-	static async hasContentChanged(owner: string, repo_name: string, path: string, newContent: string): Promise<boolean> {
+	static async hasContentChanged(
+		owner: string,
+		repo_name: string,
+		path: string,
+		newContent: string
+	): Promise<boolean> {
 		try {
 			const existing = await ContentDbService.getContentByPath(owner, repo_name, path)
 			if (!existing) return true // New content
@@ -314,12 +326,12 @@ export class ContentDbService {
 			const chunkSize = 100
 			for (let i = 0; i < contents.length; i += chunkSize) {
 				const chunk = contents.slice(i, i + chunkSize)
-				
+
 				// Use Promise.all for parallel processing within each chunk
 				const chunkResults = await Promise.all(
-					chunk.map(content => ContentDbService.upsertContent(content))
+					chunk.map((content) => ContentDbService.upsertContent(content))
 				)
-				
+
 				results.push(...chunkResults)
 			}
 
@@ -338,7 +350,7 @@ export class ContentDbService {
 	 */
 	static extractFrontmatter(content: string): Record<string, any> {
 		const metadata: Record<string, any> = {}
-		
+
 		if (!content.startsWith('---\n')) {
 			return metadata
 		}
@@ -356,10 +368,10 @@ export class ContentDbService {
 			if (colonIndex > 0) {
 				const key = line.substring(0, colonIndex).trim()
 				const value = line.substring(colonIndex + 1).trim()
-				
+
 				// Remove quotes if present
 				const cleanValue = value.replace(/^["'](.*)["']$/, '$1')
-				
+
 				// Try to parse as JSON for nested structures
 				try {
 					metadata[key] = JSON.parse(cleanValue)
@@ -377,15 +389,15 @@ export class ContentDbService {
 	 * Get content by extension(s) for a repository
 	 */
 	static async getContentByExtension(
-		owner: string, 
-		repo_name: string, 
+		owner: string,
+		repo_name: string,
 		extensions: string | string[]
 	): Promise<DbContent[]> {
 		try {
 			const extensionArray = Array.isArray(extensions) ? extensions : [extensions]
 			const content = await ContentDbService.getContentByRepo(owner, repo_name)
-			
-			return content.filter(item => {
+
+			return content.filter((item) => {
 				const ext = ContentDbService.extractExtension(item.filename)
 				return extensionArray.includes(ext)
 			})
