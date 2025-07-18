@@ -7,32 +7,13 @@ import type {
 	RepoString
 } from '$lib/types/db'
 import { logAlways, logErrorAlways } from '$lib/log'
-import { createHash } from 'crypto'
 
 export class ContentDbService {
-	/**
-	 * Calculate SHA-256 hash of content (utility function, not stored in DB)
-	 */
-	static calculateContentHash(content: string): string {
-		return createHash('sha256').update(content).digest('hex')
-	}
-
 	/**
 	 * Extract filename from path
 	 */
 	static extractFilename(path: string): string {
 		return path.split('/').pop() || path
-	}
-
-	/**
-	 * Extract file extension from filename or path
-	 */
-	static extractExtension(filenameOrPath: string): string {
-		const filename = filenameOrPath.includes('/')
-			? ContentDbService.extractFilename(filenameOrPath)
-			: filenameOrPath
-		const parts = filename.split('.')
-		return parts.length > 1 ? parts.pop()! : ''
 	}
 
 	/**
@@ -382,29 +363,5 @@ export class ContentDbService {
 		}
 
 		return metadata
-	}
-
-	/**
-	 * Get content by extension(s) for a repository
-	 */
-	static async getContentByExtension(
-		owner: string,
-		repo_name: string,
-		extensions: string | string[]
-	): Promise<DbContent[]> {
-		try {
-			const extensionArray = Array.isArray(extensions) ? extensions : [extensions]
-			const content = await ContentDbService.getContentByRepo(owner, repo_name)
-
-			return content.filter((item) => {
-				const ext = ContentDbService.extractExtension(item.filename)
-				return extensionArray.includes(ext)
-			})
-		} catch (error) {
-			logErrorAlways(`Failed to get content by extension for ${owner}/${repo_name}:`, error)
-			throw new Error(
-				`Failed to get content: ${error instanceof Error ? error.message : String(error)}`
-			)
-		}
 	}
 }

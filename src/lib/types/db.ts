@@ -97,14 +97,6 @@ export interface CreateContentInput {
 	metadata?: Record<string, unknown>
 }
 
-export interface UpdateContentInput {
-	content: string
-	size_bytes: number
-	is_processed?: boolean
-	processed_at?: Date
-	metadata?: Record<string, unknown>
-}
-
 export interface ContentFilter {
 	owner?: string
 	repo_name?: string

@@ -32,56 +32,6 @@ function sortFilesWithinGroup(files: string[]): string[] {
 	})
 }
 
-export async function fetchAndProcessMarkdownWithDb(
-	preset: PresetConfig,
-	presetKey: string
-): Promise<string> {
-	try {
-		// Use the centralized getPresetContent which handles GitHub fallback
-		const content = await getPresetContent(presetKey)
-
-		if (!content) {
-			throw new Error(`Failed to get content for preset ${presetKey}`)
-		}
-
-		return content
-	} catch (error) {
-		logErrorAlways(`Error processing preset ${presetKey}:`, error)
-		throw error
-	}
-}
-
-/**
- * Process multiple presets using the master content table
- */
-export async function fetchAndProcessMultiplePresetsWithDb(
-	presets: Array<{ config: PresetConfig; key: string }>
-): Promise<Map<string, string>> {
-	const results = new Map<string, string>()
-
-	// Process all presets
-	for (const { key } of presets) {
-		logAlways(`Processing preset ${key}`)
-
-		try {
-			// Use the centralized getPresetContent which generates content on-demand
-			const content = await getPresetContent(key)
-
-			if (!content) {
-				logErrorAlways(`No content generated for preset ${key}`)
-				continue
-			}
-
-			results.set(key, content)
-		} catch (error) {
-			logErrorAlways(`Error processing preset ${key}:`, error)
-			throw error
-		}
-	}
-
-	return results
-}
-
 /**
  * Fetch repository tarball with caching
  */
@@ -430,10 +380,6 @@ export function minimizeContent(content: string, options?: Partial<MinimizeOptio
 	}
 
 	minimized = minimized.trim()
-
-	//log(`Original content length: ${content.length}`)
-	//log(`Minimized content length: ${minimized.length}`)
-	//log('Applied minimizations:', Object.keys(settings).join(', '))
 
 	return minimized
 }

@@ -16,8 +16,7 @@ export interface PresetsByRepository {
 }
 
 /**
- * Get all unique repositories from presets
- * Since we now use a single repository, this will return only sveltejs/svelte.dev
+ * Get the default repository (now the only repository used)
  */
 export function getUniqueRepositories(): Repository[] {
 	const { owner, repo } = getDefaultRepository()
@@ -31,8 +30,7 @@ export function getUniqueRepositories(): Repository[] {
 }
 
 /**
- * Group presets by their repository
- * Since we now use a single repository, all presets will be in one group
+ * Group presets by repository (all presets use the same repository now)
  */
 export function groupPresetsByRepository(): PresetsByRepository[] {
 	const { owner, repo } = getDefaultRepository()
@@ -52,7 +50,6 @@ export function groupPresetsByRepository(): PresetsByRepository[] {
 
 /**
  * Get all presets for a specific repository
- * Since we now use a single repository, this returns all presets if it matches
  */
 export function getPresetsForRepository(
 	owner: string,
@@ -69,16 +66,14 @@ export function getPresetsForRepository(
 }
 
 /**
- * Check if multiple presets share the same repository
- * Since we now use a single repository, this always returns true
+ * Check if multiple presets share the same repository (always true now)
  */
 export function doPresetsShareRepository(presetKeys: string[]): boolean {
 	return presetKeys.length >= 2
 }
 
 /**
- * Get repository statistics
- * Since we now use a single repository, stats are simplified
+ * Get repository statistics (simplified for single repository)
  */
 export function getRepositoryStats(): {
 	totalRepositories: number
