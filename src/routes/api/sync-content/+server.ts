@@ -5,13 +5,12 @@ import { ContentSyncService } from '$lib/server/contentSync'
 import { logAlways, logErrorAlways } from '$lib/log'
 
 /**
- * API endpoint to sync content from GitHub to the database
+ * API endpoint to sync content from the sveltejs/svelte.dev repository to the database
  *
  * Usage:
- * - GET /api/sync-content?secret_key=YOUR_KEY - Sync all repositories
- * - GET /api/sync-content?secret_key=YOUR_KEY&owner=sveltejs&repo=svelte - Sync specific repository
- * - GET /api/sync-content?secret_key=YOUR_KEY&stats=true - Get content statistics
- * - GET /api/sync-content?secret_key=YOUR_KEY&cleanup=true - Clean up unused content
+ * - GET /api/sync-content?secret_key=YOUR_KEY - Sync the sveltejs/svelte.dev repository
+ * 
+ * Note: This endpoint always performs cleanup and always returns stats in the response.
  */
 export const GET: RequestHandler = async ({ url }) => {
 	// Check secret key
@@ -26,72 +25,20 @@ export const GET: RequestHandler = async ({ url }) => {
 		throw error(403, 'Invalid secret key')
 	}
 
-	// Check for stats request
-	if (url.searchParams.has('stats')) {
-		try {
-			const stats = await ContentSyncService.getContentStats()
-			return json({
-				success: true,
-				stats,
-				timestamp: new Date().toISOString()
-			})
-		} catch (e) {
-			logErrorAlways('Failed to get content stats:', e)
-			throw error(500, `Failed to get stats: ${e instanceof Error ? e.message : String(e)}`)
-		}
-	}
-
-	// Check for cleanup request
-	if (url.searchParams.has('cleanup')) {
-		try {
-			const deletedCount = await ContentSyncService.cleanupUnusedContent()
-			return json({
-				success: true,
-				message: `Cleaned up ${deletedCount} unused content items`,
-				deletedCount,
-				timestamp: new Date().toISOString()
-			})
-		} catch (e) {
-			logErrorAlways('Failed to cleanup content:', e)
-			throw error(500, `Failed to cleanup: ${e instanceof Error ? e.message : String(e)}`)
-		}
-	}
-
-	// Check for specific repository sync
-	const owner = url.searchParams.get('owner')
-	const repoName = url.searchParams.get('repo')
-
 	try {
-		if (owner && repoName) {
-			// Sync specific repository
-			logAlways(`Starting sync for repository: ${owner}/${repoName}`)
-			await ContentSyncService.syncRepository(owner, repoName)
+		logAlways('Starting content sync for sveltejs/svelte.dev repository')
+		
+		// Use ContentSyncService.syncRepository with cleanup and stats enabled
+		const result = await ContentSyncService.syncRepository({
+			performCleanup: true,
+			returnStats: true
+		})
 
-			return json({
-				success: true,
-				message: `Successfully synced repository: ${owner}/${repoName}`,
-				owner,
-				repo_name: repoName,
-				timestamp: new Date().toISOString()
-			})
-		} else if (owner || repoName) {
-			// Partial parameters provided
-			throw error(400, 'Both owner and repo parameters are required for specific repository sync')
-		} else {
-			// Sync all repositories
-			logAlways('Starting sync for all repositories')
-			await ContentSyncService.syncAllRepositories()
-
-			// Get stats after sync
-			const stats = await ContentSyncService.getContentStats()
-
-			return json({
-				success: true,
-				message: 'Successfully synced all repositories',
-				stats,
-				timestamp: new Date().toISOString()
-			})
-		}
+		return json({
+			success: true,
+			message: 'Successfully synced sveltejs/svelte.dev repository',
+			...result // This includes stats, sync_details, cleanup_details, and timestamp
+		})
 	} catch (e) {
 		logErrorAlways('Content sync failed:', e)
 		throw error(500, `Sync failed: ${e instanceof Error ? e.message : String(e)}`)

@@ -28,34 +28,60 @@ function sortFilesWithinGroup(
 }
 
 /**
- * Sync content from GitHub repositories to the content table
- * This can be used to populate the content table initially or update it periodically
+ * Sync content from the sveltejs/svelte.dev repository to the content table
  */
 export class ContentSyncService {
 	// Maximum age of content in milliseconds (24 hours)
 	static readonly MAX_CONTENT_AGE_MS = 24 * 60 * 60 * 1000
 
 	/**
-	 * Sync all repositories used in presets to the content table
-	 * Since we now use only one repository, this will sync sveltejs/svelte.dev
+	 * Sync the sveltejs/svelte.dev repository to the content table
+	 * Handles deletions properly to maintain data consistency
+	 * 
+	 * @param options.performCleanup Whether to perform cleanup after sync (default: true)
+	 * @param options.returnStats Whether to return comprehensive stats (default: true)
+	 * @returns Comprehensive sync results including stats, sync details, and cleanup details
 	 */
-	static async syncAllRepositories(): Promise<void> {
-		// We now use a single repository for all content
-		const { owner, repo } = getDefaultRepository()
-
-		logAlways(`Syncing repository: ${owner}/${repo}`)
-		await ContentSyncService.syncRepository(owner, repo)
-	}
-
-	/**
-	 * Sync a specific repository to the content table
-	 * Now handles deletions properly to maintain data consistency
-	 */
-	static async syncRepository(owner: string, repoName: string): Promise<void> {
+	static async syncRepository(
+		options: { 
+			performCleanup?: boolean 
+			returnStats?: boolean 
+		} = {}
+	): Promise<{
+		success: boolean
+		stats: {
+			total_files: number
+			total_size_bytes: number
+			by_repo: Record<string, { files: number; size_bytes: number }>
+			last_updated: Date
+		}
+		sync_details: {
+			owner: string
+			repo_name: string
+			upserted_files: number
+			deleted_files: number
+			unchanged_files: number
+		}
+		cleanup_details: {
+			deleted_count: number
+		}
+		timestamp: string
+	}> {
+		const { performCleanup = true, returnStats = true } = options
+		const { owner, repo: repoName } = getDefaultRepository()
 		const repoString = ContentDbService.getRepoString(owner, repoName)
+		
 		logAlways(`Starting sync for repository: ${repoString}`)
 
+		let upsertedFiles = 0
+		let deletedFiles = 0
+		let unchangedFiles = 0
+		let cleanupDeletedCount = 0
+
 		try {
+			// Step 1: Sync the repository
+			logAlways(`Step 1: Syncing repository ${repoString}`)
+			
 			// Fetch the repository tarball
 			const tarballBuffer = await fetchRepositoryTarball(owner, repoName)
 
@@ -112,6 +138,8 @@ export class ContentSyncService {
 						size_bytes: sizeBytes,
 						metadata
 					})
+				} else {
+					unchangedFiles++
 				}
 			}
 
@@ -124,6 +152,7 @@ export class ContentSyncService {
 				for (const input of contentInputs) {
 					await ContentDbService.markContentAsProcessed(owner, repoName, input.path, input.metadata)
 				}
+				upsertedFiles = contentInputs.length
 			} else {
 				logAlways(`No file content changes detected for ${repoString}`)
 			}
@@ -138,13 +167,55 @@ export class ContentSyncService {
 					logAlways(`  Deleting: ${deletedPath}`)
 					await ContentDbService.deleteContent(owner, repoName, deletedPath)
 				}
+				deletedFiles = deletedPaths.length
 			} else {
 				logAlways(`No deleted files detected for ${repoString}`)
 			}
 
+			// Step 2: Perform cleanup if requested
+			if (performCleanup) {
+				logAlways(`Step 2: Performing cleanup of unused content`)
+				cleanupDeletedCount = await ContentSyncService.cleanupUnusedContent()
+			} else {
+				logAlways(`Step 2: Skipping cleanup (performCleanup = false)`)
+			}
+
+			// Step 3: Get final stats if requested
+			let stats
+			if (returnStats) {
+				logAlways(`Step 3: Collecting final statistics`)
+				stats = await ContentSyncService.getContentStats()
+			} else {
+				logAlways(`Step 3: Skipping stats collection (returnStats = false)`)
+				// Return minimal stats structure
+				stats = {
+					total_files: 0,
+					total_size_bytes: 0,
+					by_repo: {},
+					last_updated: new Date()
+				}
+			}
+
 			logAlways(
-				`Successfully synced ${repoString}: ${contentInputs.length} upserted, ${deletedPaths.length} deleted`
+				`Sync completed successfully: ${upsertedFiles} upserted, ${deletedFiles} deleted, ${unchangedFiles} unchanged${performCleanup ? `, ${cleanupDeletedCount} cleaned up` : ''}`
 			)
+
+			return {
+				success: true,
+				stats,
+				sync_details: {
+					owner,
+					repo_name: repoName,
+					upserted_files: upsertedFiles,
+					deleted_files: deletedFiles,
+					unchanged_files: unchangedFiles
+				},
+				cleanup_details: {
+					deleted_count: cleanupDeletedCount
+				},
+				timestamp: new Date().toISOString()
+			}
+
 		} catch (error) {
 			logErrorAlways(`Failed to sync repository ${repoString}:`, error)
 			throw error
@@ -152,10 +223,11 @@ export class ContentSyncService {
 	}
 
 	/**
-	 * Check if repository content is stale and needs to be re-synced
+	 * Check if the sveltejs/svelte.dev repository content is stale and needs to be re-synced
 	 */
-	static async isRepositoryContentStale(owner: string, repoName: string): Promise<boolean> {
+	static async isRepositoryContentStale(): Promise<boolean> {
 		try {
+			const { owner, repo: repoName } = getDefaultRepository()
 			const stats = await ContentDbService.getContentStats()
 			const repoKey = ContentDbService.getRepoString(owner, repoName)
 
@@ -178,6 +250,7 @@ export class ContentSyncService {
 
 			return isStale
 		} catch (error) {
+			const { owner, repo: repoName } = getDefaultRepository()
 			logErrorAlways(`Error checking repository staleness for ${owner}/${repoName}:`, error)
 			return true // On error, assume stale
 		}

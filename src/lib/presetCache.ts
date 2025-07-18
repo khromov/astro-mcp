@@ -25,8 +25,7 @@ export async function getPresetContent(presetKey: string): Promise<string | null
 			logAlways(`No content in database for preset ${presetKey}, fetching from GitHub...`)
 
 			// Sync the repository first
-			const { owner, repo } = getDefaultRepository()
-			await ContentSyncService.syncRepository(owner, repo)
+			await ContentSyncService.syncRepository()
 
 			// Try again from database
 			filesWithPaths = await ContentSyncService.getPresetContentFromDb(presetKey)
@@ -81,8 +80,7 @@ export async function getPresetSizeKb(presetKey: string): Promise<number | null>
 export async function isPresetStale(presetKey: string): Promise<boolean> {
 	try {
 		// Check if the repository content is stale
-		const { owner, repo } = getDefaultRepository()
-		return await ContentSyncService.isRepositoryContentStale(owner, repo)
+		return await ContentSyncService.isRepositoryContentStale()
 	} catch (error) {
 		logErrorAlways(`Error checking preset staleness for ${presetKey}:`, error)
 		return true // On error, assume stale

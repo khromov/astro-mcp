@@ -4,10 +4,8 @@
 	let secretKey = $state('')
 
 	const endpoints = {
-		'sync-all': '/api/sync-content',
-		'sync-stats': '/api/sync-content?stats=true',
-		'sync-cleanup': '/api/sync-content?cleanup=true',
-		'sync-specific': '/api/sync-content?owner=sveltejs&repo=svelte.dev',
+		'sync': '/api/sync-content',
+		'content-stats': '/api/content-status',
 		'update-distilled': '/api/update-distilled'
 	}
 
@@ -73,29 +71,14 @@
 		<div class="endpoint-group">
 			<div class="endpoint" class:disabled={!secretKey.trim()}>
 				<span class="method">GET</span>
-				<a href={buildUrl(endpoints['sync-all'])}>{getDisplayText(endpoints['sync-all'])}</a>
-				<span class="description">Sync all content from GitHub to database</span>
+				<a href={buildUrl(endpoints['sync'])}>{getDisplayText(endpoints['sync'])}</a>
+				<span class="description">Sync sveltejs/svelte.dev repository content (always includes cleanup and stats)</span>
 			</div>
 
 			<div class="endpoint" class:disabled={!secretKey.trim()}>
 				<span class="method">GET</span>
-				<a href={buildUrl(endpoints['sync-stats'])}>{getDisplayText(endpoints['sync-stats'])}</a>
-				<span class="description">View content statistics and repository info</span>
-			</div>
-
-			<div class="endpoint" class:disabled={!secretKey.trim()}>
-				<span class="method">GET</span>
-				<a href={buildUrl(endpoints['sync-cleanup'])}>{getDisplayText(endpoints['sync-cleanup'])}</a
-				>
-				<span class="description">Remove unused content from database</span>
-			</div>
-
-			<div class="endpoint" class:disabled={!secretKey.trim()}>
-				<span class="method">GET</span>
-				<a href={buildUrl(endpoints['sync-specific'])}
-					>{getDisplayText(endpoints['sync-specific'])}</a
-				>
-				<span class="description">Sync sveltejs/svelte.dev repository only</span>
+				<a href={buildUrl(endpoints['content-stats'])}>{getDisplayText(endpoints['content-stats'])}</a>
+				<span class="description">View content statistics and repository info (no secret required)</span>
 			</div>
 		</div>
 	</section>

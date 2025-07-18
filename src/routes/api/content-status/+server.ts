@@ -11,7 +11,7 @@ export const GET: RequestHandler = async () => {
 	try {
 		const stats = await ContentSyncService.getContentStats()
 		const { owner, repo } = getDefaultRepository()
-		const isStale = await ContentSyncService.isRepositoryContentStale(owner, repo)
+		const isStale = await ContentSyncService.isRepositoryContentStale()
 
 		return json({
 			success: true,

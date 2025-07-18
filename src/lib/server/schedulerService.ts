@@ -1,7 +1,6 @@
 import { Cron, scheduledJobs } from 'croner'
 import { dev } from '$app/environment'
 import { ContentSyncService } from '$lib/server/contentSync'
-import { getDefaultRepository } from '$lib/presets'
 import { CacheDbService } from '$lib/server/cacheDb'
 import { log, logAlways, logErrorAlways } from '$lib/log'
 
@@ -101,32 +100,36 @@ export class SchedulerService {
 	}
 
 	/**
-	 * Sync content from GitHub repository to the master content table
+	 * Sync content using ContentSyncService.syncRepository with cleanup and stats
 	 */
 	private async syncContent(): Promise<void> {
-		logAlways('Starting content sync job...')
+		logAlways('Starting scheduled content sync job...')
 
 		try {
-			// Get the default repository
-			const { owner, repo } = getDefaultRepository()
-
 			// Check if content is stale before syncing
-			const isStale = await ContentSyncService.isRepositoryContentStale(owner, repo)
+			const isStale = await ContentSyncService.isRepositoryContentStale()
 
 			if (!isStale) {
-				logAlways(`Repository ${owner}/${repo} content is fresh, skipping sync`)
+				logAlways(`Repository content is fresh, skipping sync`)
 				return
 			}
 
-			// Sync the repository to the master content table
-			logAlways(`Syncing ${owner}/${repo} repository to master content table...`)
-			await ContentSyncService.syncRepository(owner, repo)
-			logAlways('Repository sync completed successfully')
+			// Use ContentSyncService.syncRepository with cleanup and stats enabled
+			logAlways(`Syncing sveltejs/svelte.dev repository using ContentSyncService...`)
+			const result = await ContentSyncService.syncRepository({
+				performCleanup: true,
+				returnStats: true
+			})
+
+			logAlways('Scheduled content sync completed successfully')
+			logAlways(`Sync details: ${result.sync_details.upserted_files} upserted, ${result.sync_details.deleted_files} deleted, ${result.sync_details.unchanged_files} unchanged`)
+			logAlways(`Cleanup details: ${result.cleanup_details.deleted_count} files cleaned up`)
+			logAlways(`Total files in database: ${result.stats.total_files}`)
 		} catch (error) {
 			logErrorAlways('Failed to sync content:', error)
 		}
 
-		logAlways('Content sync job completed')
+		logAlways('Scheduled content sync job completed')
 	}
 
 	/**
@@ -221,7 +224,7 @@ export class SchedulerService {
 	}
 
 	/**
-	 * Trigger immediate content sync (for testing/manual triggers)
+	 * Trigger immediate content sync using ContentSyncService.syncRepository
 	 */
 	async triggerContentSync(): Promise<void> {
 		logAlways('Manually triggering content sync...')
