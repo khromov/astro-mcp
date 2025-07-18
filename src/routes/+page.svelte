@@ -8,6 +8,7 @@
 		transformAndSortPresets
 	} from '$lib/presets'
 	import PresetListItem from '$lib/components/PresetListItem.svelte'
+	import CopyIcon from '$lib/components/CopyIcon.svelte'
 	import { SITE_URL } from '$lib/constants'
 	import { DistillablePreset } from '$lib/types/db'
 	import toast from 'svelte-french-toast'
@@ -16,12 +17,6 @@
 	const SSE_ENDPOINT = 'https://svelte-llm.khromov.se/mcp/sse'
 	const STREAMABLE_ENDPOINT = 'https://svelte-llm.khromov.se/mcp/mcp'
 	const NPX_COMMAND = `npx mcp-remote ${STREAMABLE_ENDPOINT}`
-
-	// SVG icon strings to avoid duplication
-	const COPY_ICON = `<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-		<path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"/>
-		<path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"/>
-	</svg>`
 
 	const combinedPresetsFormatted = transformAndSortPresets(combinedPresets)
 	const sveltePresetsFormatted = transformAndSortPresets(sveltePresets)
@@ -179,13 +174,16 @@
 	const instructions = [
 		{
 			title: 'Cursor',
-			description: `Cursor supports adding context via URL using the <a href="https://docs.cursor.com/context/@-symbols/@-link#paste-links">Paste Links</a> feature.`,
+			description: 'Cursor supports adding context via URL using the Paste Links feature.',
+			descriptionLinkText: 'Paste Links',
+			descriptionLinkUrl: 'https://docs.cursor.com/context/@-symbols/@-link#paste-links',
 			command: `@${SITE_URL}/[preset]`
 		},
 		{
 			title: 'Zed',
-			description:
-				'You can use this project directly in Zed using a <a href="https://zed.dev/docs/assistant/commands">/fetch command</a>.',
+			description: 'You can use this project directly in Zed using a /fetch command.',
+			descriptionLinkText: '/fetch command',
+			descriptionLinkUrl: 'https://zed.dev/docs/assistant/commands',
 			command: `/fetch ${SITE_URL}/[preset]`
 		},
 		{
@@ -261,7 +259,7 @@
 										<strong>MCP Server URL:</strong>
 										<code>{client.url}</code>
 										<button class="copy-btn" onclick={() => copyToClipboard(client.url)}>
-											{@html COPY_ICON}
+											<CopyIcon />
 											Copy
 										</button>
 									</div>
@@ -278,7 +276,7 @@
 								<div class="code-block">
 									<code>{client.instruction}</code>
 									<button class="copy-btn" onclick={() => copyToClipboard(client.instruction)}>
-										{@html COPY_ICON}
+										<CopyIcon />
 										Copy
 									</button>
 								</div>
@@ -286,7 +284,7 @@
 								<div class="config-block">
 									<pre><code>{client.instruction}</code></pre>
 									<button class="copy-btn" onclick={() => copyToClipboard(client.instruction)}>
-										{@html COPY_ICON}
+										<CopyIcon />
 										Copy
 									</button>
 								</div>
@@ -301,7 +299,7 @@
 											<div class={endpoint.isCommand ? 'code-block' : 'url-block'}>
 												<code>{endpoint.value}</code>
 												<button class="copy-btn" onclick={() => copyToClipboard(endpoint.value)}>
-													{@html COPY_ICON}
+													<CopyIcon />
 													Copy
 												</button>
 											</div>
@@ -313,7 +311,7 @@
 									<strong>URL:</strong>
 									<code>{client.url}</code>
 									<button class="copy-btn" onclick={() => copyToClipboard(client.url)}>
-										{@html COPY_ICON}
+										<CopyIcon />
 										Copy
 									</button>
 								</div>
@@ -444,11 +442,20 @@
 		</div>
 
 		<div class="integration-grid">
-			{#each instructions as { title, description, command }}
+			{#each instructions as { title, description, descriptionLinkText, descriptionLinkUrl, command }}
 				<div class="integration-card">
 					<h3>{title}</h3>
-					<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-					<p>{@html description}</p>
+					<p>
+						{#if descriptionLinkText && descriptionLinkUrl}
+							{description.split(descriptionLinkText)[0]}<a
+								href={descriptionLinkUrl}
+								target="_blank"
+								rel="noopener noreferrer">{descriptionLinkText}</a
+							>{description.split(descriptionLinkText)[1] || ''}
+						{:else}
+							{description}
+						{/if}
+					</p>
 					<div class="code-block">
 						<code>{command}</code>
 					</div>
@@ -993,6 +1000,16 @@
 		color: #6e6e73;
 		margin: 0 0 16px 0;
 		line-height: 1.5;
+	}
+
+	.integration-card a {
+		color: #007aff;
+		text-decoration: none;
+	}
+
+	.integration-card a:hover {
+		color: #0056b3;
+		text-decoration: underline;
 	}
 
 	.integration-card .code-block {
