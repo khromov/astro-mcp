@@ -7,6 +7,7 @@ import { minimatch } from 'minimatch'
 import { getPresetContent } from './presetCache'
 import { CacheDbService } from '$lib/server/cacheDb'
 import { log, logAlways, logErrorAlways } from '$lib/log'
+import { cleanTarballPath } from '$lib/utils/pathUtils'
 
 let cacheService: CacheDbService | null = null
 
@@ -109,8 +110,8 @@ export async function processMarkdownFromTarball(
 					let content = ''
 					stream.on('data', (chunk) => (content += chunk.toString()))
 					stream.on('end', () => {
-						// Remove only the repo directory prefix (first segment)
-						const cleanPath = header.name.split('/').slice(1).join('/')
+						// Use the unified path utility to clean tarball paths
+						const cleanPath = cleanTarballPath(header.name)
 
 						const processedContent = minimizeContent(content, minimize)
 

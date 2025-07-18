@@ -4,22 +4,12 @@ import { env } from '$env/dynamic/private'
 import { ContentDbService } from '$lib/server/contentDb'
 import type { DbContent } from '$lib/types/db'
 import { log, logAlways, logErrorAlways } from '$lib/log'
+import { cleanDocumentationPath, extractTitleFromPath } from '$lib/utils/pathUtils'
 
 interface DocumentSection {
 	filePath: string
 	title: string
 	content: string
-}
-
-/**
- * Helper function to clean up file paths by removing the "apps/svelte.dev/content/" prefix
- */
-function cleanPath(path: string): string {
-	const prefix = 'apps/svelte.dev/content/'
-	if (path.startsWith(prefix)) {
-		return path.substring(prefix.length)
-	}
-	return path
 }
 
 function getTitleFromMetadata(
@@ -52,7 +42,7 @@ export const listSectionsHandler = async () => {
 
 			const title = getTitleFromMetadata(item.metadata, item.path)
 
-			const cleanedPath = cleanPath(item.path)
+			const cleanedPath = cleanDocumentationPath(item.path)
 
 			sections.push({
 				filePath: cleanedPath,
@@ -139,7 +129,7 @@ export const getDocumentationHandler = async ({ section }: { section: string | s
 			const matchedContent = await searchSectionInDb(cleanSection)
 
 			if (matchedContent) {
-				const cleanedPath = cleanPath(matchedContent.path)
+				const cleanedPath = cleanDocumentationPath(matchedContent.path)
 
 				const formattedContent = `## ${cleanedPath}\n\n${matchedContent.content}`
 				const framework = matchedContent.path.includes('/docs/svelte/') ? 'Svelte' : 'SvelteKit'
@@ -219,11 +209,6 @@ async function searchSectionInDb(query: string): Promise<DbContent | null> {
 	if (match) return match
 
 	return null
-}
-
-function extractTitleFromPath(filePath: string): string {
-	const filename = filePath.split('/').pop() || filePath
-	return filename.replace('.md', '').replace(/^\d+-/, '')
 }
 
 export const handler = createMcpHandler(

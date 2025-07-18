@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { listSectionsHandler, getDocumentationHandler } from './mcpHandler'
 import { ContentDbService } from '$lib/server/contentDb'
 import type { DbContent } from '$lib/types/db'
@@ -16,6 +16,21 @@ vi.mock('$lib/server/contentDb', () => ({
 	ContentDbService: {
 		getContentByFilter: vi.fn()
 	}
+}))
+
+// Mock path utils
+vi.mock('$lib/utils/pathUtils', () => ({
+	cleanDocumentationPath: vi.fn((path: string) => {
+		const prefix = 'apps/svelte.dev/content/'
+		if (path.startsWith(prefix)) {
+			return path.substring(prefix.length)
+		}
+		return path
+	}),
+	extractTitleFromPath: vi.fn((filePath: string) => {
+		const filename = filePath.split('/').pop() || filePath
+		return filename.replace('.md', '').replace(/^\d+-/, '')
+	})
 }))
 
 // Mock data for testing
