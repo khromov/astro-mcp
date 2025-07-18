@@ -82,9 +82,7 @@ function transformDbDistillationToVersion(dbDistillation: DbDistillation, preset
 /**
  * Fetch distilled versions for a single preset
  */
-async function fetchDistilledVersions(
-	presetKey: string
-): Promise<{
+async function fetchDistilledVersions(presetKey: string): Promise<{
 	key: string
 	versions: Array<{ filename: string; date: string; path: string; sizeKb: number }>
 	error?: string
