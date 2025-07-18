@@ -45,8 +45,8 @@ export const listSectionsHandler = async () => {
 		sections.sort((a, b) => a.filePath.localeCompare(b.filePath))
 
 		// Group by Svelte vs SvelteKit
-		const svelteSections = sections.filter(s => s.filePath.includes('/content/docs/svelte/'))
-		const svelteKitSections = sections.filter(s => s.filePath.includes('/content/docs/kit/'))
+		const svelteSections = sections.filter((s) => s.filePath.includes('/content/docs/svelte/'))
+		const svelteKitSections = sections.filter((s) => s.filePath.includes('/content/docs/kit/'))
 
 		// Format output
 		let output = ''
@@ -125,7 +125,7 @@ export const getDocumentationHandler = async ({ section }: { section: string | s
 				// Format with path header
 				const formattedContent = `## ${matchedContent.path}\n\n${matchedContent.content}`
 				const framework = matchedContent.path.includes('/docs/svelte/') ? 'Svelte' : 'SvelteKit'
-				
+
 				results.push(
 					`📖 ${framework} documentation (${matchedContent.metadata?.title || extractTitleFromPath(matchedContent.path)}):\n\n${formattedContent}`
 				)
