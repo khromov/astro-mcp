@@ -128,17 +128,18 @@
 		}
 	]
 
-	const loadVersions = async (preset: string) => {
+	const loadVersions = async (preset: string): Promise<DistilledVersion[]> => {
 		try {
 			const response = await fetch(`/api/distilled-versions?preset=${preset}`)
 			if (response.ok) {
 				return await response.json()
 			} else {
-				throw new Error(`Failed to load versions: ${response.status} ${response.statusText}`)
+				logErrorAlways(`Failed to load distilled versions for ${preset}: ${response.status} ${response.statusText}`)
+				return []
 			}
 		} catch (e) {
 			logErrorAlways(`Failed to load distilled versions for ${preset}:`, e)
-			throw e
+			return [] // Return empty array instead of throwing
 		}
 	}
 
@@ -146,7 +147,7 @@
 		try {
 			loadingVersions = true
 
-			// Load all versions in parallel
+			// Load all versions in parallel - now all promises will resolve (never reject)
 			const presetKeys = Object.keys(distilledVersions)
 			const versionPromises = presetKeys.map((key) => loadVersions(key))
 			const allVersions = await Promise.all(versionPromises)
@@ -156,6 +157,7 @@
 				distilledVersions[key] = allVersions[index]
 			})
 		} catch (e) {
+			// This should not happen anymore since loadVersions doesn't throw
 			distilledError = `Error loading versions: ${e instanceof Error ? e.message : String(e)}`
 		} finally {
 			loadingVersions = false
