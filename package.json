@@ -13,7 +13,8 @@
 		"eslint:fix": "eslint . --fix",
 		"format": "prettier --write .",
 		"test:unit": "vitest",
-		"test": "npm run test:unit -- --run"
+		"test": "npm run test:unit -- --run",
+		"mcp": "DANGEROUSLY_OMIT_AUTH=true npx @modelcontextprotocol/inspector"
 	},
 	"devDependencies": {
 		"@octokit/rest": "^21.1.1",
