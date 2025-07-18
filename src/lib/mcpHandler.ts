@@ -5,6 +5,7 @@ import { env } from '$env/dynamic/private'
 import { ContentDbService } from '$lib/server/contentDb'
 import type { DbContent } from '$lib/types/db'
 import { log, logAlways, logErrorAlways } from '$lib/log'
+import { compile } from 'svelte/compiler'
 
 interface DocumentSection {
 	filePath: string
@@ -248,6 +249,20 @@ export const handler = createMcpHandler(
 			},
 			async ({ section }) => getDocumentationHandler({ section })
 		)
+
+		server.prompt('svelte-developer', () => {
+			return {
+				messages: [
+					{
+						role: 'user',
+						content: {
+							type: 'text',
+							text: "You are a 10x svelte developer leading maintainer of the svelte project, you know everything about it and if you don't please use the mcp tool"
+						}
+					}
+				]
+			}
+		})
 
 		server.resource(
 			'svelte_doc',
