@@ -12,6 +12,17 @@ interface DocumentSection {
 }
 
 /**
+ * Helper function to clean up file paths by removing the "apps/svelte.dev/content/" prefix
+ */
+function cleanPath(path: string): string {
+	const prefix = 'apps/svelte.dev/content/'
+	if (path.startsWith(prefix)) {
+		return path.substring(prefix.length)
+	}
+	return path
+}
+
+/**
  * Safely extract title from metadata, ensuring it's a string
  */
 function getTitleFromMetadata(
@@ -48,19 +59,22 @@ export const listSectionsHandler = async () => {
 			// Extract title from metadata or filename with proper type safety
 			const title = getTitleFromMetadata(item.metadata, item.path)
 
+			// Clean the path to remove the "apps/svelte.dev/content/" prefix
+			const cleanedPath = cleanPath(item.path)
+
 			sections.push({
-				filePath: item.path,
+				filePath: cleanedPath, // Use cleaned path instead of full path
 				title,
-				content: `## ${item.path}\n\n${item.content}`
+				content: `## ${cleanedPath}\n\n${item.content}`
 			})
 		}
 
 		// Sort sections by path
 		sections.sort((a, b) => a.filePath.localeCompare(b.filePath))
 
-		// Group by Svelte vs SvelteKit
-		const svelteSections = sections.filter((s) => s.filePath.includes('/content/docs/svelte/'))
-		const svelteKitSections = sections.filter((s) => s.filePath.includes('/content/docs/kit/'))
+		// Group by Svelte vs SvelteKit using cleaned paths (without leading slash)
+		const svelteSections = sections.filter((s) => s.filePath.includes('docs/svelte/'))
+		const svelteKitSections = sections.filter((s) => s.filePath.includes('docs/kit/'))
 
 		// Format output
 		let output = ''
@@ -136,8 +150,11 @@ export const getDocumentationHandler = async ({ section }: { section: string | s
 			const matchedContent = await searchSectionInDb(cleanSection)
 
 			if (matchedContent) {
-				// Format with path header
-				const formattedContent = `## ${matchedContent.path}\n\n${matchedContent.content}`
+				// Clean the path to remove the "apps/svelte.dev/content/" prefix
+				const cleanedPath = cleanPath(matchedContent.path)
+				
+				// Format with cleaned path header
+				const formattedContent = `## ${cleanedPath}\n\n${matchedContent.content}`
 				const framework = matchedContent.path.includes('/docs/svelte/') ? 'Svelte' : 'SvelteKit'
 
 				const title = getTitleFromMetadata(matchedContent.metadata, matchedContent.path)
