@@ -136,6 +136,126 @@ export class ContentDbService {
 		}
 	}
 
+	/**
+	 * Search content by title (from metadata) or path pattern
+	 * This performs the search at the database level for efficiency
+	 */
+	static async searchContent(
+		owner: string,
+		repo_name: string,
+		searchQuery: string,
+		pathPattern?: string
+	): Promise<DbContent | null> {
+		try {
+			const lowerQuery = searchQuery.toLowerCase()
+
+			// First, try exact title match using JSON operators
+			let queryStr = `
+				SELECT * FROM content 
+				WHERE owner = $1 
+					AND repo_name = $2 
+					AND path LIKE $3
+					AND LOWER(metadata->>'title') = $4
+				LIMIT 1
+			`
+
+			let params = [owner, repo_name, pathPattern ? pathPattern.replace('*', '%') : '%', lowerQuery]
+
+			let result = await query(queryStr, params)
+
+			if (result.rows.length > 0) {
+				return result.rows[0] as DbContent
+			}
+
+			// Then try partial title match
+			queryStr = `
+				SELECT * FROM content 
+				WHERE owner = $1 
+					AND repo_name = $2 
+					AND path LIKE $3
+					AND LOWER(metadata->>'title') LIKE $4
+				LIMIT 1
+			`
+
+			params = [
+				owner,
+				repo_name,
+				pathPattern ? pathPattern.replace('*', '%') : '%',
+				`%${lowerQuery}%`
+			]
+
+			result = await query(queryStr, params)
+
+			if (result.rows.length > 0) {
+				return result.rows[0] as DbContent
+			}
+
+			// Finally try path match for backward compatibility
+			queryStr = `
+				SELECT * FROM content 
+				WHERE owner = $1 
+					AND repo_name = $2 
+					AND path LIKE $3
+					AND LOWER(path) LIKE $4
+				LIMIT 1
+			`
+
+			params = [
+				owner,
+				repo_name,
+				pathPattern ? pathPattern.replace('*', '%') : '%',
+				`%${lowerQuery}%`
+			]
+
+			result = await query(queryStr, params)
+
+			return result.rows.length > 0 ? (result.rows[0] as DbContent) : null
+		} catch (error) {
+			logErrorAlways(`Failed to search content for "${searchQuery}":`, error)
+			throw new Error(
+				`Failed to search content: ${error instanceof Error ? error.message : String(error)}`
+			)
+		}
+	}
+
+	/**
+	 * Get documentation sections list with minimal data for efficiency
+	 * Only fetches path, content length, and metadata for sections
+	 */
+	static async getDocumentationSections(
+		owner: string,
+		repo_name: string,
+		pathPattern: string,
+		minContentLength: number = 100
+	): Promise<Array<{ path: string; metadata: Record<string, unknown>; content: string }>> {
+		try {
+			const queryStr = `
+				SELECT path, metadata, content
+				FROM content 
+				WHERE owner = $1 
+					AND repo_name = $2 
+					AND path LIKE $3
+					AND LENGTH(content) >= $4
+				ORDER BY path
+			`
+
+			const params = [owner, repo_name, pathPattern.replace('*', '%'), minContentLength]
+
+			const result = await query(queryStr, params)
+
+			return result.rows.map((row) => ({
+				path: row.path,
+				metadata: row.metadata,
+				content: row.content
+			}))
+		} catch (error) {
+			logErrorAlways('Failed to get documentation sections:', error)
+			throw new Error(
+				`Failed to get sections: ${error instanceof Error ? error.message : String(error)}`
+			)
+		}
+	}
+
 	static async markContentAsProcessed(
 		owner: string,
 		repo_name: string,

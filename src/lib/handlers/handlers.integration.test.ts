@@ -7,7 +7,8 @@ import { mockSvelteContent } from '$lib/test-fixtures/mockSvelteContent'
 // Mock ContentDbService
 vi.mock('$lib/server/contentDb', () => ({
 	ContentDbService: {
-		getContentByFilter: vi.fn()
+		getDocumentationSections: vi.fn(),
+		searchContent: vi.fn()
 	}
 }))
 
@@ -31,9 +32,43 @@ describe('MCP Handler Integration', () => {
 		// Reset mocks before each test
 		vi.clearAllMocks()
 
-		// Setup default mock implementation
-		const mockGetContentByFilter = vi.mocked(ContentDbService.getContentByFilter)
-		mockGetContentByFilter.mockResolvedValue(mockSvelteContent)
+		// Setup default mock implementation for getDocumentationSections
+		const mockGetDocumentationSections = vi.mocked(ContentDbService.getDocumentationSections)
+		mockGetDocumentationSections.mockResolvedValue(
+			mockSvelteContent.map((item) => ({
+				path: item.path,
+				metadata: item.metadata,
+				content: item.content
+			}))
+		)
+
+		// Setup default mock implementation for searchContent
+		const mockSearchContent = vi.mocked(ContentDbService.searchContent)
+		mockSearchContent.mockImplementation(async (owner, repo, query, pathPattern) => {
+			// Find matching content from mock data
+			const lowerQuery = query.toLowerCase()
+
+			// Try exact title match first
+			let match = mockSvelteContent.find((item) => {
+				const title = (item.metadata?.title as string) || ''
+				return title.toLowerCase() === lowerQuery
+			})
+
+			// Try partial title match
+			if (!match) {
+				match = mockSvelteContent.find((item) => {
+					const title = (item.metadata?.title as string) || ''
+					return title.toLowerCase().includes(lowerQuery)
+				})
+			}
+
+			// Try path match
+			if (!match) {
+				match = mockSvelteContent.find((item) => item.path.toLowerCase().includes(lowerQuery))
+			}
+
+			return match || null
+		})
 	})
 
 	it('should list sections and successfully fetch each one using both handlers', async () => {

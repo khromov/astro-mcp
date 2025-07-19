@@ -14,33 +14,20 @@ function getTitleFromMetadata(
 }
 
 async function searchSectionInDb(query: string): Promise<DbContent | null> {
-	const lowerQuery = query.toLowerCase()
+	try {
+		// Use the new searchContent method for efficient database-level search
+		const result = await ContentDbService.searchContent(
+			'sveltejs',
+			'svelte.dev',
+			query,
+			'apps/svelte.dev/content/docs/%'
+		)
 
-	const allContent = await ContentDbService.getContentByFilter({
-		owner: 'sveltejs',
-		repo_name: 'svelte.dev',
-		path_pattern: 'apps/svelte.dev/content/docs/%'
-	})
-
-	// First try exact title match
-	let match = allContent.find((item) => {
-		const title = getTitleFromMetadata(item.metadata, item.path)
-		return title.toLowerCase() === lowerQuery
-	})
-	if (match) return match
-
-	// Then try partial title match
-	match = allContent.find((item) => {
-		const title = getTitleFromMetadata(item.metadata, item.path)
-		return title.toLowerCase().includes(lowerQuery)
-	})
-	if (match) return match
-
-	// Finally try file path match for backward compatibility
-	match = allContent.find((item) => item.path.toLowerCase().includes(lowerQuery))
-	if (match) return match
-
-	return null
+		return result
+	} catch (error) {
+		logErrorAlways(`Error searching for section "${query}":`, error)
+		return null
+	}
 }
 
 export const getDocumentationHandler = async ({ section }: { section: string | string[] }) => {
