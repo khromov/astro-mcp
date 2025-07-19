@@ -183,6 +183,5 @@ describe('getDocumentationHandler', () => {
 
 		expect(result.content[0].type).toBe('text')
 		expect(result.content[0].text).toContain('❌ Section(s) "$state" not found')
-		// The error is caught and handled differently now - it returns "not found" instead of showing the database error
 	})
 })
