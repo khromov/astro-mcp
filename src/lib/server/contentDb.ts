@@ -124,9 +124,9 @@ export class ContentDbService {
 			}
 
 			const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
-			const queryStr = `SELECT * FROM content ${whereClause} ORDER BY owner, repo_name, path`
+			const filterQueryStr = `SELECT * FROM content ${whereClause} ORDER BY owner, repo_name, path`
 
-			const result = await query(queryStr, params)
+			const result = await query(filterQueryStr, params)
 			return result.rows as DbContent[]
 		} catch (error) {
 			logErrorAlways('Failed to get content by filter:', error)
@@ -150,7 +150,7 @@ export class ContentDbService {
 			const lowerQuery = searchQuery.toLowerCase()
 
 			// First, try exact title match using JSON operators
-			let queryStr = `
+			const exactTitleQueryStr = `
 				SELECT * FROM content 
 				WHERE owner = $1 
 					AND repo_name = $2 
@@ -159,16 +159,21 @@ export class ContentDbService {
 				LIMIT 1
 			`
 
-			let params = [owner, repo_name, pathPattern ? pathPattern.replace('*', '%') : '%', lowerQuery]
+			const exactTitleParams = [
+				owner,
+				repo_name,
+				pathPattern ? pathPattern.replace('*', '%') : '%',
+				lowerQuery
+			]
 
-			let result = await query(queryStr, params)
+			const exactTitleResult = await query(exactTitleQueryStr, exactTitleParams)
 
-			if (result.rows.length > 0) {
-				return result.rows[0] as DbContent
+			if (exactTitleResult.rows.length > 0) {
+				return exactTitleResult.rows[0] as DbContent
 			}
 
 			// Then try partial title match
-			queryStr = `
+			const partialTitleQueryStr = `
 				SELECT * FROM content 
 				WHERE owner = $1 
 					AND repo_name = $2 
@@ -177,21 +182,21 @@ export class ContentDbService {
 				LIMIT 1
 			`
 
-			params = [
+			const partialTitleParams = [
 				owner,
 				repo_name,
 				pathPattern ? pathPattern.replace('*', '%') : '%',
 				`%${lowerQuery}%`
 			]
 
-			result = await query(queryStr, params)
+			const partialTitleResult = await query(partialTitleQueryStr, partialTitleParams)
 
-			if (result.rows.length > 0) {
-				return result.rows[0] as DbContent
+			if (partialTitleResult.rows.length > 0) {
+				return partialTitleResult.rows[0] as DbContent
 			}
 
 			// Finally try path match for backward compatibility
-			queryStr = `
+			const pathMatchQueryStr = `
 				SELECT * FROM content 
 				WHERE owner = $1 
 					AND repo_name = $2 
@@ -200,16 +205,16 @@ export class ContentDbService {
 				LIMIT 1
 			`
 
-			params = [
+			const pathMatchParams = [
 				owner,
 				repo_name,
 				pathPattern ? pathPattern.replace('*', '%') : '%',
 				`%${lowerQuery}%`
 			]
 
-			result = await query(queryStr, params)
+			const pathMatchResult = await query(pathMatchQueryStr, pathMatchParams)
 
-			return result.rows.length > 0 ? (result.rows[0] as DbContent) : null
+			return pathMatchResult.rows.length > 0 ? (pathMatchResult.rows[0] as DbContent) : null
 		} catch (error) {
 			logErrorAlways(`Failed to search content for "${searchQuery}":`, error)
 			throw new Error(
@@ -229,7 +234,7 @@ export class ContentDbService {
 		minContentLength: number = 100
 	): Promise<Array<{ path: string; metadata: Record<string, unknown>; content: string }>> {
 		try {
-			const queryStr = `
+			const sectionsQueryStr = `
 				SELECT path, metadata, content
 				FROM content 
 				WHERE owner = $1 
@@ -241,7 +246,7 @@ export class ContentDbService {
 
 			const params = [owner, repo_name, pathPattern.replace('*', '%'), minContentLength]
 
-			const result = await query(queryStr, params)
+			const result = await query(sectionsQueryStr, params)
 
 			return result.rows.map((row) => ({
 				path: row.path,
