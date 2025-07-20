@@ -31,6 +31,7 @@ async function searchSectionInDb(query: string): Promise<DbContent | null> {
 }
 
 export const getDocumentationHandler = async ({ section }: { section: string | string[] }) => {
+	logAlways('getDocumentationHandler called with section(s):', section)
 	try {
 		// Handle array of sections - including JSON string arrays
 		let sections: string[]
