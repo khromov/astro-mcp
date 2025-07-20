@@ -108,25 +108,29 @@ export const handler = createMcpHandler(
 				}
 			}),
 			async (uri, { slug }) => {
-				logAlways(`Resource requested with slug: ${slug}`)
+				//TODO: What is right here?
+				// If array for some reason, use the first element
+				const slugString = Array.isArray(slug) ? slug[0] : slug
+
+				logAlways(`Resource requested with slug: ${slugString}`)
 
 				// First try intelligent search (by title or partial path)
-				let document = await searchSectionInDb(slug)
+				let document = await searchSectionInDb(slugString)
 
 				// If not found, try exact path match
 				if (!document) {
-					document = await ContentDbService.getContentByPath('sveltejs', 'svelte.dev', slug)
+					document = await ContentDbService.getContentByPath('sveltejs', 'svelte.dev', slugString)
 				}
 
 				// If still not found, try with the full path pattern
-				if (!document && !slug.startsWith('apps/svelte.dev/content/')) {
-					const fullPath = `apps/svelte.dev/content/docs/${slug}`
+				if (!document && !slugString.startsWith('apps/svelte.dev/content/')) {
+					const fullPath = `apps/svelte.dev/content/docs/${slugString}`
 					document = await ContentDbService.getContentByPath('sveltejs', 'svelte.dev', fullPath)
 				}
 
 				if (!document) {
 					throw new Error(
-						`Document not found for slug: ${slug}. Try using a document title (e.g., "$state") or a valid path.`
+						`Document not found for slug: ${slugString}. Try using a document title (e.g., "$state") or a valid path.`
 					)
 				}
 
