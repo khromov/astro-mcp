@@ -59,45 +59,28 @@ export const handler = createMcpHandler(
 			async ({ section }) => getDocumentationHandler({ section })
 		)
 
-		// Create tool for task-based development assistance
-		server.tool(
-			'svelte_developer_assist',
-			'Get expert Svelte 5 and SvelteKit development assistance. This provides comprehensive guidance including best practices, TypeScript usage, and proper documentation references. Optionally provide a specific task for focused assistance.',
+		// Prompt with optional task parameter
+		server.prompt(
+			'svelte-developer',
 			{
 				task: z.string().optional().describe('Optional specific task or requirement to focus on')
 			},
-			async ({ task }) => {
+			({ task }) => {
 				const promptText = createSvelteDeveloperPromptWithTask(task)
 
 				return {
-					content: [
+					messages: [
 						{
-							type: 'text' as const,
-							text: promptText
+							role: 'user',
+							content: {
+								type: 'text',
+								text: promptText
+							}
 						}
 					]
 				}
 			}
 		)
-
-		// Simple prompt without arguments (compatible with all MCP clients)
-		server.prompt('svelte-developer', () => {
-			const promptText = createSvelteDeveloperPromptWithTask()
-
-			return {
-				messages: [
-					{
-						role: 'user',
-						content: {
-							type: 'text',
-							text:
-								promptText +
-								'\n\nFor task-specific assistance, use the svelte_developer_assist tool with a task parameter.'
-						}
-					}
-				]
-			}
-		})
 
 		server.resource(
 			'svelte-doc',
