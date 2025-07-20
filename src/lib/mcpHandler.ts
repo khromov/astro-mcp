@@ -12,6 +12,7 @@ import {
 	extractTitleFromPath,
 	removeFrontmatter
 } from '$lib/utils/pathUtils'
+import { SVELTE_DEVELOPER_PROMPT } from '$lib/utils/prompts'
 
 // Helper function to search for sections in the database
 async function searchSectionInDb(query: string): Promise<DbContent | null> {
@@ -58,6 +59,58 @@ export const handler = createMcpHandler(
 			async ({ section }) => getDocumentationHandler({ section })
 		)
 
+		// Create tool for task-based development assistance
+		server.tool(
+			'svelte_developer_assist',
+			'Get expert Svelte 5 and SvelteKit development assistance. This provides comprehensive guidance including best practices, TypeScript usage, and proper documentation references. Optionally provide a specific task for focused assistance.',
+			{
+				task: z.string().optional().describe('Optional specific task or requirement to focus on')
+			},
+			async ({ task }) => {
+				// First, provide the comprehensive prompt
+				let responseText = SVELTE_DEVELOPER_PROMPT
+
+				if (task) {
+					responseText += `\n\n## Current Task:\n${task}\n\n## Task-Specific Approach:\n`
+					responseText += `1. Run list_sections to see all available documentation\n`
+					responseText += `2. Based on "${task.substring(0, 50)}...", fetch these types of docs:\n`
+					responseText += `   - Component-related: runes, props, events, lifecycle\n`
+					responseText += `   - Routing-related: routing, load functions, layouts\n`
+					responseText += `   - State-related: stores, context, reactive statements\n`
+					responseText += `   - Form-related: actions, progressive enhancement\n`
+					responseText += `3. Design solution architecture:\n`
+					responseText += `   - Component structure and composition\n`
+					responseText += `   - State management approach\n`
+					responseText += `   - TypeScript types and interfaces\n`
+					responseText += `   - Error handling strategy\n`
+					responseText += `4. Implement with:\n`
+					responseText += `   - Complete, working code\n`
+					responseText += `   - Proper types and error boundaries\n`
+					responseText += `   - Performance optimizations\n`
+					responseText += `   - Accessibility considerations\n`
+					responseText += `5. Explain implementation choices and alternatives`
+				} else {
+					responseText += `\n\n## Your Approach:\n`
+					responseText += `When helping with Svelte/SvelteKit:\n`
+					responseText += `1. Use list_sections to discover documentation\n`
+					responseText += `2. Analyze requirements and fetch relevant docs with get_documentation\n`
+					responseText += `3. Provide complete, working solutions with TypeScript\n`
+					responseText += `4. Explain architectural decisions and trade-offs\n`
+					responseText += `5. Suggest optimizations and best practices`
+				}
+
+				return {
+					content: [
+						{
+							type: 'text' as const,
+							text: responseText
+						}
+					]
+				}
+			}
+		)
+
+		// Simple prompt without arguments (compatible with all MCP clients)
 		server.prompt('svelte-developer', () => {
 			return {
 				messages: [
@@ -65,7 +118,19 @@ export const handler = createMcpHandler(
 						role: 'user',
 						content: {
 							type: 'text',
-							text: "You are a 10x svelte developer leading maintainer of the svelte project, you know everything about it and if you don't please use the mcp tool"
+							text:
+								SVELTE_DEVELOPER_PROMPT +
+								`
+
+## Your Approach:
+When helping with Svelte/SvelteKit:
+1. Use list_sections to discover documentation
+2. Analyze requirements and fetch relevant docs with get_documentation
+3. Provide complete, working solutions with TypeScript
+4. Explain architectural decisions and trade-offs
+5. Suggest optimizations and best practices
+
+For task-specific assistance, use the svelte_developer_assist tool with a task parameter.`
 						}
 					}
 				]
