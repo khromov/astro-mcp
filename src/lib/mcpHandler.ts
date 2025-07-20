@@ -3,8 +3,34 @@ import { createMcpHandler } from 'mcp-handler'
 import { ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { env } from '$env/dynamic/private'
 import { ContentDbService } from '$lib/server/contentDb'
+import type { DbContent } from '$lib/types/db'
 import { listSectionsHandler } from '$lib/handlers/listSectionsHandler'
 import { getDocumentationHandler } from '$lib/handlers/getDocumentationHandler'
+import { logAlways, logErrorAlways } from '$lib/log'
+import { cleanDocumentationPath, extractTitleFromPath } from '$lib/utils/pathUtils'
+
+// Helper function to search for sections in the database
+async function searchSectionInDb(query: string): Promise<DbContent | null> {
+	try {
+		// Use the searchContent method with default parameters
+		const result = await ContentDbService.searchContent(query)
+		return result
+	} catch (error) {
+		logErrorAlways(`Error searching for section "${query}":`, error)
+		return null
+	}
+}
+
+// Helper function to get title from metadata or path
+function getTitleFromMetadata(
+	metadata: Record<string, unknown> | undefined,
+	fallbackPath: string
+): string {
+	if (metadata?.title && typeof metadata.title === 'string') {
+		return metadata.title
+	}
+	return extractTitleFromPath(fallbackPath)
+}
 
 export const handler = createMcpHandler(
 	(server) => {
@@ -51,39 +77,85 @@ export const handler = createMcpHandler(
 						repo_name: 'svelte.dev',
 						path_pattern: 'apps/svelte.dev/content/docs/%'
 					})
-					console.error(documents[0])
+
+					logAlways(`Found ${documents.length} documents for resource listing`)
+
 					return {
 						resources: documents.map((doc) => {
+							const title = getTitleFromMetadata(doc.metadata, doc.path)
+							const cleanPath = cleanDocumentationPath(doc.path)
+
 							return {
-								name: doc.filename,
-								uri: `svelte-llm://${doc.path}`
+								// Use title and clean path for better display
+								name: `${title} (${cleanPath})`,
+								uri: `svelte-llm://${doc.path}`,
+								// Add description from metadata if available
+								description: doc.metadata?.description as string | undefined
 							}
 						})
 					}
 				},
 				complete: {
 					slug: async (query) => {
+						// First try to search by title/content
+						const searchResult = await searchSectionInDb(query)
+						if (searchResult) {
+							return [searchResult.path]
+						}
+
+						// Fallback to path-based filtering
 						const documents = await ContentDbService.getContentByFilter({
 							owner: 'sveltejs',
 							repo_name: 'svelte.dev',
 							path_pattern: `apps/svelte.dev/content/docs/${query}%`
 						})
-						console.error(documents[0], query)
-						return documents.map((doc) => doc.filename)
+
+						logAlways(`Found ${documents.length} documents matching query: ${query}`)
+
+						return documents.map((doc) => doc.path)
 					}
 				}
 			}),
 			async (uri, { slug }) => {
-				const document = await ContentDbService.getContentByPath('sveltejs', 'svelte.dev', slug)
+				logAlways(`Resource requested with slug: ${slug}`)
+
+				// First try intelligent search (by title or partial path)
+				let document = await searchSectionInDb(slug)
+
+				// If not found, try exact path match
 				if (!document) {
-					throw new Error(`Document not found for slug: ${slug}`)
+					document = await ContentDbService.getContentByPath('sveltejs', 'svelte.dev', slug)
 				}
+
+				// If still not found, try with the full path pattern
+				if (!document && !slug.startsWith('apps/svelte.dev/content/')) {
+					const fullPath = `apps/svelte.dev/content/docs/${slug}`
+					document = await ContentDbService.getContentByPath('sveltejs', 'svelte.dev', fullPath)
+				}
+
+				if (!document) {
+					throw new Error(
+						`Document not found for slug: ${slug}. Try using a document title (e.g., "$state") or a valid path.`
+					)
+				}
+
+				const title = getTitleFromMetadata(document.metadata, document.path)
+				const cleanPath = cleanDocumentationPath(document.path)
+
+				logAlways(`Returning document: ${title} (${cleanPath})`)
+
 				return {
 					contents: [
 						{
 							uri: uri.toString(),
 							type: 'text',
-							text: document?.content
+							text: document.content,
+							// Include metadata in the response
+							metadata: {
+								title,
+								path: cleanPath,
+								originalPath: document.path
+							}
 						}
 					]
 				}
