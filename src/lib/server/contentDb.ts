@@ -210,6 +210,73 @@ export class ContentDbService {
 	}
 
 	/**
+	 * Search all content by title (from metadata) or path pattern
+	 * Returns multiple results for autocomplete/suggestions
+	 * Defaults to searching sveltejs/svelte.dev docs
+	 */
+	static async searchAllContent(
+		searchQuery: string,
+		owner: string = 'sveltejs',
+		repo_name: string = 'svelte.dev',
+		pathPattern: string = 'apps/svelte.dev/content/docs/%',
+		limit: number = 50
+	): Promise<DbContent[]> {
+		try {
+			const lowerQuery = searchQuery.toLowerCase()
+
+			// Combine all search types into one query with UNION
+			const combinedQueryStr = `
+				-- Exact title matches first
+				(SELECT * FROM content 
+				WHERE owner = $1 
+					AND repo_name = $2 
+					AND path LIKE $3
+					AND LOWER(metadata->>'title') = $4
+				ORDER BY path
+				LIMIT $5)
+				
+				UNION
+				
+				-- Then partial title matches
+				(SELECT * FROM content 
+				WHERE owner = $1 
+					AND repo_name = $2 
+					AND path LIKE $3
+					AND LOWER(metadata->>'title') LIKE $6
+					AND LOWER(metadata->>'title') != $4
+				ORDER BY path
+				LIMIT $5)
+				
+				UNION
+				
+				-- Finally path matches
+				(SELECT * FROM content 
+				WHERE owner = $1 
+					AND repo_name = $2 
+					AND path LIKE $3
+					AND LOWER(path) LIKE $6
+					AND (metadata->>'title' IS NULL OR LOWER(metadata->>'title') NOT LIKE $6)
+				ORDER BY path
+				LIMIT $5)
+				
+				ORDER BY path
+				LIMIT $5
+			`
+
+			const params = [owner, repo_name, pathPattern, lowerQuery, limit, `%${lowerQuery}%`]
+
+			const result = await query(combinedQueryStr, params)
+
+			return result.rows as DbContent[]
+		} catch (error) {
+			logErrorAlways(`Failed to search all content for "${searchQuery}":`, error)
+			throw new Error(
+				`Failed to search content: ${error instanceof Error ? error.message : String(error)}`
+			)
+		}
+	}
+
+	/**
 	 * Get documentation sections list with minimal data for efficiency
 	 * Only fetches path, content length, and metadata for sections
 	 * Defaults to searching sveltejs/svelte.dev docs

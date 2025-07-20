@@ -97,22 +97,13 @@ export const handler = createMcpHandler(
 				},
 				complete: {
 					slug: async (query) => {
-						// First try to search by title/content
-						const searchResult = await searchSectionInDb(query)
-						if (searchResult) {
-							return [searchResult.path]
-						}
+						// Use the new searchAllContent method to get all matching results
+						const searchResults = await ContentDbService.searchAllContent(query)
 
-						// Fallback to path-based filtering
-						const documents = await ContentDbService.getContentByFilter({
-							owner: 'sveltejs',
-							repo_name: 'svelte.dev',
-							path_pattern: `apps/svelte.dev/content/docs/${query}%`
-						})
+						const paths = searchResults.map((doc) => doc.path)
+						logAlways(`Found ${paths.length} documents matching query: ${query}`)
 
-						logAlways(`Found ${documents.length} documents matching query: ${query}`)
-
-						return documents.map((doc) => doc.path)
+						return paths
 					}
 				}
 			}),
