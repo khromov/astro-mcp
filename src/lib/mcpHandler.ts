@@ -73,7 +73,7 @@ export const handler = createMcpHandler(
 		})
 
 		server.resource(
-			'svelte_doc',
+			'svelte-doc',
 			new ResourceTemplate('svelte-llm://{+slug}', {
 				list: async () => {
 					const documents = await ContentDbService.getContentByFilter({
@@ -92,7 +92,8 @@ export const handler = createMcpHandler(
 							return {
 								// Use title and clean path for better display
 								name: `${title} (${cleanPath})`,
-								uri: `svelte-llm://${doc.path}`,
+								// Use cleaned path in URI for consistency
+								uri: `svelte-llm://${cleanPath}`,
 								// Add description from metadata if available
 								description: doc.metadata?.description as string | undefined
 							}
@@ -104,7 +105,8 @@ export const handler = createMcpHandler(
 						// Use the new searchAllContent method to get all matching results
 						const searchResults = await ContentDbService.searchAllContent(query)
 
-						const paths = searchResults.map((doc) => doc.path)
+						// Return cleaned paths for consistency
+						const paths = searchResults.map((doc) => cleanDocumentationPath(doc.path))
 						logAlways(`Found ${paths.length} documents matching query: ${query}`)
 
 						return paths
@@ -121,15 +123,27 @@ export const handler = createMcpHandler(
 				// First try intelligent search (by title or partial path)
 				let document = await searchSectionInDb(slugString)
 
-				// If not found, try exact path match
+				// If not found, try exact path match with cleaned path
 				if (!document) {
-					document = await ContentDbService.getContentByPath('sveltejs', 'svelte.dev', slugString)
+					// Try to find by cleaned path - need to search all content and match cleaned paths
+					const allDocs = await ContentDbService.getContentByFilter({
+						owner: 'sveltejs',
+						repo_name: 'svelte.dev',
+						path_pattern: 'apps/svelte.dev/content/docs/%'
+					})
+
+					document = allDocs.find((doc) => cleanDocumentationPath(doc.path) === slugString) || null
 				}
 
-				// If still not found, try with the full path pattern
+				// If still not found, try with the full path pattern (for backward compatibility)
 				if (!document && !slugString.startsWith('apps/svelte.dev/content/')) {
 					const fullPath = `apps/svelte.dev/content/docs/${slugString}`
 					document = await ContentDbService.getContentByPath('sveltejs', 'svelte.dev', fullPath)
+				}
+
+				// If still not found, try direct database path match (for backward compatibility)
+				if (!document) {
+					document = await ContentDbService.getContentByPath('sveltejs', 'svelte.dev', slugString)
 				}
 
 				if (!document) {
