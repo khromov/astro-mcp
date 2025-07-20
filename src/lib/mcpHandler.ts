@@ -44,7 +44,6 @@ export const handler = createMcpHandler(
 
 		server.resource(
 			'svelte_doc',
-			// @ts-expect-error vercel is dumb
 			new ResourceTemplate('svelte-llm://{+slug}', {
 				list: async () => {
 					const documents = await ContentDbService.getContentByFilter({
@@ -74,7 +73,6 @@ export const handler = createMcpHandler(
 					}
 				}
 			}),
-			// @ts-expect-error vercel is dumb
 			async (uri, { slug }) => {
 				const document = await ContentDbService.getContentByPath('sveltejs', 'svelte.dev', slug)
 				if (!document) {
