@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { createMcpHandler } from '@vercel/mcp-adapter'
+import { createMcpHandler } from 'mcp-handler'
 import { ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { env } from '$env/dynamic/private'
 import { ContentDbService } from '$lib/server/contentDb'
