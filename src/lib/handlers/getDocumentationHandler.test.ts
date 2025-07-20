@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { getDocumentationHandler } from './getDocumentationHandler'
 import { ContentDbService } from '$lib/server/contentDb'
 import { mockSvelteContent } from '$lib/test-fixtures/mockSvelteContent'
-import type { DbContent } from '$lib/types/db'
 
 // Mock ContentDbService
 vi.mock('$lib/server/contentDb', () => ({
