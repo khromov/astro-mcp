@@ -22,22 +22,13 @@ export const listSectionsHandler = async () => {
 	logAlways('Listing sections from database')
 
 	try {
-		const allContent = await ContentDbService.getContentByFilter({
-			owner: 'sveltejs',
-			repo_name: 'svelte.dev',
-			path_pattern: 'apps/svelte.dev/content/docs/%'
-		})
+		// Use the new efficient method with default parameters
+		const dbSections = await ContentDbService.getDocumentationSections()
 
 		const sections: DocumentSection[] = []
 
-		for (const item of allContent) {
-			if (item.content.length < 100) {
-				log(`Filtered out section: "${item.path}" (${item.content.length} chars)`)
-				continue
-			}
-
+		for (const item of dbSections) {
 			const title = getTitleFromMetadata(item.metadata, item.path)
-
 			const cleanedPath = cleanDocumentationPath(item.path)
 
 			sections.push({

@@ -23,12 +23,15 @@ export class SchedulerService {
 
 	private cleanupOrphanedJobs(): void {
 		if (scheduledJobs && Array.isArray(scheduledJobs)) {
-			const jobNames = ['content-sync', 'cache-cleanup']
+			// More robust cleanup - track our job instances and clean up any unrecognized jobs
+			const knownJobInstances = Array.from(this.jobs.values())
+
 			for (let i = scheduledJobs.length - 1; i >= 0; i--) {
 				const job = scheduledJobs[i]
-				if (job && job.options && job.options.name && jobNames.includes(job.options.name)) {
+				if (job && !knownJobInstances.includes(job)) {
+					// This is an orphaned job not in our tracking map
 					job.stop()
-					logAlways(`Cleaned up orphaned job: ${job.options.name}`)
+					logAlways(`Cleaned up orphaned cron job`)
 				}
 			}
 		}
@@ -69,7 +72,7 @@ export class SchedulerService {
 		const job = new Cron(
 			schedule,
 			{
-				// Don't use name to avoid conflicts during hot module reloading
+				name: 'content-sync',
 				timezone: 'UTC',
 				catch: (err) => {
 					logErrorAlways('Error in content sync job:', err)
@@ -135,7 +138,7 @@ export class SchedulerService {
 			logAlways(`Stopped job: ${name}`)
 		}
 
-		// This handles cases where hot module reloading might leave orphaned jobs
+		// Clean up any remaining orphaned jobs by name
 		if (scheduledJobs && Array.isArray(scheduledJobs)) {
 			const jobNames = ['content-sync', 'cache-cleanup']
 			for (let i = scheduledJobs.length - 1; i >= 0; i--) {
@@ -163,7 +166,7 @@ export class SchedulerService {
 		const job = new Cron(
 			'* * * * *',
 			{
-				// Don't use name to avoid conflicts during hot module reloading
+				name: 'cache-cleanup', // Now consistently using names
 				timezone: 'UTC',
 				catch: (err) => {
 					logErrorAlways('Error in cache cleanup job:', err)

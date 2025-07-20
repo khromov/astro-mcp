@@ -6,7 +6,7 @@ import { mockSvelteContent } from '$lib/test-fixtures/mockSvelteContent'
 // Mock ContentDbService
 vi.mock('$lib/server/contentDb', () => ({
 	ContentDbService: {
-		getContentByFilter: vi.fn()
+		getDocumentationSections: vi.fn()
 	}
 }))
 
@@ -30,9 +30,15 @@ describe('listSectionsHandler', () => {
 		// Reset mocks before each test
 		vi.clearAllMocks()
 
-		// Setup default mock implementation
-		const mockGetContentByFilter = vi.mocked(ContentDbService.getContentByFilter)
-		mockGetContentByFilter.mockResolvedValue(mockSvelteContent)
+		// Setup default mock implementation for getDocumentationSections
+		const mockGetDocumentationSections = vi.mocked(ContentDbService.getDocumentationSections)
+		mockGetDocumentationSections.mockResolvedValue(
+			mockSvelteContent.map((item) => ({
+				path: item.path,
+				metadata: item.metadata,
+				content: item.content
+			}))
+		)
 	})
 
 	it('should list sections and return structured content', async () => {
@@ -117,8 +123,8 @@ describe('listSectionsHandler', () => {
 
 	it('should handle errors gracefully', async () => {
 		// Mock database error
-		const mockGetContentByFilter = vi.mocked(ContentDbService.getContentByFilter)
-		mockGetContentByFilter.mockRejectedValue(new Error('Database error'))
+		const mockGetDocumentationSections = vi.mocked(ContentDbService.getDocumentationSections)
+		mockGetDocumentationSections.mockRejectedValue(new Error('Database error'))
 
 		const result = await listSectionsHandler()
 

@@ -124,14 +124,126 @@ export class ContentDbService {
 			}
 
 			const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
-			const queryStr = `SELECT * FROM content ${whereClause} ORDER BY owner, repo_name, path`
+			const filterQueryStr = `SELECT * FROM content ${whereClause} ORDER BY owner, repo_name, path`
 
-			const result = await query(queryStr, params)
+			const result = await query(filterQueryStr, params)
 			return result.rows as DbContent[]
 		} catch (error) {
 			logErrorAlways('Failed to get content by filter:', error)
 			throw new Error(
 				`Failed to get content: ${error instanceof Error ? error.message : String(error)}`
+			)
+		}
+	}
+
+	/**
+	 * Search content by title (from metadata) or path pattern
+	 * This performs the search at the database level for efficiency
+	 * Defaults to searching sveltejs/svelte.dev docs
+	 */
+	static async searchContent(
+		searchQuery: string,
+		owner: string = 'sveltejs',
+		repo_name: string = 'svelte.dev',
+		pathPattern: string = 'apps/svelte.dev/content/docs/%'
+	): Promise<DbContent | null> {
+		try {
+			const lowerQuery = searchQuery.toLowerCase()
+
+			// First, try exact title match using JSON operators
+			const exactTitleQueryStr = `
+				SELECT * FROM content 
+				WHERE owner = $1 
+					AND repo_name = $2 
+					AND path LIKE $3
+					AND LOWER(metadata->>'title') = $4
+				LIMIT 1
+			`
+
+			const exactTitleParams = [owner, repo_name, pathPattern, lowerQuery]
+
+			const exactTitleResult = await query(exactTitleQueryStr, exactTitleParams)
+
+			if (exactTitleResult.rows.length > 0) {
+				return exactTitleResult.rows[0] as DbContent
+			}
+
+			// Then try partial title match
+			const partialTitleQueryStr = `
+				SELECT * FROM content 
+				WHERE owner = $1 
+					AND repo_name = $2 
+					AND path LIKE $3
+					AND LOWER(metadata->>'title') LIKE $4
+				LIMIT 1
+			`
+
+			const partialTitleParams = [owner, repo_name, pathPattern, `%${lowerQuery}%`]
+
+			const partialTitleResult = await query(partialTitleQueryStr, partialTitleParams)
+
+			if (partialTitleResult.rows.length > 0) {
+				return partialTitleResult.rows[0] as DbContent
+			}
+
+			// Finally try path match for backward compatibility
+			const pathMatchQueryStr = `
+				SELECT * FROM content 
+				WHERE owner = $1 
+					AND repo_name = $2 
+					AND path LIKE $3
+					AND LOWER(path) LIKE $4
+				LIMIT 1
+			`
+
+			const pathMatchParams = [owner, repo_name, pathPattern, `%${lowerQuery}%`]
+
+			const pathMatchResult = await query(pathMatchQueryStr, pathMatchParams)
+
+			return pathMatchResult.rows.length > 0 ? (pathMatchResult.rows[0] as DbContent) : null
+		} catch (error) {
+			logErrorAlways(`Failed to search content for "${searchQuery}":`, error)
+			throw new Error(
+				`Failed to search content: ${error instanceof Error ? error.message : String(error)}`
+			)
+		}
+	}
+
+	/**
+	 * Get documentation sections list with minimal data for efficiency
+	 * Only fetches path, content length, and metadata for sections
+	 * Defaults to searching sveltejs/svelte.dev docs
+	 */
+	static async getDocumentationSections(
+		owner: string = 'sveltejs',
+		repo_name: string = 'svelte.dev',
+		pathPattern: string = 'apps/svelte.dev/content/docs/%',
+		minContentLength: number = 100
+	): Promise<Array<{ path: string; metadata: Record<string, unknown>; content: string }>> {
+		try {
+			const sectionsQueryStr = `
+				SELECT path, metadata, content
+				FROM content 
+				WHERE owner = $1 
+					AND repo_name = $2 
+					AND path LIKE $3
+					AND LENGTH(content) >= $4
+				ORDER BY path
+			`
+
+			const params = [owner, repo_name, pathPattern, minContentLength]
+
+			const result = await query(sectionsQueryStr, params)
+
+			return result.rows.map((row) => ({
+				path: row.path,
+				metadata: row.metadata,
+				content: row.content
+			}))
+		} catch (error) {
+			logErrorAlways('Failed to get documentation sections:', error)
+			throw new Error(
+				`Failed to get sections: ${error instanceof Error ? error.message : String(error)}`
 			)
 		}
 	}

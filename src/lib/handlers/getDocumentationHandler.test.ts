@@ -6,7 +6,7 @@ import { mockSvelteContent } from '$lib/test-fixtures/mockSvelteContent'
 // Mock ContentDbService
 vi.mock('$lib/server/contentDb', () => ({
 	ContentDbService: {
-		getContentByFilter: vi.fn()
+		searchContent: vi.fn()
 	}
 }))
 
@@ -30,9 +30,33 @@ describe('getDocumentationHandler', () => {
 		// Reset mocks before each test
 		vi.clearAllMocks()
 
-		// Setup default mock implementation
-		const mockGetContentByFilter = vi.mocked(ContentDbService.getContentByFilter)
-		mockGetContentByFilter.mockResolvedValue(mockSvelteContent)
+		// Setup default mock implementation for searchContent
+		const mockSearchContent = vi.mocked(ContentDbService.searchContent)
+		mockSearchContent.mockImplementation(async (searchQuery) => {
+			// Find matching content from mock data
+			const lowerQuery = searchQuery.toLowerCase()
+
+			// Try exact title match first
+			let match = mockSvelteContent.find((item) => {
+				const title = (item.metadata?.title as string) || ''
+				return title.toLowerCase() === lowerQuery
+			})
+
+			// Try partial title match
+			if (!match) {
+				match = mockSvelteContent.find((item) => {
+					const title = (item.metadata?.title as string) || ''
+					return title.toLowerCase().includes(lowerQuery)
+				})
+			}
+
+			// Try path match
+			if (!match) {
+				match = mockSvelteContent.find((item) => item.path.toLowerCase().includes(lowerQuery))
+			}
+
+			return match || null
+		})
 	})
 
 	it('should clean paths in documentation responses', async () => {
@@ -151,13 +175,12 @@ describe('getDocumentationHandler', () => {
 
 	it('should handle database errors gracefully', async () => {
 		// Mock database error
-		const mockGetContentByFilter = vi.mocked(ContentDbService.getContentByFilter)
-		mockGetContentByFilter.mockRejectedValue(new Error('Database error'))
+		const mockSearchContent = vi.mocked(ContentDbService.searchContent)
+		mockSearchContent.mockRejectedValue(new Error('Database error'))
 
 		const result = await getDocumentationHandler({ section: '$state' })
 
 		expect(result.content[0].type).toBe('text')
-		expect(result.content[0].text).toContain('❌ Error fetching documentation')
-		expect(result.content[0].text).toContain('Database error')
+		expect(result.content[0].text).toContain('❌ Section(s) "$state" not found')
 	})
 })
