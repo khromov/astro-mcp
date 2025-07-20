@@ -22,13 +22,8 @@ export const listSectionsHandler = async () => {
 	logAlways('Listing sections from database')
 
 	try {
-		// Use the new efficient method that only fetches necessary data
-		const dbSections = await ContentDbService.getDocumentationSections(
-			'sveltejs',
-			'svelte.dev',
-			'apps/svelte.dev/content/docs/%',
-			100 // minimum content length
-		)
+		// Use the new efficient method with default parameters
+		const dbSections = await ContentDbService.getDocumentationSections()
 
 		const sections: DocumentSection[] = []
 

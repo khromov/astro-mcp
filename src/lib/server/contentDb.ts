@@ -139,12 +139,13 @@ export class ContentDbService {
 	/**
 	 * Search content by title (from metadata) or path pattern
 	 * This performs the search at the database level for efficiency
+	 * Defaults to searching sveltejs/svelte.dev docs
 	 */
 	static async searchContent(
-		owner: string,
-		repo_name: string,
 		searchQuery: string,
-		pathPattern?: string
+		owner: string = 'sveltejs',
+		repo_name: string = 'svelte.dev',
+		pathPattern: string = 'apps/svelte.dev/content/docs/%'
 	): Promise<DbContent | null> {
 		try {
 			const lowerQuery = searchQuery.toLowerCase()
@@ -159,12 +160,7 @@ export class ContentDbService {
 				LIMIT 1
 			`
 
-			const exactTitleParams = [
-				owner,
-				repo_name,
-				pathPattern ? pathPattern.replace('*', '%') : '%',
-				lowerQuery
-			]
+			const exactTitleParams = [owner, repo_name, pathPattern, lowerQuery]
 
 			const exactTitleResult = await query(exactTitleQueryStr, exactTitleParams)
 
@@ -182,12 +178,7 @@ export class ContentDbService {
 				LIMIT 1
 			`
 
-			const partialTitleParams = [
-				owner,
-				repo_name,
-				pathPattern ? pathPattern.replace('*', '%') : '%',
-				`%${lowerQuery}%`
-			]
+			const partialTitleParams = [owner, repo_name, pathPattern, `%${lowerQuery}%`]
 
 			const partialTitleResult = await query(partialTitleQueryStr, partialTitleParams)
 
@@ -205,12 +196,7 @@ export class ContentDbService {
 				LIMIT 1
 			`
 
-			const pathMatchParams = [
-				owner,
-				repo_name,
-				pathPattern ? pathPattern.replace('*', '%') : '%',
-				`%${lowerQuery}%`
-			]
+			const pathMatchParams = [owner, repo_name, pathPattern, `%${lowerQuery}%`]
 
 			const pathMatchResult = await query(pathMatchQueryStr, pathMatchParams)
 
@@ -226,11 +212,12 @@ export class ContentDbService {
 	/**
 	 * Get documentation sections list with minimal data for efficiency
 	 * Only fetches path, content length, and metadata for sections
+	 * Defaults to searching sveltejs/svelte.dev docs
 	 */
 	static async getDocumentationSections(
-		owner: string,
-		repo_name: string,
-		pathPattern: string,
+		owner: string = 'sveltejs',
+		repo_name: string = 'svelte.dev',
+		pathPattern: string = 'apps/svelte.dev/content/docs/%',
 		minContentLength: number = 100
 	): Promise<Array<{ path: string; metadata: Record<string, unknown>; content: string }>> {
 		try {
@@ -244,7 +231,7 @@ export class ContentDbService {
 				ORDER BY path
 			`
 
-			const params = [owner, repo_name, pathPattern.replace('*', '%'), minContentLength]
+			const params = [owner, repo_name, pathPattern, minContentLength]
 
 			const result = await query(sectionsQueryStr, params)
 

@@ -15,13 +15,8 @@ function getTitleFromMetadata(
 
 async function searchSectionInDb(query: string): Promise<DbContent | null> {
 	try {
-		// Use the new searchContent method for efficient database-level search
-		const result = await ContentDbService.searchContent(
-			'sveltejs',
-			'svelte.dev',
-			query,
-			'apps/svelte.dev/content/docs/%'
-		)
+		// Use the new searchContent method with default parameters
+		const result = await ContentDbService.searchContent(query)
 
 		return result
 	} catch (error) {

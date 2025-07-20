@@ -44,9 +44,9 @@ describe('MCP Handler Integration', () => {
 
 		// Setup default mock implementation for searchContent
 		const mockSearchContent = vi.mocked(ContentDbService.searchContent)
-		mockSearchContent.mockImplementation(async (owner, repo, query, pathPattern) => {
+		mockSearchContent.mockImplementation(async (searchQuery) => {
 			// Find matching content from mock data
-			const lowerQuery = query.toLowerCase()
+			const lowerQuery = searchQuery.toLowerCase()
 
 			// Try exact title match first
 			let match = mockSvelteContent.find((item) => {
