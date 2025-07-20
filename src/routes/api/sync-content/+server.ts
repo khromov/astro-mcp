@@ -35,7 +35,6 @@ export const GET: RequestHandler = async ({ url }) => {
 		})
 
 		return json({
-			success: true,
 			message: `Successfully synced ${owner}/${repo} repository`,
 			...result
 		})
