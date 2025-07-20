@@ -51,3 +51,25 @@ export function extractTitleFromPath(filePath: string): string {
 	// Remove .md extension and numbered prefixes
 	return filename.replace('.md', '').replace(/^\d+-/, '')
 }
+
+/**
+ * Remove frontmatter from markdown content
+ * Frontmatter is YAML metadata at the beginning of files between --- delimiters
+ *
+ * @param content - The markdown content that may contain frontmatter
+ * @returns The content with frontmatter removed
+ */
+export function removeFrontmatter(content: string): string {
+	if (!content || !content.startsWith('---\n')) {
+		return content
+	}
+
+	const endIndex = content.indexOf('\n---\n', 4)
+	if (endIndex === -1) {
+		// Malformed frontmatter - return original content
+		return content
+	}
+
+	// Return content after the frontmatter, trimming any leading whitespace
+	return content.substring(endIndex + 5).trim()
+}

@@ -7,7 +7,11 @@ import type { DbContent } from '$lib/types/db'
 import { listSectionsHandler } from '$lib/handlers/listSectionsHandler'
 import { getDocumentationHandler } from '$lib/handlers/getDocumentationHandler'
 import { logAlways, logErrorAlways } from '$lib/log'
-import { cleanDocumentationPath, extractTitleFromPath } from '$lib/utils/pathUtils'
+import {
+	cleanDocumentationPath,
+	extractTitleFromPath,
+	removeFrontmatter
+} from '$lib/utils/pathUtils'
 
 // Helper function to search for sections in the database
 async function searchSectionInDb(query: string): Promise<DbContent | null> {
@@ -137,6 +141,9 @@ export const handler = createMcpHandler(
 				const title = getTitleFromMetadata(document.metadata, document.path)
 				const cleanPath = cleanDocumentationPath(document.path)
 
+				// Remove frontmatter from the content before returning it
+				const contentWithoutFrontmatter = removeFrontmatter(document.content)
+
 				logAlways(`Returning document: ${title} (${cleanPath})`)
 
 				return {
@@ -144,7 +151,7 @@ export const handler = createMcpHandler(
 						{
 							uri: uri.toString(),
 							type: 'text',
-							text: document.content,
+							text: contentWithoutFrontmatter,
 							// Include metadata in the response
 							metadata: {
 								title,

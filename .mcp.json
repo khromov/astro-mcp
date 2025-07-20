@@ -1,8 +1,8 @@
 {
 	"mcpServers": {
-		"svelte-llm": {
+		"svelte-llm-local": {
 			"type": "sse",
-			"url": "https://svelte-llm.khromov.se/mcp/sse"
+			"url": "http://localhost:5173/mcp/sse"
 		},
 		"context-coder": {
 			"command": "npx",
