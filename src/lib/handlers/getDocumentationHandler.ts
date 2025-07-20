@@ -95,6 +95,7 @@ export const getDocumentationHandler = async ({ section }: { section: string | s
 			responseText += `\n\n---\n\n❌ The following sections were not found: ${notFound.join(', ')}`
 		}
 
+		logAlways(`Returned ${results.length} number of sections.`)
 		return {
 			content: [
 				{
