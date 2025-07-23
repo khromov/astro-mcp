@@ -1,12 +1,22 @@
 import { query } from '$lib/server/db'
 import type {
 	DbContent,
+	DbContentDistilled,
 	CreateContentInput,
 	ContentFilter,
 	ContentStats,
 	RepoString
 } from '$lib/types/db'
 import { logAlways, logErrorAlways } from '$lib/log'
+
+// Type mapping for table names to their corresponding types
+type TableTypeMap = {
+	content: DbContent
+	content_distilled: DbContentDistilled
+}
+
+// Union type for valid table names
+type TableName = keyof TableTypeMap
 
 export class ContentDbService {
 	static extractFilename(path: string): string {
@@ -136,70 +146,78 @@ export class ContentDbService {
 		}
 	}
 
-	static async searchContent(
+	/**
+	 * Generic search method that works with both content and content_distilled tables
+	 */
+	static async searchContent<T extends TableName>(
 		searchQuery: string,
+		tableName: T,
 		owner: string = 'sveltejs',
 		repo_name: string = 'svelte.dev',
 		pathPattern: string = 'apps/svelte.dev/content/docs/%'
-	): Promise<DbContent | null> {
+	): Promise<TableTypeMap[T] | null> {
 		try {
 			const lowerQuery = searchQuery.toLowerCase()
 
+			// Build table-specific WHERE clauses
+			let baseWhereClause = ''
+			let params: (string | number)[] = []
+			let paramIndex = 1
+
+			if (tableName === 'content') {
+				// For content table, include owner, repo_name, and path filters
+				baseWhereClause = `WHERE owner = $${paramIndex} AND repo_name = $${paramIndex + 1} AND path LIKE $${paramIndex + 2}`
+				params = [owner, repo_name, pathPattern]
+				paramIndex = 4
+			} else {
+				// For content_distilled table, no owner/repo filters needed
+				baseWhereClause = ''
+				paramIndex = 1
+			}
+
 			// First, try exact title match using JSON operators
 			const exactTitleQueryStr = `
-				SELECT * FROM content 
-				WHERE owner = $1 
-					AND repo_name = $2 
-					AND path LIKE $3
-					AND LOWER(metadata->>'title') = $4
+				SELECT * FROM ${tableName} 
+				${baseWhereClause}${baseWhereClause ? ' AND' : 'WHERE'} LOWER(metadata->>'title') = $${paramIndex}
 				LIMIT 1
 			`
 
-			const exactTitleParams = [owner, repo_name, pathPattern, lowerQuery]
-
+			const exactTitleParams = [...params, lowerQuery]
 			const exactTitleResult = await query(exactTitleQueryStr, exactTitleParams)
 
 			if (exactTitleResult.rows.length > 0) {
-				return exactTitleResult.rows[0] as DbContent
+				return exactTitleResult.rows[0] as TableTypeMap[T]
 			}
 
 			// Then try partial title match
 			const partialTitleQueryStr = `
-				SELECT * FROM content 
-				WHERE owner = $1 
-					AND repo_name = $2 
-					AND path LIKE $3
-					AND LOWER(metadata->>'title') LIKE $4
+				SELECT * FROM ${tableName} 
+				${baseWhereClause}${baseWhereClause ? ' AND' : 'WHERE'} LOWER(metadata->>'title') LIKE $${paramIndex}
 				LIMIT 1
 			`
 
-			const partialTitleParams = [owner, repo_name, pathPattern, `%${lowerQuery}%`]
-
+			const partialTitleParams = [...params, `%${lowerQuery}%`]
 			const partialTitleResult = await query(partialTitleQueryStr, partialTitleParams)
 
 			if (partialTitleResult.rows.length > 0) {
-				return partialTitleResult.rows[0] as DbContent
+				return partialTitleResult.rows[0] as TableTypeMap[T]
 			}
 
 			// Finally try path match for backward compatibility
 			const pathMatchQueryStr = `
-				SELECT * FROM content 
-				WHERE owner = $1 
-					AND repo_name = $2 
-					AND path LIKE $3
-					AND LOWER(path) LIKE $4
+				SELECT * FROM ${tableName} 
+				${baseWhereClause}${baseWhereClause ? ' AND' : 'WHERE'} LOWER(path) LIKE $${paramIndex}
 				LIMIT 1
 			`
 
-			const pathMatchParams = [owner, repo_name, pathPattern, `%${lowerQuery}%`]
-
+			const pathMatchParams = [...params, `%${lowerQuery}%`]
 			const pathMatchResult = await query(pathMatchQueryStr, pathMatchParams)
 
-			return pathMatchResult.rows.length > 0 ? (pathMatchResult.rows[0] as DbContent) : null
+			return pathMatchResult.rows.length > 0 ? (pathMatchResult.rows[0] as TableTypeMap[T]) : null
 		} catch (error) {
-			logErrorAlways(`Failed to search content for "${searchQuery}":`, error)
+			logErrorAlways(`Failed to search ${tableName} for "${searchQuery}":`, error)
 			throw new Error(
-				`Failed to search content: ${error instanceof Error ? error.message : String(error)}`
+				`Failed to search ${tableName}: ${error instanceof Error ? error.message : String(error)}`
 			)
 		}
 	}

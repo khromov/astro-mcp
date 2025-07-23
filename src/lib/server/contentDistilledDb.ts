@@ -1,13 +1,16 @@
 import { query } from '$lib/server/db'
 import type { DbContentDistilled, CreateContentDistilledInput } from '$lib/types/db'
 import { logAlways, logErrorAlways } from '$lib/log'
+import { ContentDbService } from './contentDb'
 
 export class ContentDistilledDbService {
 	static extractFilename(path: string): string {
 		return path.split('/').pop() || path
 	}
 
-	static async upsertContentDistilled(input: CreateContentDistilledInput): Promise<DbContentDistilled> {
+	static async upsertContentDistilled(
+		input: CreateContentDistilledInput
+	): Promise<DbContentDistilled> {
 		try {
 			const result = await query(
 				`INSERT INTO content_distilled (
@@ -62,46 +65,13 @@ export class ContentDistilledDbService {
 		}
 	}
 
+	/**
+	 * Wrapper for ContentDbService.searchContent that searches the content_distilled table
+	 */
 	static async searchDistilledContent(searchQuery: string): Promise<DbContentDistilled | null> {
 		try {
-			const lowerQuery = searchQuery.toLowerCase()
-
-			// First, try exact title match using JSON operators
-			const exactTitleQueryStr = `
-				SELECT * FROM content_distilled 
-				WHERE LOWER(metadata->>'title') = $1
-				LIMIT 1
-			`
-
-			const exactTitleResult = await query(exactTitleQueryStr, [lowerQuery])
-
-			if (exactTitleResult.rows.length > 0) {
-				return exactTitleResult.rows[0] as DbContentDistilled
-			}
-
-			// Then try partial title match
-			const partialTitleQueryStr = `
-				SELECT * FROM content_distilled 
-				WHERE LOWER(metadata->>'title') LIKE $1
-				LIMIT 1
-			`
-
-			const partialTitleResult = await query(partialTitleQueryStr, [`%${lowerQuery}%`])
-
-			if (partialTitleResult.rows.length > 0) {
-				return partialTitleResult.rows[0] as DbContentDistilled
-			}
-
-			// Finally try path match for backward compatibility
-			const pathMatchQueryStr = `
-				SELECT * FROM content_distilled 
-				WHERE LOWER(path) LIKE $1
-				LIMIT 1
-			`
-
-			const pathMatchResult = await query(pathMatchQueryStr, [`%${lowerQuery}%`])
-
-			return pathMatchResult.rows.length > 0 ? (pathMatchResult.rows[0] as DbContentDistilled) : null
+			// Use the generic searchContent method with the content_distilled table
+			return await ContentDbService.searchContent(searchQuery, 'content_distilled')
 		} catch (error) {
 			logErrorAlways(`Failed to search distilled content for "${searchQuery}":`, error)
 			throw new Error(

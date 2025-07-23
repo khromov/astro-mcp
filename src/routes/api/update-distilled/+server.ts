@@ -223,17 +223,19 @@ export const GET: RequestHandler = async ({ url }) => {
 		const finalSvelteKitContent = svelteKitContent + prompt
 
 		logAlways(`Storing ${successfulResults.length} individual distilled files`)
-		const distilledContentInputs: CreateContentDistilledInput[] = successfulResults.map((result) => ({
-			path: result.path,
-			filename: ContentDistilledDbService.extractFilename(result.path),
-			content: result.content,
-			size_bytes: new TextEncoder().encode(result.content).length,
-			metadata: {}
-		}))
+		const distilledContentInputs: CreateContentDistilledInput[] = successfulResults.map(
+			(result) => ({
+				path: result.path,
+				filename: ContentDistilledDbService.extractFilename(result.path),
+				content: result.content,
+				size_bytes: new TextEncoder().encode(result.content).length,
+				metadata: {}
+			})
+		)
 
 		await ContentDistilledDbService.batchUpsertContentDistilled(distilledContentInputs)
 
-		const currentPaths = successfulResults.map(result => result.path)
+		const currentPaths = successfulResults.map((result) => result.path)
 		const cleanedUpCount = await ContentDistilledDbService.cleanupUnusedEntries(currentPaths)
 		logAlways(`Cleaned up ${cleanedUpCount} unused distilled content entries`)
 
