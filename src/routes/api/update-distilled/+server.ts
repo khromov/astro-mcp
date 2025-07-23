@@ -10,8 +10,9 @@ import {
 import type { RequestHandler } from './$types'
 import { AnthropicProvider, type AnthropicBatchRequest } from '$lib/anthropic'
 import { PresetDbService } from '$lib/server/presetDb'
+import { ContentDistilledDbService } from '$lib/server/contentDistilledDb'
 import { DistillablePreset } from '$lib/types/db'
-import type { DbDistillationJob } from '$lib/types/db'
+import type { DbDistillationJob, CreateContentDistilledInput } from '$lib/types/db'
 import { logAlways, logErrorAlways } from '$lib/log'
 import { cleanDocumentationPath } from '$lib/utils/pathUtils'
 import { DISTILLATION_PROMPT } from '$lib/utils/prompts'
@@ -220,6 +221,24 @@ export const GET: RequestHandler = async ({ url }) => {
 		const finalContent = distilledContent + prompt
 		const finalSvelteContent = svelteContent + prompt
 		const finalSvelteKitContent = svelteKitContent + prompt
+
+		// Store individual distilled files in content_distilled table
+		logAlways(`Storing ${successfulResults.length} individual distilled files`)
+		const distilledContentInputs: CreateContentDistilledInput[] = successfulResults.map((result) => ({
+			path: result.path,
+			filename: ContentDistilledDbService.extractFilename(result.path),
+			content: result.content,
+			size_bytes: new TextEncoder().encode(result.content).length,
+			metadata: {}
+		}))
+
+		// Batch upsert all distilled content
+		await ContentDistilledDbService.batchUpsertContentDistilled(distilledContentInputs)
+
+		// Clean up unused entries (files that were not in this distillation run)
+		const currentPaths = successfulResults.map(result => result.path)
+		const cleanedUpCount = await ContentDistilledDbService.cleanupUnusedEntries(currentPaths)
+		logAlways(`Cleaned up ${cleanedUpCount} unused distilled content entries`)
 
 		const today = new Date()
 		const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(

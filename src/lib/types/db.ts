@@ -66,6 +66,24 @@ export interface DbContent {
 	updated_at: Date
 }
 
+export interface DbContentDistilled {
+	id: number
+	// File information
+	path: string // Full file path
+	filename: string // Just the filename
+
+	// Content
+	content: string // The distilled file content
+
+	// Metadata
+	size_bytes: number // Size of the content in bytes
+	metadata: Record<string, unknown> // Additional metadata (frontmatter, etc.)
+
+	// Timestamps
+	created_at: Date
+	updated_at: Date
+}
+
 // Input types for creating/updating records
 
 export interface CreateDistillationInput {
@@ -90,6 +108,14 @@ export interface CreateDistillationJobInput {
 export interface CreateContentInput {
 	owner: string
 	repo_name: string
+	path: string
+	filename: string
+	content: string
+	size_bytes: number
+	metadata?: Record<string, unknown>
+}
+
+export interface CreateContentDistilledInput {
 	path: string
 	filename: string
 	content: string
