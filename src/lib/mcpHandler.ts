@@ -18,7 +18,7 @@ import { createSvelteDeveloperPromptWithTask } from '$lib/utils/prompts'
 async function searchSectionInDb(query: string): Promise<DbContent | null> {
 	try {
 		// Use the searchContent method with default parameters
-		const result = await ContentDbService.searchContent(query)
+		const result = await ContentDbService.searchContent(query, 'content')
 		return result
 	} catch (error) {
 		logErrorAlways(`Error searching for section "${query}":`, error)
@@ -87,8 +87,6 @@ export const handler = createMcpHandler(
 			new ResourceTemplate('svelte-llm://{+slug}', {
 				list: async () => {
 					const documents = await ContentDbService.getContentByFilter({
-						owner: 'sveltejs',
-						repo_name: 'svelte.dev',
 						path_pattern: 'apps/svelte.dev/content/docs/%'
 					})
 
@@ -137,8 +135,6 @@ export const handler = createMcpHandler(
 				if (!document) {
 					// Try to find by cleaned path - need to search all content and match cleaned paths
 					const allDocs = await ContentDbService.getContentByFilter({
-						owner: 'sveltejs',
-						repo_name: 'svelte.dev',
 						path_pattern: 'apps/svelte.dev/content/docs/%'
 					})
 
@@ -148,12 +144,12 @@ export const handler = createMcpHandler(
 				// If still not found, try with the full path pattern (for backward compatibility)
 				if (!document && !slugString.startsWith('apps/svelte.dev/content/')) {
 					const fullPath = `apps/svelte.dev/content/docs/${slugString}`
-					document = await ContentDbService.getContentByPath('sveltejs', 'svelte.dev', fullPath)
+					document = await ContentDbService.getContentByPath(fullPath)
 				}
 
 				// If still not found, try direct database path match (for backward compatibility)
 				if (!document) {
-					document = await ContentDbService.getContentByPath('sveltejs', 'svelte.dev', slugString)
+					document = await ContentDbService.getContentByPath(slugString)
 				}
 
 				if (!document) {

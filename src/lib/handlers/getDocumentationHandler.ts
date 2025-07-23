@@ -16,7 +16,7 @@ function getTitleFromMetadata(
 async function searchSectionInDb(query: string): Promise<DbContent | null> {
 	try {
 		// Use the new searchContent method with default parameters
-		const result = await ContentDbService.searchContent(query)
+		const result = await ContentDbService.searchContent(query, 'content')
 
 		return result
 	} catch (error) {

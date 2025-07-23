@@ -44,14 +44,10 @@ export interface DbDistillationJob {
 
 export interface DbContent {
 	id: number
-	owner: string
-	repo_name: string
 	path: string
 	filename: string
 	content: string
 	size_bytes: number
-	is_processed: boolean
-	processed_at: Date | null
 	metadata: Record<string, unknown>
 	created_at: Date
 	updated_at: Date
@@ -90,8 +86,6 @@ export interface CreateDistillationJobInput {
 }
 
 export interface CreateContentInput {
-	owner: string
-	repo_name: string
 	path: string
 	filename: string
 	content: string
@@ -108,18 +102,11 @@ export interface CreateContentDistilledInput {
 }
 
 export interface ContentFilter {
-	owner?: string
-	repo_name?: string
-	is_processed?: boolean
 	path_pattern?: string // For glob pattern matching
 }
 
 export interface ContentStats {
 	total_files: number
 	total_size_bytes: number
-	by_repo: Record<string, { files: number; size_bytes: number }>
 	last_updated: Date
 }
-
-// Helper type for the combined repo string
-export type RepoString = `${string}/${string}` // e.g., 'sveltejs/svelte'
