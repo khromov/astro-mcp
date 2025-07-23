@@ -28,7 +28,6 @@ export class ContentSyncService {
 
 	static async syncRepository(
 		options: {
-			performCleanup?: boolean
 			returnStats?: boolean
 		} = {}
 	): Promise<{
@@ -43,12 +42,9 @@ export class ContentSyncService {
 			deleted_files: number
 			unchanged_files: number
 		}
-		cleanup_details: {
-			deleted_count: number
-		}
 		timestamp: string
 	}> {
-		const { performCleanup = true, returnStats = true } = options
+		const { returnStats = true } = options
 		const { owner, repo: repoName } = DEFAULT_REPOSITORY
 
 		logAlways(`Starting sync for repository: ${owner}/${repoName}`)
@@ -56,7 +52,6 @@ export class ContentSyncService {
 		let upsertedFiles = 0
 		let deletedFiles = 0
 		let unchangedFiles = 0
-		let cleanupDeletedCount = 0
 
 		try {
 			logAlways(`Step 1: Syncing repository ${owner}/${repoName}`)
@@ -130,19 +125,12 @@ export class ContentSyncService {
 				logAlways(`No deleted files detected`)
 			}
 
-			if (performCleanup) {
-				logAlways(`Step 2: Performing cleanup of unused content`)
-				cleanupDeletedCount = await ContentSyncService.cleanupUnusedContent()
-			} else {
-				logAlways(`Step 2: Skipping cleanup (performCleanup = false)`)
-			}
-
 			let stats
 			if (returnStats) {
-				logAlways(`Step 3: Collecting final statistics`)
+				logAlways(`Step 2: Collecting final statistics`)
 				stats = await ContentSyncService.getContentStats()
 			} else {
-				logAlways(`Step 3: Skipping stats collection (returnStats = false)`)
+				logAlways(`Step 2: Skipping stats collection (returnStats = false)`)
 				// Return minimal stats structure
 				stats = {
 					total_files: 0,
@@ -152,7 +140,7 @@ export class ContentSyncService {
 			}
 
 			logAlways(
-				`Sync completed successfully: ${upsertedFiles} upserted, ${deletedFiles} deleted, ${unchangedFiles} unchanged${performCleanup ? `, ${cleanupDeletedCount} cleaned up` : ''}`
+				`Sync completed successfully: ${upsertedFiles} upserted, ${deletedFiles} deleted, ${unchangedFiles} unchanged`
 			)
 
 			return {
@@ -162,9 +150,6 @@ export class ContentSyncService {
 					upserted_files: upsertedFiles,
 					deleted_files: deletedFiles,
 					unchanged_files: unchangedFiles
-				},
-				cleanup_details: {
-					deleted_count: cleanupDeletedCount
 				},
 				timestamp: new Date().toISOString()
 			}
@@ -282,16 +267,5 @@ export class ContentSyncService {
 
 	static async getContentStats() {
 		return ContentDbService.getContentStats()
-	}
-
-	/**
-	 * Clean up old or unused content
-	 * Since we no longer have repository-specific content, this will be minimal
-	 */
-	static async cleanupUnusedContent(): Promise<number> {
-		// For now, this doesn't do anything since we don't track repositories anymore
-		// In the future, this could clean up files that don't match any current preset patterns
-		logAlways('No cleanup needed - repository tracking removed')
-		return 0
 	}
 }

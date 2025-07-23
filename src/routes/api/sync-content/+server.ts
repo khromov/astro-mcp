@@ -22,7 +22,6 @@ export const GET: RequestHandler = async ({ url }) => {
 		logAlways(`Starting content sync for ${owner}/${repo} repository`)
 
 		const result = await ContentSyncService.syncRepository({
-			performCleanup: true,
 			returnStats: true
 		})
 
