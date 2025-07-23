@@ -44,42 +44,26 @@ export interface DbDistillationJob {
 
 export interface DbContent {
 	id: number
-	// Repository information
-	owner: string // Repository owner (e.g., 'sveltejs')
-	repo_name: string // Repository name (e.g., 'svelte')
-
-	// File information
-	path: string // Full file path
-	filename: string // Just the filename
-
-	// Content
-	content: string // The actual file content
-
-	// Metadata
-	size_bytes: number // Size of the content in bytes
-	is_processed: boolean // Whether content has been processed
-	processed_at: Date | null // When content was processed
-	metadata: Record<string, unknown> // Additional metadata (frontmatter, etc.)
-
-	// Timestamps
+	owner: string
+	repo_name: string
+	path: string
+	filename: string
+	content: string
+	size_bytes: number
+	is_processed: boolean
+	processed_at: Date | null
+	metadata: Record<string, unknown>
 	created_at: Date
 	updated_at: Date
 }
 
 export interface DbContentDistilled {
 	id: number
-	// File information
-	path: string // Full file path
-	filename: string // Just the filename
-
-	// Content
-	content: string // The distilled file content
-
-	// Metadata
-	size_bytes: number // Size of the content in bytes
-	metadata: Record<string, unknown> // Additional metadata (frontmatter, etc.)
-
-	// Timestamps
+	path: string
+	filename: string
+	content: string
+	size_bytes: number
+	metadata: Record<string, unknown>
 	created_at: Date
 	updated_at: Date
 }
