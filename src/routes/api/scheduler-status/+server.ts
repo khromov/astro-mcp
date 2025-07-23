@@ -3,9 +3,6 @@ import { json } from '@sveltejs/kit'
 import { schedulerService } from '$lib/server/schedulerService'
 import { logErrorAlways } from '$lib/log'
 
-/**
- * API endpoint to get the status of the background scheduler
- */
 export const GET: RequestHandler = async ({ url }) => {
 	try {
 		const status = schedulerService.getJobStatus()

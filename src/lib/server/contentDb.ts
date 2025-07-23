@@ -136,11 +136,6 @@ export class ContentDbService {
 		}
 	}
 
-	/**
-	 * Search content by title (from metadata) or path pattern
-	 * This performs the search at the database level for efficiency
-	 * Defaults to searching sveltejs/svelte.dev docs
-	 */
 	static async searchContent(
 		searchQuery: string,
 		owner: string = 'sveltejs',
@@ -209,11 +204,6 @@ export class ContentDbService {
 		}
 	}
 
-	/**
-	 * Search all content by title (from metadata) or path pattern
-	 * Returns multiple results for autocomplete/suggestions
-	 * Defaults to searching sveltejs/svelte.dev docs
-	 */
 	static async searchAllContent(
 		searchQuery: string,
 		owner: string = 'sveltejs',
@@ -276,11 +266,6 @@ export class ContentDbService {
 		}
 	}
 
-	/**
-	 * Get documentation sections list with minimal data for efficiency
-	 * Only fetches path, content length, and metadata for sections
-	 * Defaults to searching sveltejs/svelte.dev docs
-	 */
 	static async getDocumentationSections(
 		owner: string = 'sveltejs',
 		repo_name: string = 'svelte.dev',

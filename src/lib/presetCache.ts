@@ -6,10 +6,6 @@ import { cleanDocumentationPath } from '$lib/utils/pathUtils'
 // Maximum age of cached content in milliseconds (24 hours)
 export const MAX_CACHE_AGE_MS = 24 * 60 * 60 * 1000
 
-/**
- * Get preset content generated on-demand from the content table
- * Falls back to GitHub fetch if content table is empty
- */
 export async function getPresetContent(presetKey: string): Promise<string | null> {
 	try {
 		const preset = presets[presetKey]
@@ -57,9 +53,6 @@ export async function getPresetContent(presetKey: string): Promise<string | null
 	}
 }
 
-/**
- * Get content size in KB calculated on-demand
- */
 export async function getPresetSizeKb(presetKey: string): Promise<number | null> {
 	try {
 		const content = await getPresetContent(presetKey)
@@ -75,9 +68,6 @@ export async function getPresetSizeKb(presetKey: string): Promise<number | null>
 	}
 }
 
-/**
- * Check if preset content is stale based on repository content staleness
- */
 export async function isPresetStale(presetKey: string): Promise<boolean> {
 	try {
 		// Check if the repository content is stale
@@ -88,9 +78,6 @@ export async function isPresetStale(presetKey: string): Promise<boolean> {
 	}
 }
 
-/**
- * Check if preset exists (has matching content in database)
- */
 export async function presetExists(presetKey: string): Promise<boolean> {
 	try {
 		const preset = presets[presetKey]
@@ -107,9 +94,6 @@ export async function presetExists(presetKey: string): Promise<boolean> {
 	}
 }
 
-/**
- * Get preset metadata calculated on-demand
- */
 export async function getPresetMetadata(presetKey: string): Promise<{
 	size_kb: number
 	document_count: number

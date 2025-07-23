@@ -146,9 +146,6 @@ export class AnthropicProvider implements LLMProvider {
 		}
 	}
 
-	/**
-	 * Get the status of a batch with automatic retry logic
-	 */
 	async getBatchStatus(
 		batchId: string,
 		maxRetries = 10,

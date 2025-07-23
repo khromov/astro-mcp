@@ -8,9 +8,6 @@ import type { CreateContentInput } from '$lib/types/db'
 import { presets, DEFAULT_REPOSITORY } from '$lib/presets'
 import { logAlways, logErrorAlways, log } from '$lib/log'
 
-/**
- * Sort files within a group using the same logic as the original sortFilesWithinGroup
- */
 function sortFilesWithinGroup(
 	files: Array<{ path: string; content: string }>
 ): Array<{ path: string; content: string }> {
@@ -27,13 +24,8 @@ function sortFilesWithinGroup(
 }
 
 export class ContentSyncService {
-	// Maximum age of content in milliseconds (24 hours)
 	static readonly MAX_CONTENT_AGE_MS = 24 * 60 * 60 * 1000
 
-	/**
-	 * Sync the sveltejs/svelte.dev repository to the content table
-	 * Handles deletions properly to maintain data consistency
-	 */
 	static async syncRepository(
 		options: {
 			performCleanup?: boolean
@@ -229,12 +221,6 @@ export class ContentSyncService {
 		}
 	}
 
-	/**
-	 * Get content from the database matching preset glob patterns
-	 * This replaces the Git fetching when content table is populated
-	 * FIXED: Now processes one glob pattern at a time to maintain natural order
-	 * AND applies proper sorting within each glob group
-	 */
 	static async getPresetContentFromDb(
 		presetKey: string
 	): Promise<Array<{ path: string; content: string }> | null> {

@@ -8,9 +8,6 @@ import { logErrorAlways } from '$lib/log'
 // Valid basenames for distilled content - now using the enum values
 const VALID_DISTILLED_BASENAMES = Object.values(DistillablePreset)
 
-/**
- * Transform database distillation to distilled version format
- */
 function transformDbDistillationToVersion(dbDistillation: DbDistillation, presetKey: string) {
 	// Handle date format - version could be 'latest' or '2024-01-15'
 	const date =
@@ -18,7 +15,6 @@ function transformDbDistillationToVersion(dbDistillation: DbDistillation, preset
 			? new Date(dbDistillation.created_at).toISOString().split('T')[0]
 			: dbDistillation.version
 
-	// Generate filename from preset key and date
 	const filename = `${presetKey}-${date}.md`
 
 	return {
