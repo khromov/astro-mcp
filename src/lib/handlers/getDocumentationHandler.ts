@@ -25,24 +25,8 @@ async function searchSectionInDb(query: string): Promise<DbContent | null> {
 	}
 }
 
-export const getDocumentationHandler = async ({
-	section
-}: {
-	section: string | string[] | undefined
-}) => {
+export const getDocumentationHandler = async ({ section }: { section: string | string[] }) => {
 	logAlways('getDocumentationHandler called with:', { section, type: typeof section })
-
-	if (!section) {
-		logAlways('No section provided, returning empty response')
-		return {
-			content: [
-				{
-					type: 'text' as const,
-					text: '❌ No section provided. Please specify a section to retrieve documentation.'
-				}
-			]
-		}
-	}
 
 	try {
 		// Handle array of sections - including JSON string arrays
