@@ -19,9 +19,6 @@ const ALL_PRESET_KEYS = [...Object.keys(presets), ...VIRTUAL_DISTILLED_PRESETS]
 // Valid basenames for distilled content - now using the enum values
 const VALID_DISTILLED_BASENAMES = Object.values(DistillablePreset)
 
-/**
- * Fetch size for a single preset
- */
 async function fetchPresetSize(
 	presetKey: string
 ): Promise<{ key: string; sizeKb: number | null; error?: string }> {
@@ -58,9 +55,6 @@ async function fetchPresetSize(
 	}
 }
 
-/**
- * Transform database distillation to distilled version format
- */
 function transformDbDistillationToVersion(dbDistillation: DbDistillation, presetKey: string) {
 	// Handle date format - version could be 'latest' or '2024-01-15'
 	const date =
@@ -79,9 +73,6 @@ function transformDbDistillationToVersion(dbDistillation: DbDistillation, preset
 	}
 }
 
-/**
- * Fetch distilled versions for a single preset
- */
 async function fetchDistilledVersions(presetKey: string): Promise<{
 	key: string
 	versions: Array<{ filename: string; date: string; path: string; sizeKb: number }>
