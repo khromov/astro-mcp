@@ -19,6 +19,7 @@ export const handler = createMcpHandler(
 			{
 				section: z
 					.union([z.string(), z.array(z.string())])
+					.optional()
 					.describe(
 						'The section name(s) to retrieve. Can search by title (e.g., "$state", "load functions") or file path (e.g., "docs/svelte/state.md"). Supports single string and array of strings'
 					)
