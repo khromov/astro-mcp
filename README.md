@@ -1,15 +1,13 @@
 ## svelte-llm
 
-LLM presets and MCP for Svelte 5 and SvelteKit. Visit the site at [svelte-llm.khromov.se](https://svelte-llm.khromov.se).
+LLM presets and MCP for Svelte 5 and SvelteKit. Visit the site at [svelte-llm.stanislav.garden](https://svelte-llm.stanislav.garden).
 
 ## MCP Endpoint
 
 This service provides an MCP (Model Context Protocol) endpoint for use with AI assistants:
 
-- **SSE (Claude Desktop)**: `https://svelte-llm.khromov.se/mcp/sse`
-- **Streamable HTTP (most other clients)**: `https://svelte-llm.khromov.se/mcp/mcp`
-
-OG image from https://dynamic-og-image-generator.vercel.app/
+- **SSE (Claude Desktop)**: `https://svelte-llm.stanislav.garden/mcp/sse`
+- **Streamable HTTP (most other clients)**: `https://svelte-llm.stanislav.garden/mcp/mcp`
 
 # Setup
 
@@ -76,3 +74,7 @@ NODE_TLS_REJECT_UNAUTHORIZED=0 NODE_OPTIONS="--insecure-http-parser" npx @modelc
 http://127.0.0.1:6274
 
 You can also use GitHub Copilot in Agent mode to try the agent locally, see `.vscode/mcp.json` for info on how that works.
+
+### Misc
+
+OG image from https://dynamic-og-image-generator.vercel.app/
