@@ -1,6 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { ContentDistilledDbService } from '$lib/server/contentDistilledDb'
 import { SVELTE_5_PROMPT } from '$lib/utils/prompts'
+import { PRESET_CONFIGS } from '$lib/mcpPresets'
 
 /**
  * Register template-based prompts for documentation injection
@@ -8,207 +9,31 @@ import { SVELTE_5_PROMPT } from '$lib/utils/prompts'
  * based on predefined path patterns for different Svelte/SvelteKit sections
  */
 export function registerTemplatePrompts(server: McpServer): void {
-	// Core Svelte functionality (sections 1-4)
-	server.registerPrompt(
-		'svelte-core',
-		{
-			title: 'Svelte Core Documentation',
-			description:
-				'Inject core Svelte 5 documentation covering introduction, runes, template syntax, and styling (sections 1-4)',
-			argsSchema: {}
-		},
-		async () => {
-			const patterns = [
-				'apps/svelte.dev/content/docs/svelte/01-introduction%',
-				'apps/svelte.dev/content/docs/svelte/02-runes%',
-				'apps/svelte.dev/content/docs/svelte/03-template-syntax%',
-				'apps/svelte.dev/content/docs/svelte/04-styling%'
-			]
+	// Register prompts for each preset configuration
+	for (const preset of PRESET_CONFIGS) {
+		server.registerPrompt(
+			preset.id,
+			{
+				title: preset.title,
+				description: `Inject ${preset.description.toLowerCase()}`,
+				argsSchema: {}
+			},
+			async () => {
+				const content = await ContentDistilledDbService.getContentByPathPatterns(preset.patterns)
+				const promptText = `${SVELTE_5_PROMPT}\n\n${preset.title}:\n\n${content}`
 
-			const content = await ContentDistilledDbService.getContentByPathPatterns(patterns)
-			const promptText = `${SVELTE_5_PROMPT}\n\nCore Svelte 5 Documentation:\n\n${content}`
-
-			return {
-				messages: [
-					{
-						role: 'user',
-						content: {
-							type: 'text',
-							text: promptText
+				return {
+					messages: [
+						{
+							role: 'user',
+							content: {
+								type: 'text',
+								text: promptText
+							}
 						}
-					}
-				]
+					]
+				}
 			}
-		}
-	)
-
-	// Advanced Svelte features (sections 5-6)
-	server.registerPrompt(
-		'svelte-advanced',
-		{
-			title: 'Svelte Advanced Documentation',
-			description:
-				'Inject advanced Svelte 5 documentation covering special elements, runtime, and miscellaneous topics (sections 5-7)',
-			argsSchema: {}
-		},
-		async () => {
-			const patterns = [
-				'apps/svelte.dev/content/docs/svelte/05-special-elements%',
-				'apps/svelte.dev/content/docs/svelte/06-runtime%',
-				'apps/svelte.dev/content/docs/svelte/07-misc%'
-			]
-
-			const content = await ContentDistilledDbService.getContentByPathPatterns(patterns)
-			const promptText = `${SVELTE_5_PROMPT}\n\nAdvanced Svelte 5 Documentation:\n\n${content}`
-
-			return {
-				messages: [
-					{
-						role: 'user',
-						content: {
-							type: 'text',
-							text: promptText
-						}
-					}
-				]
-			}
-		}
-	)
-
-	// Complete Svelte documentation (sections 1-7)
-	server.registerPrompt(
-		'svelte-complete',
-		{
-			title: 'Complete Svelte Documentation',
-			description:
-				'Inject complete Svelte 5 documentation covering all sections (1-7): introduction, runes, template syntax, styling, special elements, runtime, and miscellaneous',
-			argsSchema: {}
-		},
-		async () => {
-			const patterns = [
-				'apps/svelte.dev/content/docs/svelte/01-introduction%',
-				'apps/svelte.dev/content/docs/svelte/02-runes%',
-				'apps/svelte.dev/content/docs/svelte/03-template-syntax%',
-				'apps/svelte.dev/content/docs/svelte/04-styling%',
-				'apps/svelte.dev/content/docs/svelte/05-special-elements%',
-				'apps/svelte.dev/content/docs/svelte/06-runtime%',
-				'apps/svelte.dev/content/docs/svelte/07-misc%'
-			]
-
-			const content = await ContentDistilledDbService.getContentByPathPatterns(patterns)
-			const promptText = `${SVELTE_5_PROMPT}\n\nComplete Svelte 5 Documentation:\n\n${content}`
-
-			return {
-				messages: [
-					{
-						role: 'user',
-						content: {
-							type: 'text',
-							text: promptText
-						}
-					}
-				]
-			}
-		}
-	)
-
-	// Core SvelteKit concepts
-	server.registerPrompt(
-		'sveltekit-core',
-		{
-			title: 'SvelteKit Core Documentation',
-			description:
-				'Inject core SvelteKit documentation covering getting started and core concepts like routing, loading, and form actions',
-			argsSchema: {}
-		},
-		async () => {
-			const patterns = [
-				'apps/svelte.dev/content/docs/kit/10-getting-started%',
-				'apps/svelte.dev/content/docs/kit/20-core-concepts%'
-			]
-
-			const content = await ContentDistilledDbService.getContentByPathPatterns(patterns)
-			const promptText = `${SVELTE_5_PROMPT}\n\nCore SvelteKit Documentation:\n\n${content}`
-
-			return {
-				messages: [
-					{
-						role: 'user',
-						content: {
-							type: 'text',
-							text: promptText
-						}
-					}
-				]
-			}
-		}
-	)
-
-	// Production SvelteKit features
-	server.registerPrompt(
-		'sveltekit-production',
-		{
-			title: 'SvelteKit Production Documentation',
-			description:
-				'Inject production-focused SvelteKit documentation covering build & deploy, advanced features, and best practices',
-			argsSchema: {}
-		},
-		async () => {
-			const patterns = [
-				'apps/svelte.dev/content/docs/kit/25-build-and-deploy%',
-				'apps/svelte.dev/content/docs/kit/30-advanced%',
-				'apps/svelte.dev/content/docs/kit/40-best-practices%'
-			]
-
-			const content = await ContentDistilledDbService.getContentByPathPatterns(patterns)
-			const promptText = `${SVELTE_5_PROMPT}\n\nProduction SvelteKit Documentation:\n\n${content}`
-
-			return {
-				messages: [
-					{
-						role: 'user',
-						content: {
-							type: 'text',
-							text: promptText
-						}
-					}
-				]
-			}
-		}
-	)
-
-	// Complete SvelteKit documentation
-	server.registerPrompt(
-		'sveltekit-complete',
-		{
-			title: 'Complete SvelteKit Documentation',
-			description:
-				'Inject complete SvelteKit documentation covering all sections: getting started, core concepts, build & deploy, advanced features, and best practices',
-			argsSchema: {}
-		},
-		async () => {
-			const patterns = [
-				'apps/svelte.dev/content/docs/kit/10-getting-started%',
-				'apps/svelte.dev/content/docs/kit/20-core-concepts%',
-				'apps/svelte.dev/content/docs/kit/25-build-and-deploy%',
-				'apps/svelte.dev/content/docs/kit/30-advanced%',
-				'apps/svelte.dev/content/docs/kit/40-best-practices%'
-			]
-
-			const content = await ContentDistilledDbService.getContentByPathPatterns(patterns)
-			const promptText = `${SVELTE_5_PROMPT}\n\nComplete SvelteKit Documentation:\n\n${content}`
-
-			return {
-				messages: [
-					{
-						role: 'user',
-						content: {
-							type: 'text',
-							text: promptText
-						}
-					}
-				]
-			}
-		}
-	)
+		)
+	}
 }
