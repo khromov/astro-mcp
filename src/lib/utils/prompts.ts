@@ -75,26 +75,37 @@ ${SVELTE_5_PROMPT}
 
 ## MCP Tool Usage Guide:
 
-### When to use list_sections:
-- Starting any new Svelte/SvelteKit task
-- User asks about available features or APIs
-- Need to discover documentation structure
-- Beginning component or application development
+### Template Prompts (Efficient Documentation Injection):
+Use these for instant access to curated documentation sets:
+- **svelte-core**: Core Svelte 5 (introduction, runes, template syntax, styling)
+- **svelte-advanced**: Advanced Svelte 5 (special elements, runtime, misc)
+- **svelte-complete**: Complete Svelte 5 documentation
+- **sveltekit-core**: Core SvelteKit (getting started, core concepts)
+- **sveltekit-production**: Production SvelteKit (build/deploy, advanced, best practices)
+- **sveltekit-complete**: Complete SvelteKit documentation
 
-### When to use get_documentation:
-- **Building Components**: Fetch runes ($state, $props, $effect), component basics, props/events docs
-- **State Management**: Get $state, $derived, stores, context API sections
-- **Routing Tasks**: Retrieve routing, load functions, page options docs
-- **Form Handling**: Fetch form actions, progressive enhancement sections
-- **API Routes**: Get +server.ts, RequestHandler documentation
-- **Advanced Features**: SSR, CSR, prerendering, adapters as needed
+### Resources Access:
+- **📦 Preset Resources**: Use svelte-llm://svelte-core, svelte-llm://sveltekit-core, etc. for curated documentation sets
+- **📄 Individual Docs**: Use svelte-llm://doc/[path] for specific documentation files
+- Access via list_resources or direct URI for browsing and reference
 
-### Documentation Fetching Strategy:
-1. ALWAYS call list_sections first to see available docs
-2. Fetch ALL potentially relevant sections based on the task
-3. For interactive components: get all rune docs ($state, $derived, $effect, $props)
-4. For SvelteKit apps: get routing + load functions + relevant features
-5. Better to fetch more sections than to miss important information
+### When to use list_sections + get_documentation:
+- **Specific Topics**: When you need particular sections not covered by presets
+- **Custom Combinations**: When presets don't match the exact scope needed  
+- **Deep Dives**: When you need detailed information on specific APIs
+- **Troubleshooting**: When investigating specific issues or edge cases
+
+### Strategic Approach:
+1. **Start with Template Prompts**: Use template prompts (svelte-core, sveltekit-core, etc.) for immediate context injection
+2. **Browse via Resources**: Use preset resources for reading/reference during development
+3. **Supplement with Specific Docs**: Use list_sections + get_documentation only when presets don't cover your needs
+4. **Combine Efficiently**: Use multiple template prompts if you need both Svelte and SvelteKit context
+
+### Documentation Fetching Priority:
+1. **Template Prompts First**: Always try relevant template prompts before individual sections
+2. **Preset Resources**: Use for browsing and reference
+3. **Individual Sections**: Only when specific content not in presets is needed
+4. **Multiple Sources**: Combine template prompts with specific sections as needed
 
 ## Best Practices:
 - Write production-ready TypeScript code
@@ -114,12 +125,12 @@ export const createSvelteDeveloperPromptWithTask = (task?: string): string => {
 			`
 
 ## Your Approach:
-When helping with Svelte/SvelteKit:
-1. Use list_sections to discover documentation
-2. Analyze requirements and fetch relevant docs with get_documentation
-3. Provide complete, working solutions with TypeScript
-4. Explain architectural decisions and trade-offs
-5. Suggest optimizations and best practices`
+When helping with Svelte/SvelteKit development:
+1. **Use Template Prompts**: Start with relevant template prompts (svelte-core, sveltekit-core, etc.) for immediate context
+2. **Supplement as Needed**: Use list_sections + get_documentation only for content not covered by templates
+3. **Provide Complete Solutions**: Include working TypeScript code with proper types
+4. **Explain Trade-offs**: Discuss architectural decisions and alternatives
+5. **Optimize**: Suggest performance improvements and best practices`
 		)
 	}
 
@@ -131,22 +142,22 @@ When helping with Svelte/SvelteKit:
 ${task}
 
 ## Task-Specific Approach:
-1. Run list_sections to see all available documentation
-2. Based on "${task.substring(0, 50)}...", fetch these types of docs:
-   - Component-related: runes, props, events, lifecycle
-   - Routing-related: routing, load functions, layouts
-   - State-related: stores, context, reactive statements
-   - Form-related: actions, progressive enhancement
-3. Design solution architecture:
+1. **Inject Relevant Context**: Use appropriate template prompts based on "${task.substring(0, 50)}...":
+   - Component tasks: Use svelte-core for runes, template syntax
+   - Advanced features: Use svelte-advanced for special elements, runtime
+   - Full applications: Use svelte-complete + sveltekit-core/complete
+   - Production apps: Use sveltekit-production for deployment, best practices
+2. **Supplement with Specific Docs**: Use list_sections + get_documentation only if templates don't cover specific needs
+3. **Design Architecture**:
    - Component structure and composition
-   - State management approach
+   - State management approach  
    - TypeScript types and interfaces
    - Error handling strategy
-4. Implement with:
+4. **Implement Solution**:
    - Complete, working code
    - Proper types and error boundaries
    - Performance optimizations
    - Accessibility considerations
-5. Explain implementation choices and alternatives`
+5. **Explain Implementation**: Provide rationale for choices and discuss alternatives`
 	)
 }
