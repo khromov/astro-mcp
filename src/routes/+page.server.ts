@@ -144,7 +144,6 @@ export const load: PageServerLoad = async ({ parent }) => {
 
 	logAlways('Returning streaming promises for preset sizes and distilled versions')
 
-	// Return the promises directly - SvelteKit will stream them as they resolve
 	return {
 		isOldHost,
 		presetSizes: presetSizePromises,

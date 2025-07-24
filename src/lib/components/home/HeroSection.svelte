@@ -92,8 +92,8 @@
 		}
 
 		.hero.rounded-top {
-			border-radius: 20px 20px 0 0;
-			margin: 0 -16px 40px -16px;
+			border-radius: 20px 20px 20px 20px;
+			margin: 0 8px 40px 8px;
 		}
 
 		.hero-content {

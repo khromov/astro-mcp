@@ -46,16 +46,16 @@
 		align-items: center;
 		gap: 16px;
 		flex: 1;
-		justify-content: center;
 	}
 
 	.banner-icon {
 		font-size: 24px;
 		line-height: 1;
+		flex-shrink: 0;
 	}
 
 	.banner-text {
-		text-align: center;
+		flex: 1;
 	}
 
 	.banner-title {
@@ -95,6 +95,7 @@
 
 		.banner-message {
 			gap: 12px;
+			justify-content: center;
 		}
 
 		.banner-icon {
@@ -107,6 +108,10 @@
 
 		.banner-description {
 			font-size: 13px;
+		}
+
+		.banner-text {
+			text-align: center;
 		}
 	}
 
