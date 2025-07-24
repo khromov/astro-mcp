@@ -123,3 +123,7 @@ The application provides MCP endpoints for AI assistants:
 - Preset caching system in `src/lib/presetCache.ts` handles staleness detection
 - MCP handlers in `src/lib/mcpHandler.ts` provide AI assistant integration
 - Uses Zod for schema validation throughout the codebase
+
+## Guidelines
+
+- Use comments sparingly

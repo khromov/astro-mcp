@@ -256,10 +256,6 @@ export function transformAndSortPresets(presetsObject: Record<string, PresetConf
 		.sort()
 }
 
-/**
- * Default repository information for all presets
- * Since we're now using a single repository for all content
- */
 export const DEFAULT_REPOSITORY = {
 	owner: 'sveltejs',
 	repo: 'svelte.dev'

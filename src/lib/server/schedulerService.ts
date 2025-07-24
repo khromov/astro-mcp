@@ -100,7 +100,6 @@ export class SchedulerService {
 
 			logAlways(`Syncing sveltejs/svelte.dev repository using ContentSyncService...`)
 			const result = await ContentSyncService.syncRepository({
-				performCleanup: true,
 				returnStats: true
 			})
 
@@ -108,7 +107,6 @@ export class SchedulerService {
 			logAlways(
 				`Sync details: ${result.sync_details.upserted_files} upserted, ${result.sync_details.deleted_files} deleted, ${result.sync_details.unchanged_files} unchanged`
 			)
-			logAlways(`Cleanup details: ${result.cleanup_details.deleted_count} files cleaned up`)
 			logAlways(`Total files in database: ${result.stats.total_files}`)
 		} catch (error) {
 			logErrorAlways('Failed to sync content:', error)

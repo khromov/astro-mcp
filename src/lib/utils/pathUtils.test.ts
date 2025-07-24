@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest'
-import { cleanDocumentationPath, cleanTarballPath, extractTitleFromPath } from './pathUtils'
+import {
+	cleanDocumentationPath,
+	cleanTarballPath,
+	extractTitleFromPath,
+	removeFrontmatter
+} from './pathUtils'
 
 describe('pathUtils', () => {
 	describe('cleanDocumentationPath', () => {
@@ -164,6 +169,107 @@ describe('pathUtils', () => {
 		})
 	})
 
+	describe('removeFrontmatter', () => {
+		it('should remove valid frontmatter from content', () => {
+			const input = `---
+title: Introduction
+description: Getting started guide
+---
+
+# Introduction
+
+This is the main content.`
+			const expected = `# Introduction
+
+This is the main content.`
+			expect(removeFrontmatter(input)).toBe(expected)
+		})
+
+		it('should handle content without frontmatter', () => {
+			const input = `# Introduction
+
+This is content without frontmatter.`
+			const expected = `# Introduction
+
+This is content without frontmatter.`
+			expect(removeFrontmatter(input)).toBe(expected)
+		})
+
+		it('should handle empty content', () => {
+			const input = ''
+			const expected = ''
+			expect(removeFrontmatter(input)).toBe(expected)
+		})
+
+		it('should handle malformed frontmatter (no closing delimiter)', () => {
+			const input = `---
+title: Introduction
+This is malformed frontmatter without closing delimiter
+
+# Content here`
+			const expected = input // Should return original content unchanged
+			expect(removeFrontmatter(input)).toBe(expected)
+		})
+
+		it('should handle frontmatter with complex YAML', () => {
+			const input = `---
+title: Complex Example
+tags:
+  - svelte
+  - tutorial
+metadata:
+  author: John Doe
+  date: 2024-01-15
+---
+
+# Complex Example
+
+Content with complex frontmatter.`
+			const expected = `# Complex Example
+
+Content with complex frontmatter.`
+			expect(removeFrontmatter(input)).toBe(expected)
+		})
+
+		it('should handle content that starts with --- but is not frontmatter', () => {
+			const input = `---
+This is not YAML frontmatter, just content that starts with ---`
+			const expected = input // Should return original content unchanged
+			expect(removeFrontmatter(input)).toBe(expected)
+		})
+
+		it('should handle frontmatter with empty lines', () => {
+			const input = `---
+title: Introduction
+
+description: A guide
+---
+
+# Content`
+			const expected = `# Content`
+			expect(removeFrontmatter(input)).toBe(expected)
+		})
+
+		it('should trim whitespace after removing frontmatter', () => {
+			const input = `---
+title: Introduction
+---
+
+
+# Content with leading whitespace`
+			const expected = `# Content with leading whitespace`
+			expect(removeFrontmatter(input)).toBe(expected)
+		})
+
+		it('should handle frontmatter at the end of content', () => {
+			const input = `---
+title: Only Frontmatter
+---`
+			const expected = ``
+			expect(removeFrontmatter(input)).toBe(expected)
+		})
+	})
+
 	describe('integration tests', () => {
 		it('should work together for typical documentation workflow', () => {
 			// Simulate a typical path from tarball to display
@@ -209,6 +315,21 @@ describe('pathUtils', () => {
 
 			const title = extractTitleFromPath(cleanedFromTarball)
 			expect(title).toBe('hello-world')
+		})
+
+		it('should handle content processing with frontmatter removal', () => {
+			const content = `---
+title: Introduction
+---
+
+# Introduction
+
+This is the content.`
+
+			const contentWithoutFrontmatter = removeFrontmatter(content)
+			expect(contentWithoutFrontmatter).toBe(`# Introduction
+
+This is the content.`)
 		})
 	})
 })

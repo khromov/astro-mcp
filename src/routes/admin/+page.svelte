@@ -81,6 +81,12 @@
 				<a href="/api/content-status">/api/content-status</a>
 				<span class="description">View content statistics and repository info</span>
 			</div>
+
+			<div class="endpoint">
+				<span class="method">GET</span>
+				<a href="/content">/content</a>
+				<span class="description">Compare original vs distilled content</span>
+			</div>
 		</div>
 	</section>
 

@@ -4,9 +4,6 @@ import { ContentSyncService } from '$lib/server/contentSync'
 import { DEFAULT_REPOSITORY } from '$lib/presets'
 import { logErrorAlways } from '$lib/log'
 
-/**
- * API endpoint to check content table status
- */
 export const GET: RequestHandler = async () => {
 	try {
 		const stats = await ContentSyncService.getContentStats()

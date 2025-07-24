@@ -5,14 +5,6 @@ import { ContentSyncService } from '$lib/server/contentSync'
 import { DEFAULT_REPOSITORY } from '$lib/presets'
 import { logAlways, logErrorAlways } from '$lib/log'
 
-/**
- * API endpoint to sync content from the sveltejs/svelte.dev repository to the database
- *
- * Usage:
- * - GET /api/sync-content?secret_key=YOUR_KEY - Sync the sveltejs/svelte.dev repository
- *
- * Note: This endpoint always performs cleanup and always returns stats in the response.
- */
 export const GET: RequestHandler = async ({ url }) => {
 	const secretKey = url.searchParams.get('secret_key')
 	const envSecretKey = env.CONTENT_SYNC_SECRET_KEY || env.DISTILL_SECRET_KEY
@@ -30,7 +22,6 @@ export const GET: RequestHandler = async ({ url }) => {
 		logAlways(`Starting content sync for ${owner}/${repo} repository`)
 
 		const result = await ContentSyncService.syncRepository({
-			performCleanup: true,
 			returnStats: true
 		})
 

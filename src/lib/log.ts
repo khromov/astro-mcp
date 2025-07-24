@@ -1,7 +1,7 @@
 import { dev } from '$app/environment'
 
 export const log = (...props: unknown[]) => {
-	if (dev) {
+	if (false) {
 		console.log(...props)
 	}
 }

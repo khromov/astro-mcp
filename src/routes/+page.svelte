@@ -20,8 +20,8 @@
 	// Get the streamed data from the load function
 	let { data }: { data: PageData } = $props()
 
-	const SSE_ENDPOINT = 'https://svelte-llm.khromov.se/mcp/sse'
-	const STREAMABLE_ENDPOINT = 'https://svelte-llm.khromov.se/mcp/mcp'
+	const SSE_ENDPOINT = 'https://svelte-llm.stanislav.garden/mcp/sse'
+	const STREAMABLE_ENDPOINT = 'https://svelte-llm.stanislav.garden/mcp/mcp'
 
 	const combinedPresetsFormatted = transformAndSortPresets(combinedPresets)
 	const sveltePresetsFormatted = transformAndSortPresets(sveltePresets)
@@ -42,7 +42,7 @@
 </script>
 
 <main>
-	<HeroSection />
+	<HeroSection isOldHost={data.isOldHost} />
 
 	<McpSection sseEndpoint={SSE_ENDPOINT} streamableEndpoint={STREAMABLE_ENDPOINT} />
 
