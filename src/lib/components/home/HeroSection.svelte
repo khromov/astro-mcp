@@ -1,4 +1,8 @@
-<header class="hero">
+<script lang="ts">
+	let { isOldHost = false }: { isOldHost?: boolean } = $props()
+</script>
+
+<header class="hero" class:rounded-top={isOldHost}>
 	<div class="hero-content">
 		<div class="logo">svelte-llm</div>
 		<h1>Svelte & SvelteKit documentation for AI assistants</h1>
@@ -25,6 +29,10 @@
 		color: white;
 		margin: 0 0 30px 0;
 		border-radius: 0 0 20px 20px;
+	}
+
+	.hero.rounded-top {
+		border-radius: 20px 20px 20px 20px;
 	}
 
 	.hero-content {
@@ -81,6 +89,11 @@
 			border-radius: 0;
 			margin: 0 -16px 40px -16px;
 			padding: 60px 0 40px 0;
+		}
+
+		.hero.rounded-top {
+			border-radius: 20px 20px 0 0;
+			margin: 0 -16px 40px -16px;
 		}
 
 		.hero-content {

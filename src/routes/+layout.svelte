@@ -65,11 +65,6 @@
 		padding-top: 20px;
 	}
 
-	/* When migration banner is shown, give the hero section rounded top corners */
-	:global(.has-migration-banner) :global(.hero) {
-		border-radius: 20px 20px 20px 20px !important;
-	}
-
 	.github-corner {
 		position: fixed;
 		top: 0;

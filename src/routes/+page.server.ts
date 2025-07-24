@@ -108,7 +108,9 @@ async function fetchDistilledVersions(presetKey: string): Promise<{
 	}
 }
 
-export const load: PageServerLoad = async () => {
+export const load: PageServerLoad = async ({ parent }) => {
+	const { isOldHost } = await parent()
+
 	logAlways(`Starting parallel fetch of sizes for ${ALL_PRESET_KEYS.length} presets`)
 
 	// Create streaming promises for all preset sizes
@@ -144,6 +146,7 @@ export const load: PageServerLoad = async () => {
 
 	// Return the promises directly - SvelteKit will stream them as they resolve
 	return {
+		isOldHost,
 		presetSizes: presetSizePromises,
 		distilledVersions: distilledVersionsPromises
 	}
