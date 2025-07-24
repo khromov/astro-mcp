@@ -10,6 +10,8 @@
 
 <svelte:head>
 	<title>{TITLE}</title>
+	<link rel="canonical" href={SITE_URL} />
+
 	<meta property="og:title" content={TITLE} />
 	<meta property="og:type" content="website" />
 	<meta property="og:url" content={SITE_URL} />
