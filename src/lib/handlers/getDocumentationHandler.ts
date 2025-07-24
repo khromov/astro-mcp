@@ -26,7 +26,8 @@ async function searchSectionInDb(query: string): Promise<DbContent | null> {
 }
 
 export const getDocumentationHandler = async ({ section }: { section: string | string[] }) => {
-	logAlways('getDocumentationHandler called with section(s):', section)
+	logAlways('getDocumentationHandler called with:', { section, type: typeof section })
+
 	try {
 		// Handle array of sections - including JSON string arrays
 		let sections: string[]
@@ -40,8 +41,10 @@ export const getDocumentationHandler = async ({ section }: { section: string | s
 			// Try to parse JSON string array
 			try {
 				const parsed = JSON.parse(section)
+				logAlways('JSON parsed successfully:', parsed)
 				sections = Array.isArray(parsed) ? parsed : [section]
-			} catch {
+			} catch (parseError) {
+				logAlways('JSON parse failed:', parseError)
 				sections = [section]
 			}
 		} else {
@@ -61,10 +64,8 @@ export const getDocumentationHandler = async ({ section }: { section: string | s
 
 			if (matchedContent) {
 				const cleanedPath = cleanDocumentationPath(matchedContent.path)
-
 				const formattedContent = `## ${cleanedPath}\n\n${matchedContent.content}`
 				const framework = matchedContent.path.includes('/docs/svelte/') ? 'Svelte' : 'SvelteKit'
-
 				const title = getTitleFromMetadata(matchedContent.metadata, matchedContent.path)
 				results.push(`📖 ${framework} documentation (${title}):\n\n${formattedContent}`)
 			} else {
@@ -90,7 +91,7 @@ export const getDocumentationHandler = async ({ section }: { section: string | s
 			responseText += `\n\n---\n\n❌ The following sections were not found: ${notFound.join(', ')}`
 		}
 
-		logAlways(`Returned ${results.length} number of sections.`)
+		logAlways(`Returned ${results.length} sections successfully`)
 		return {
 			content: [
 				{
@@ -100,7 +101,10 @@ export const getDocumentationHandler = async ({ section }: { section: string | s
 			]
 		}
 	} catch (error) {
-		logErrorAlways('Error fetching documentation:', error)
+		logErrorAlways('getDocumentationHandler error:', error)
+		logErrorAlways('Original section parameter:', section, 'type:', typeof section)
+		logErrorAlways('Error stack:', error instanceof Error ? error.stack : 'no stack')
+
 		const sectionList = Array.isArray(section) ? section.join(', ') : section
 		return {
 			content: [
