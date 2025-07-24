@@ -60,11 +60,16 @@ export const handler = createMcpHandler(
 			async ({ section }) => getDocumentationHandler({ section })
 		)
 
-		// Prompt with optional task parameter
-		server.prompt(
+		// Main developer prompt with optional task parameter
+		server.registerPrompt(
 			'svelte-developer',
 			{
-				task: z.string().optional().describe('Optional specific task or requirement to focus on')
+				title: 'Svelte 5 Developer Assistant',
+				description:
+					'Expert-level guidance for Svelte 5 and SvelteKit development with optional task-specific focus',
+				argsSchema: {
+					task: z.string().optional().describe('Optional specific task or requirement to focus on')
+				}
 			},
 			({ task }) => {
 				const promptText = createSvelteDeveloperPromptWithTask(task)
