@@ -18,7 +18,7 @@
 
 <MigrationBanner show={data.isOldHost} />
 
-<div class="layout">
+<div class="layout" class:has-migration-banner={data.isOldHost}>
 	<a
 		target="_blank"
 		href="https://github.com/khromov/llmctx"
@@ -61,6 +61,15 @@
 		min-height: 100vh;
 	}
 
+	.layout.has-migration-banner {
+		padding-top: 20px;
+	}
+
+	/* When migration banner is shown, give the hero section rounded top corners */
+	:global(.has-migration-banner) :global(.hero) {
+		border-radius: 20px 20px 20px 20px !important;
+	}
+
 	.github-corner {
 		position: fixed;
 		top: 0;
@@ -99,6 +108,12 @@
 		}
 		.github-corner .octo-arm {
 			animation: octocat-wave 560ms ease-in-out;
+		}
+	}
+
+	@media (max-width: 768px) {
+		.layout.has-migration-banner {
+			padding-top: 16px;
 		}
 	}
 </style>
