@@ -11,10 +11,10 @@ export function registerTemplatePrompts(server: McpServer): void {
 	// Core Svelte functionality (sections 1-4)
 	server.prompt('svelte-core', {}, async () => {
 		const patterns = [
-			'%/apps/svelte.dev/content/docs/svelte/01-introduction/%',
-			'%/apps/svelte.dev/content/docs/svelte/02-runes/%',
-			'%/apps/svelte.dev/content/docs/svelte/03-template-syntax/%',
-			'%/apps/svelte.dev/content/docs/svelte/04-styling/%'
+			'apps/svelte.dev/content/docs/svelte/01-introduction%',
+			'apps/svelte.dev/content/docs/svelte/02-runes%',
+			'apps/svelte.dev/content/docs/svelte/03-template-syntax%',
+			'apps/svelte.dev/content/docs/svelte/04-styling%'
 		]
 
 		const content = await ContentDistilledDbService.getContentByPathPatterns(patterns)
@@ -36,9 +36,9 @@ export function registerTemplatePrompts(server: McpServer): void {
 	// Advanced Svelte features (sections 5-6)
 	server.prompt('svelte-advanced', {}, async () => {
 		const patterns = [
-			'%/apps/svelte.dev/content/docs/svelte/05-special-elements/%',
-			'%/apps/svelte.dev/content/docs/svelte/06-runtime/%',
-			'%/apps/svelte.dev/content/docs/svelte/07-misc/%'
+			'apps/svelte.dev/content/docs/svelte/05-special-elements%',
+			'apps/svelte.dev/content/docs/svelte/06-runtime%',
+			'apps/svelte.dev/content/docs/svelte/07-misc%'
 		]
 
 		const content = await ContentDistilledDbService.getContentByPathPatterns(patterns)
@@ -60,13 +60,13 @@ export function registerTemplatePrompts(server: McpServer): void {
 	// Complete Svelte documentation (sections 1-7)
 	server.prompt('svelte-complete', {}, async () => {
 		const patterns = [
-			'%/apps/svelte.dev/content/docs/svelte/01-introduction/%',
-			'%/apps/svelte.dev/content/docs/svelte/02-runes/%',
-			'%/apps/svelte.dev/content/docs/svelte/03-template-syntax/%',
-			'%/apps/svelte.dev/content/docs/svelte/04-styling/%',
-			'%/apps/svelte.dev/content/docs/svelte/05-special-elements/%',
-			'%/apps/svelte.dev/content/docs/svelte/06-runtime/%',
-			'%/apps/svelte.dev/content/docs/svelte/07-misc/%'
+			'apps/svelte.dev/content/docs/svelte/01-introduction%',
+			'apps/svelte.dev/content/docs/svelte/02-runes%',
+			'apps/svelte.dev/content/docs/svelte/03-template-syntax%',
+			'apps/svelte.dev/content/docs/svelte/04-styling%',
+			'apps/svelte.dev/content/docs/svelte/05-special-elements%',
+			'apps/svelte.dev/content/docs/svelte/06-runtime%',
+			'apps/svelte.dev/content/docs/svelte/07-misc%'
 		]
 
 		const content = await ContentDistilledDbService.getContentByPathPatterns(patterns)
@@ -88,8 +88,8 @@ export function registerTemplatePrompts(server: McpServer): void {
 	// Core SvelteKit concepts
 	server.prompt('sveltekit-core', {}, async () => {
 		const patterns = [
-			'%/apps/svelte.dev/content/docs/kit/10-getting-started/%',
-			'%/apps/svelte.dev/content/docs/kit/20-core-concepts/%'
+			'apps/svelte.dev/content/docs/kit/10-getting-started%',
+			'apps/svelte.dev/content/docs/kit/20-core-concepts%'
 		]
 
 		const content = await ContentDistilledDbService.getContentByPathPatterns(patterns)
@@ -111,9 +111,9 @@ export function registerTemplatePrompts(server: McpServer): void {
 	// Production SvelteKit features
 	server.prompt('sveltekit-production', {}, async () => {
 		const patterns = [
-			'%/apps/svelte.dev/content/docs/kit/25-build-and-deploy/%',
-			'%/apps/svelte.dev/content/docs/kit/30-advanced/%',
-			'%/apps/svelte.dev/content/docs/kit/40-best-practices/%'
+			'apps/svelte.dev/content/docs/kit/25-build-and-deploy%',
+			'apps/svelte.dev/content/docs/kit/30-advanced%',
+			'apps/svelte.dev/content/docs/kit/40-best-practices%'
 		]
 
 		const content = await ContentDistilledDbService.getContentByPathPatterns(patterns)
@@ -135,11 +135,11 @@ export function registerTemplatePrompts(server: McpServer): void {
 	// Complete SvelteKit documentation
 	server.prompt('sveltekit-complete', {}, async () => {
 		const patterns = [
-			'%/apps/svelte.dev/content/docs/kit/10-getting-started/%',
-			'%/apps/svelte.dev/content/docs/kit/20-core-concepts/%',
-			'%/apps/svelte.dev/content/docs/kit/25-build-and-deploy/%',
-			'%/apps/svelte.dev/content/docs/kit/30-advanced/%',
-			'%/apps/svelte.dev/content/docs/kit/40-best-practices/%'
+			'apps/svelte.dev/content/docs/kit/10-getting-started%',
+			'apps/svelte.dev/content/docs/kit/20-core-concepts%',
+			'apps/svelte.dev/content/docs/kit/25-build-and-deploy%',
+			'apps/svelte.dev/content/docs/kit/30-advanced%',
+			'apps/svelte.dev/content/docs/kit/40-best-practices%'
 		]
 
 		const content = await ContentDistilledDbService.getContentByPathPatterns(patterns)
