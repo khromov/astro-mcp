@@ -85,7 +85,7 @@ Use these for instant access to curated documentation sets:
 - **sveltekit-complete**: Complete SvelteKit documentation
 
 ### Resources Access:
-- **📦 Preset Resources**: Use svelte-llm://svelte-core, svelte-llm://sveltekit-core, etc. for curated documentation sets
+- **📦 Preset Resources**: Use svelte-llm://svelte-core, svelte-llm://svelte-advanced, svelte-llm://svelte-complete, svelte-llm://sveltekit-core, svelte-llm://sveltekit-production, svelte-llm://sveltekit-complete for curated documentation sets
 - **📄 Individual Docs**: Use svelte-llm://doc/[path] for specific documentation files
 - Access via list_resources or direct URI for browsing and reference
 
