@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { SITE_URL } from '$lib/constants'
 	import { Toaster } from 'svelte-french-toast'
+	import MigrationBanner from '$lib/components/MigrationBanner.svelte'
 
-	let { children } = $props()
+	let { children, data } = $props()
 
 	const TITLE = 'svelte-llm - Svelte 5 and SvelteKit Developer documentation in an LLM-ready format'
 </script>
@@ -14,6 +15,8 @@
 	<meta property="og:url" content={SITE_URL} />
 	<meta property="og:image" content="{SITE_URL}/og.jpg" />
 </svelte:head>
+
+<MigrationBanner show={data.isOldHost} />
 
 <div class="layout">
 	<a
