@@ -3,6 +3,7 @@ import { createMcpHandler } from 'mcp-handler'
 import { ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { env } from '$env/dynamic/private'
 import { ContentDbService } from '$lib/server/contentDb'
+import { ContentDistilledDbService } from '$lib/server/contentDistilledDb'
 import type { DbContent } from '$lib/types/db'
 import { listSectionsHandler } from '$lib/handlers/listSectionsHandler'
 import { getDocumentationHandler } from '$lib/handlers/getDocumentationHandler'
@@ -37,6 +38,84 @@ function getTitleFromMetadata(
 	}
 	return extractTitleFromPath(fallbackPath)
 }
+
+// Define preset configurations for resources
+interface PresetConfig {
+	id: string
+	title: string
+	description: string
+	patterns: string[]
+}
+
+const PRESET_CONFIGS: PresetConfig[] = [
+	{
+		id: 'svelte-core',
+		title: 'Svelte Core Documentation',
+		description: 'Core Svelte 5 documentation: introduction, runes, template syntax, and styling',
+		patterns: [
+			'apps/svelte.dev/content/docs/svelte/01-introduction%',
+			'apps/svelte.dev/content/docs/svelte/02-runes%',
+			'apps/svelte.dev/content/docs/svelte/03-template-syntax%',
+			'apps/svelte.dev/content/docs/svelte/04-styling%'
+		]
+	},
+	{
+		id: 'svelte-advanced',
+		title: 'Svelte Advanced Documentation',
+		description: 'Advanced Svelte 5 documentation: special elements, runtime, and miscellaneous',
+		patterns: [
+			'apps/svelte.dev/content/docs/svelte/05-special-elements%',
+			'apps/svelte.dev/content/docs/svelte/06-runtime%',
+			'apps/svelte.dev/content/docs/svelte/07-misc%'
+		]
+	},
+	{
+		id: 'svelte-complete',
+		title: 'Complete Svelte Documentation',
+		description: 'Complete Svelte 5 documentation covering all sections',
+		patterns: [
+			'apps/svelte.dev/content/docs/svelte/01-introduction%',
+			'apps/svelte.dev/content/docs/svelte/02-runes%',
+			'apps/svelte.dev/content/docs/svelte/03-template-syntax%',
+			'apps/svelte.dev/content/docs/svelte/04-styling%',
+			'apps/svelte.dev/content/docs/svelte/05-special-elements%',
+			'apps/svelte.dev/content/docs/svelte/06-runtime%',
+			'apps/svelte.dev/content/docs/svelte/07-misc%'
+		]
+	},
+	{
+		id: 'sveltekit-core',
+		title: 'SvelteKit Core Documentation',
+		description: 'Core SvelteKit documentation: getting started and core concepts',
+		patterns: [
+			'apps/svelte.dev/content/docs/kit/10-getting-started%',
+			'apps/svelte.dev/content/docs/kit/20-core-concepts%'
+		]
+	},
+	{
+		id: 'sveltekit-production',
+		title: 'SvelteKit Production Documentation',
+		description:
+			'Production SvelteKit documentation: build & deploy, advanced features, best practices',
+		patterns: [
+			'apps/svelte.dev/content/docs/kit/25-build-and-deploy%',
+			'apps/svelte.dev/content/docs/kit/30-advanced%',
+			'apps/svelte.dev/content/docs/kit/40-best-practices%'
+		]
+	},
+	{
+		id: 'sveltekit-complete',
+		title: 'Complete SvelteKit Documentation',
+		description: 'Complete SvelteKit documentation covering all sections',
+		patterns: [
+			'apps/svelte.dev/content/docs/kit/10-getting-started%',
+			'apps/svelte.dev/content/docs/kit/20-core-concepts%',
+			'apps/svelte.dev/content/docs/kit/25-build-and-deploy%',
+			'apps/svelte.dev/content/docs/kit/30-advanced%',
+			'apps/svelte.dev/content/docs/kit/40-best-practices%'
+		]
+	}
+]
 
 export const handler = createMcpHandler(
 	(server) => {
@@ -95,50 +174,117 @@ export const handler = createMcpHandler(
 			'svelte-doc',
 			new ResourceTemplate('svelte-llm://{+slug}', {
 				list: async () => {
+					const resources = []
+
+					// First, add preset resources
+					for (const preset of PRESET_CONFIGS) {
+						resources.push({
+							name: `📦 ${preset.title}`,
+							uri: `svelte-llm://${preset.id}`,
+							description: preset.description
+						})
+					}
+
+					// Then add individual documents
 					const documents = await ContentDbService.getContentByFilter({
 						path_pattern: 'apps/svelte.dev/content/docs/%'
 					})
 
-					logAlways(`Found ${documents.length} documents for resource listing`)
+					logAlways(`Found ${documents.length} individual documents for resource listing`)
 
-					return {
-						resources: documents.map((doc) => {
-							const title = getTitleFromMetadata(doc.metadata, doc.path)
-							const cleanPath = cleanDocumentationPath(doc.path)
+					for (const doc of documents) {
+						const title = getTitleFromMetadata(doc.metadata, doc.path)
+						const cleanPath = cleanDocumentationPath(doc.path)
 
-							return {
-								// Use title and clean path for better display
-								name: `${title} (${cleanPath})`,
-								// Use cleaned path in URI for consistency
-								uri: `svelte-llm://${cleanPath}`,
-								// Add description from metadata if available
-								description: doc.metadata?.description as string | undefined
-							}
+						resources.push({
+							// Use title and clean path for better display, prefix with 📄 to distinguish from presets
+							name: `📄 ${title} (${cleanPath})`,
+							// Use cleaned path with prefix to avoid conflicts with preset IDs
+							uri: `svelte-llm://doc/${cleanPath}`,
+							// Add description from metadata if available
+							description: doc.metadata?.description as string | undefined
 						})
 					}
+
+					logAlways(
+						`Returning ${resources.length} total resources (${PRESET_CONFIGS.length} presets + ${documents.length} individual docs)`
+					)
+
+					return { resources }
 				},
 				complete: {
 					slug: async (query) => {
-						// Use the new searchAllContent method to get all matching results
+						const suggestions = []
+
+						// Add preset completions first
+						for (const preset of PRESET_CONFIGS) {
+							if (
+								preset.id.toLowerCase().includes(query.toLowerCase()) ||
+								preset.title.toLowerCase().includes(query.toLowerCase())
+							) {
+								suggestions.push(preset.id)
+							}
+						}
+
+						// Then add individual document completions
 						const searchResults = await ContentDbService.searchAllContent(query)
+						const paths = searchResults.map((doc) => `doc/${cleanDocumentationPath(doc.path)}`)
 
-						// Return cleaned paths for consistency
-						const paths = searchResults.map((doc) => cleanDocumentationPath(doc.path))
-						logAlways(`Found ${paths.length} documents matching query: ${query}`)
+						suggestions.push(...paths)
 
-						return paths
+						logAlways(`Found ${suggestions.length} completions for query: ${query}`)
+
+						return suggestions
 					}
 				}
 			}),
 			async (uri, { slug }) => {
-				//TODO: What is right here?
 				// If array for some reason, use the first element
 				const slugString = Array.isArray(slug) ? slug[0] : slug
 
 				logAlways(`Resource requested with slug: ${slugString}`)
 
+				// Check if this is a preset request
+				const preset = PRESET_CONFIGS.find((p) => p.id === slugString)
+				if (preset) {
+					logAlways(`Serving preset resource: ${preset.id}`)
+
+					// Get aggregated content for this preset
+					const content = await ContentDistilledDbService.getContentByPathPatterns(preset.patterns)
+
+					if (!content || content.trim().length === 0) {
+						throw new Error(
+							`No content found for preset: ${preset.id}. The distilled content may not be available yet.`
+						)
+					}
+
+					return {
+						contents: [
+							{
+								uri: uri.toString(),
+								type: 'text',
+								text: content,
+								metadata: {
+									title: preset.title,
+									description: preset.description,
+									type: 'preset',
+									id: preset.id
+								}
+							}
+						]
+					}
+				}
+
+				// Handle individual document requests (with 'doc/' prefix)
+				let documentSlug = slugString
+				if (slugString.startsWith('doc/')) {
+					documentSlug = slugString.substring(4) // Remove 'doc/' prefix
+				}
+
+				logAlways(`Serving individual document with slug: ${documentSlug}`)
+
 				// First try intelligent search (by title or partial path)
-				let document = await searchSectionInDb(slugString)
+				let document = await searchSectionInDb(documentSlug)
 
 				// If not found, try exact path match with cleaned path
 				if (!document) {
@@ -147,23 +293,24 @@ export const handler = createMcpHandler(
 						path_pattern: 'apps/svelte.dev/content/docs/%'
 					})
 
-					document = allDocs.find((doc) => cleanDocumentationPath(doc.path) === slugString) || null
+					document =
+						allDocs.find((doc) => cleanDocumentationPath(doc.path) === documentSlug) || null
 				}
 
 				// If still not found, try with the full path pattern (for backward compatibility)
-				if (!document && !slugString.startsWith('apps/svelte.dev/content/')) {
-					const fullPath = `apps/svelte.dev/content/docs/${slugString}`
+				if (!document && !documentSlug.startsWith('apps/svelte.dev/content/')) {
+					const fullPath = `apps/svelte.dev/content/docs/${documentSlug}`
 					document = await ContentDbService.getContentByPath(fullPath)
 				}
 
 				// If still not found, try direct database path match (for backward compatibility)
 				if (!document) {
-					document = await ContentDbService.getContentByPath(slugString)
+					document = await ContentDbService.getContentByPath(documentSlug)
 				}
 
 				if (!document) {
 					throw new Error(
-						`Document not found for slug: ${slugString}. Try using a document title (e.g., "$state") or a valid path.`
+						`Document not found for slug: ${documentSlug}. Try using a document title (e.g., "$state") or a valid path.`
 					)
 				}
 
@@ -173,7 +320,7 @@ export const handler = createMcpHandler(
 				// Remove frontmatter from the content before returning it
 				const contentWithoutFrontmatter = removeFrontmatter(document.content)
 
-				logAlways(`Returning document: ${title} (${cleanPath})`)
+				logAlways(`Returning individual document: ${title} (${cleanPath})`)
 
 				return {
 					contents: [
@@ -185,7 +332,8 @@ export const handler = createMcpHandler(
 							metadata: {
 								title,
 								path: cleanPath,
-								originalPath: document.path
+								originalPath: document.path,
+								type: 'document'
 							}
 						}
 					]
