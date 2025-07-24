@@ -2,6 +2,7 @@ import { query } from '$lib/server/db'
 import type { DbContentDistilled, CreateContentDistilledInput } from '$lib/types/db'
 import { logAlways, logErrorAlways } from '$lib/log'
 import { ContentDbService } from './contentDb'
+import { cleanDocumentationPath } from '$lib/utils/pathUtils'
 
 export class ContentDistilledDbService {
 	static extractFilename(path: string): string {
@@ -62,6 +63,54 @@ export class ContentDistilledDbService {
 			throw new Error(
 				`Failed to get distilled content: ${error instanceof Error ? error.message : String(error)}`
 			)
+		}
+	}
+
+	/**
+	 * Search content by path patterns for MCP prompts
+	 * @param pathPatterns Array of path patterns to search for (e.g., ['%/docs/svelte/01-%', '%/docs/kit/20-%'])
+	 * @returns Formatted content string with headers
+	 */
+	static async getContentByPathPatterns(pathPatterns: string[]): Promise<string> {
+		try {
+			const allContent: Array<{ path: string; content: string }> = []
+
+			// For each pattern, find matching content
+			for (const pattern of pathPatterns) {
+				logAlways(`Searching distilled content with pattern: ${pattern}`)
+
+				const result = await query(
+					`SELECT path, content, metadata
+					FROM content_distilled 
+					WHERE path LIKE $1
+					ORDER BY path`,
+					[pattern]
+				)
+
+				for (const row of result.rows) {
+					const cleanPath = cleanDocumentationPath(row.path)
+					allContent.push({
+						path: cleanPath,
+						content: row.content
+					})
+				}
+			}
+
+			// Remove duplicates and format content
+			const uniqueContent = new Map<string, string>()
+			for (const item of allContent) {
+				if (!uniqueContent.has(item.path)) {
+					uniqueContent.set(item.path, `## ${item.path}\n\n${item.content}`)
+				}
+			}
+
+			const contentArray = Array.from(uniqueContent.values())
+			logAlways(`Found ${contentArray.length} unique documents for patterns`)
+
+			return contentArray.join('\n\n')
+		} catch (error) {
+			logErrorAlways('Error fetching content by path patterns:', error)
+			return ''
 		}
 	}
 

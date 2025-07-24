@@ -6,6 +6,7 @@ import { ContentDbService } from '$lib/server/contentDb'
 import type { DbContent } from '$lib/types/db'
 import { listSectionsHandler } from '$lib/handlers/listSectionsHandler'
 import { getDocumentationHandler } from '$lib/handlers/getDocumentationHandler'
+import { registerTemplatePrompts } from '$lib/mcpPrompts'
 import { logAlways, logErrorAlways } from '$lib/log'
 import {
 	cleanDocumentationPath,
@@ -81,6 +82,9 @@ export const handler = createMcpHandler(
 				}
 			}
 		)
+
+		// Register the new template-based prompts
+		registerTemplatePrompts(server)
 
 		server.resource(
 			'svelte-doc',
