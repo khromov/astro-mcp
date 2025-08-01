@@ -5,7 +5,8 @@
 
 	const endpoints = {
 		sync: '/api/sync-content',
-		'update-distilled': '/api/update-distilled'
+		'update-distilled': '/api/update-distilled',
+		'heap-snapshot': '/api/heap-snapshot'
 	}
 
 	// Load secret key from localStorage on mount
@@ -126,6 +127,14 @@
 				<span class="method">GET</span>
 				<a href="/api/scheduler-status">/api/scheduler-status</a>
 				<span class="description">Check background scheduler status</span>
+			</div>
+
+			<div class="endpoint" class:disabled={!secretKey.trim()}>
+				<span class="method">GET</span>
+				<a href={buildUrl(endpoints['heap-snapshot'])}
+					>{getDisplayText(endpoints['heap-snapshot'])}</a
+				>
+				<span class="description">Generate V8 heap snapshot for memory analysis</span>
 			</div>
 		</div>
 	</section>
