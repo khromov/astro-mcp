@@ -3,7 +3,7 @@ import type { RequestHandler } from './$types'
 import { env } from '$env/dynamic/private'
 import { dev } from '$app/environment'
 import { logAlways, logErrorAlways } from '$lib/log'
-import { v8 } from 'node:v8'
+import v8 from 'node:v8'
 import { existsSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 
