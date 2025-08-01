@@ -1,6 +1,7 @@
 import { json, error } from '@sveltejs/kit'
 import type { RequestHandler } from './$types'
 import { env } from '$env/dynamic/private'
+import { dev } from '$app/environment'
 import { logAlways, logErrorAlways } from '$lib/log'
 import { v8 } from 'node:v8'
 import { existsSync, mkdirSync } from 'node:fs'
@@ -22,8 +23,9 @@ export const GET: RequestHandler = async ({ url }) => {
 	}
 
 	try {
-		// Ensure the output directory exists
-		const outputDir = '/app/outputs'
+		// Use different output directories for dev vs production
+		const outputDir = dev ? './mount' : '/app/outputs'
+
 		if (!existsSync(outputDir)) {
 			logAlways('Creating outputs directory:', outputDir)
 			mkdirSync(outputDir, { recursive: true })
@@ -46,7 +48,8 @@ export const GET: RequestHandler = async ({ url }) => {
 		logAlways('Heap snapshot created successfully:', {
 			path: heapSnapshotPath,
 			size: stats.size,
-			created: stats.birthtime
+			created: stats.birthtime,
+			environment: dev ? 'development' : 'production'
 		})
 
 		return json({
@@ -59,6 +62,7 @@ export const GET: RequestHandler = async ({ url }) => {
 				created: stats.birthtime.toISOString(),
 				sizeFormatted: formatBytes(stats.size)
 			},
+			environment: dev ? 'development' : 'production',
 			timestamp: new Date().toISOString()
 		})
 	} catch (e) {
