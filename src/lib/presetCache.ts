@@ -2,9 +2,19 @@ import { ContentSyncService } from '$lib/server/contentSync'
 import { presets, DEFAULT_REPOSITORY } from '$lib/presets'
 import { log, logAlways, logErrorAlways } from '$lib/log'
 import { cleanDocumentationPath } from '$lib/utils/pathUtils'
+import { CacheDbService } from '$lib/server/cacheDb'
 
 // Maximum age of cached content in milliseconds (24 hours)
 export const MAX_CACHE_AGE_MS = 24 * 60 * 60 * 1000
+
+let cacheService: CacheDbService | null = null
+
+function getCacheService(): CacheDbService {
+	if (!cacheService) {
+		cacheService = new CacheDbService()
+	}
+	return cacheService
+}
 
 export async function getPresetContent(presetKey: string): Promise<string | null> {
 	try {
@@ -12,6 +22,22 @@ export async function getPresetContent(presetKey: string): Promise<string | null
 		if (!preset) {
 			log(`Preset not found: ${presetKey}`)
 			return null
+		}
+
+		// Check cache first
+		const cache = getCacheService()
+		const cacheKey = `preset:${presetKey}`
+		
+		try {
+			const cachedData = await cache.get(cacheKey)
+			if (cachedData) {
+				const cachedContent = cachedData.toString('utf8')
+				logAlways(`Using cached content for preset ${presetKey}`)
+				return cachedContent
+			}
+		} catch (cacheError) {
+			logErrorAlways(`Error reading cache for preset ${presetKey}:`, cacheError)
+			// Continue with normal flow if cache read fails
 		}
 
 		// Try to get files from the content table first
@@ -45,6 +71,16 @@ export async function getPresetContent(presetKey: string): Promise<string | null
 		const content = files.join('\n\n')
 
 		logAlways(`Generated content for ${presetKey} on-demand (${filesWithPaths.length} files)`)
+
+		// Cache the generated content for 1 hour (60 minutes)
+		try {
+			const contentBuffer = Buffer.from(content, 'utf8')
+			await cache.set(cacheKey, contentBuffer, 60) // 60 minutes TTL
+			logAlways(`Cached content for preset ${presetKey} (expires in 1 hour)`)
+		} catch (cacheError) {
+			logErrorAlways(`Error caching content for preset ${presetKey}:`, cacheError)
+			// Don't fail the request if caching fails
+		}
 
 		return content
 	} catch (error) {
@@ -128,5 +164,50 @@ export async function getPresetMetadata(presetKey: string): Promise<{
 	} catch (error) {
 		logErrorAlways(`Error getting preset metadata for ${presetKey}:`, error)
 		return null
+	}
+}
+
+/**
+ * Clear the cache for a specific preset
+ */
+export async function clearPresetCache(presetKey: string): Promise<boolean> {
+	try {
+		const cache = getCacheService()
+		const cacheKey = `preset:${presetKey}`
+		const success = await cache.delete(cacheKey)
+		
+		if (success) {
+			logAlways(`Cleared cache for preset ${presetKey}`)
+		}
+		
+		return success
+	} catch (error) {
+		logErrorAlways(`Error clearing cache for preset ${presetKey}:`, error)
+		return false
+	}
+}
+
+/**
+ * Clear cache for all presets
+ */
+export async function clearAllPresetCaches(): Promise<number> {
+	try {
+		const cache = getCacheService()
+		const allPresetKeys = Object.keys(presets)
+		let clearedCount = 0
+		
+		for (const presetKey of allPresetKeys) {
+			const cacheKey = `preset:${presetKey}`
+			const success = await cache.delete(cacheKey)
+			if (success) {
+				clearedCount++
+			}
+		}
+		
+		logAlways(`Cleared cache for ${clearedCount} presets`)
+		return clearedCount
+	} catch (error) {
+		logErrorAlways(`Error clearing all preset caches:`, error)
+		return 0
 	}
 }

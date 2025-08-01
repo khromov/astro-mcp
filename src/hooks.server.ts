@@ -13,7 +13,7 @@ const headers: Handle = async ({ event, resolve }) => {
 }
 
 const migration: Handle = async ({ event, resolve }) => {
-	logAlways('🛜 Host detected:', event.request.headers.get('host'))
+	//logAlways('🛜 Host detected:', event.request.headers.get('host'))
 	const hostRaw = event.request.headers.get('host') || null
 	const host = hostRaw ? hostRaw.split(':')[0] : null
 	event.locals.isOldHost = host === 'svelte-llm.khromov.se' || dev
