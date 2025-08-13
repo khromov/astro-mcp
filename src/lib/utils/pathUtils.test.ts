@@ -53,14 +53,14 @@ describe('pathUtils', () => {
 
 	describe('cleanTarballPath', () => {
 		it('should remove the first segment from tarball paths', () => {
-			const input = 'svelte.dev-main/apps/svelte.dev/content/docs/svelte/01-introduction.md'
-			const expected = 'apps/svelte.dev/content/docs/svelte/01-introduction.md'
+			const input = 'docs-main/src/content/docs/en/getting-started.mdx'
+			const expected = 'src/content/docs/en/getting-started.mdx'
 			expect(cleanTarballPath(input)).toBe(expected)
 		})
 
 		it('should handle paths with different repo prefixes', () => {
-			const input = 'svelte-12345/apps/svelte.dev/content/docs/kit/01-routing.md'
-			const expected = 'apps/svelte.dev/content/docs/kit/01-routing.md'
+			const input = 'docs-12345/src/content/docs/en/guides/routing.mdx'
+			const expected = 'src/content/docs/en/guides/routing.mdx'
 			expect(cleanTarballPath(input)).toBe(expected)
 		})
 
@@ -273,48 +273,45 @@ title: Only Frontmatter
 	describe('integration tests', () => {
 		it('should work together for typical documentation workflow', () => {
 			// Simulate a typical path from tarball to display
-			const tarballPath = 'svelte.dev-main/apps/svelte.dev/content/docs/svelte/01-introduction.md'
+			const tarballPath = 'docs-main/src/content/docs/en/getting-started.mdx'
 
 			// Clean tarball path
 			const cleanedFromTarball = cleanTarballPath(tarballPath)
-			expect(cleanedFromTarball).toBe('apps/svelte.dev/content/docs/svelte/01-introduction.md')
+			expect(cleanedFromTarball).toBe('src/content/docs/en/getting-started.mdx')
 
 			// This would be stored in DB and later cleaned for display
 			const cleanedForDisplay = cleanDocumentationPath(cleanedFromTarball)
-			expect(cleanedForDisplay).toBe('docs/svelte/01-introduction.md')
+			expect(cleanedForDisplay).toBe('docs/en/getting-started.mdx')
 
 			// Extract title for metadata
 			const title = extractTitleFromPath(cleanedFromTarball)
-			expect(title).toBe('introduction')
+			expect(title).toBe('getting-started')
 		})
 
-		it('should handle SvelteKit paths through full workflow', () => {
-			const tarballPath = 'svelte.dev-main/apps/svelte.dev/content/docs/kit/01-routing.md'
+		it('should handle Astro guides paths through full workflow', () => {
+			const tarballPath = 'docs-main/src/content/docs/en/guides/routing.mdx'
 
 			const cleanedFromTarball = cleanTarballPath(tarballPath)
-			expect(cleanedFromTarball).toBe('apps/svelte.dev/content/docs/kit/01-routing.md')
+			expect(cleanedFromTarball).toBe('src/content/docs/en/guides/routing.mdx')
 
 			const cleanedForDisplay = cleanDocumentationPath(cleanedFromTarball)
-			expect(cleanedForDisplay).toBe('docs/kit/01-routing.md')
+			expect(cleanedForDisplay).toBe('docs/en/guides/routing.mdx')
 
 			const title = extractTitleFromPath(cleanedFromTarball)
 			expect(title).toBe('routing')
 		})
 
-		it('should handle tutorial paths through full workflow', () => {
-			const tarballPath =
-				'svelte.dev-main/apps/svelte.dev/content/tutorial/01-introduction/01-hello-world.md'
+		it('should handle Astro reference paths through full workflow', () => {
+			const tarballPath = 'docs-main/src/content/docs/en/reference/api-reference.mdx'
 
 			const cleanedFromTarball = cleanTarballPath(tarballPath)
-			expect(cleanedFromTarball).toBe(
-				'apps/svelte.dev/content/tutorial/01-introduction/01-hello-world.md'
-			)
+			expect(cleanedFromTarball).toBe('src/content/docs/en/reference/api-reference.mdx')
 
 			const cleanedForDisplay = cleanDocumentationPath(cleanedFromTarball)
-			expect(cleanedForDisplay).toBe('tutorial/01-introduction/01-hello-world.md')
+			expect(cleanedForDisplay).toBe('docs/en/reference/api-reference.mdx')
 
 			const title = extractTitleFromPath(cleanedFromTarball)
-			expect(title).toBe('hello-world')
+			expect(title).toBe('api-reference')
 		})
 
 		it('should handle content processing with frontmatter removal', () => {
