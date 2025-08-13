@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { SITE_URL } from '$lib/constants'
 	import { Toaster } from 'svelte-french-toast'
-	import MigrationBanner from '$lib/components/MigrationBanner.svelte'
 
 	let { children, data } = $props()
 
@@ -18,9 +17,8 @@
 	<meta property="og:image" content="{SITE_URL}/og.jpg" />
 </svelte:head>
 
-<MigrationBanner show={data.isOldHost} />
 
-<div class="layout" class:has-migration-banner={data.isOldHost}>
+<div class="layout">
 	<a
 		target="_blank"
 		href="https://github.com/khromov/llmctx"
@@ -63,9 +61,6 @@
 		min-height: 100vh;
 	}
 
-	.layout.has-migration-banner {
-		padding-top: 20px;
-	}
 
 	.github-corner {
 		position: fixed;
@@ -108,9 +103,4 @@
 		}
 	}
 
-	@media (max-width: 768px) {
-		.layout.has-migration-banner {
-			padding-top: 16px;
-		}
-	}
 </style>

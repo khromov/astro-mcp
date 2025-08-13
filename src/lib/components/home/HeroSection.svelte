@@ -1,8 +1,7 @@
 <script lang="ts">
-	let { isOldHost = false }: { isOldHost?: boolean } = $props()
 </script>
 
-<header class="hero" class:rounded-top={isOldHost}>
+<header class="hero">
 	<div class="hero-content">
 		<div class="logo">astro-llm</div>
 		<h1>Astro documentation for AI assistants</h1>
@@ -31,9 +30,6 @@
 		border-radius: 0 0 20px 20px;
 	}
 
-	.hero.rounded-top {
-		border-radius: 20px 20px 20px 20px;
-	}
 
 	.hero-content {
 		max-width: 800px;
@@ -91,10 +87,6 @@
 			padding: 60px 0 40px 0;
 		}
 
-		.hero.rounded-top {
-			border-radius: 20px 20px 20px 20px;
-			margin: 0 8px 40px 8px;
-		}
 
 		.hero-content {
 			padding: 0 16px;

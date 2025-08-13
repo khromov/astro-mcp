@@ -21,7 +21,7 @@
 </script>
 
 <main>
-	<HeroSection isOldHost={data.isOldHost} />
+	<HeroSection />
 
 	<McpSection sseEndpoint={SSE_ENDPOINT} streamableEndpoint={STREAMABLE_ENDPOINT} />
 

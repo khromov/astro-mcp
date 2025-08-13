@@ -12,14 +12,6 @@ const headers: Handle = async ({ event, resolve }) => {
 	return response
 }
 
-const migration: Handle = async ({ event, resolve }) => {
-	//logAlways('🛜 Host detected:', event.request.headers.get('host'))
-	const hostRaw = event.request.headers.get('host') || null
-	const host = hostRaw ? hostRaw.split(':')[0] : null
-	event.locals.isOldHost = host === 'svelte-llm.khromov.se' || dev
-	const response = await resolve(event)
-	return response
-}
 
 const logger: Handle = async ({ event, resolve }) => {
 	const requestStartTime = Date.now()
@@ -50,7 +42,7 @@ const logger: Handle = async ({ event, resolve }) => {
 	return response
 }
 
-export const handle: Handle = sequence(logger, headers, migration)
+export const handle: Handle = sequence(logger, headers)
 
 export const init: ServerInit = async () => {
 	logAlways('Server initializing...')

@@ -100,8 +100,7 @@ async function fetchDistilledVersions(presetKey: string): Promise<{
 	}
 }
 
-export const load: PageServerLoad = async ({ parent }) => {
-	const { isOldHost } = await parent()
+export const load: PageServerLoad = async () => {
 
 	logAlways(`Starting parallel fetch of sizes for ${ALL_PRESET_KEYS.length} presets`)
 
@@ -137,7 +136,6 @@ export const load: PageServerLoad = async ({ parent }) => {
 	logAlways('Returning streaming promises for preset sizes and distilled versions')
 
 	return {
-		isOldHost,
 		presetSizes: presetSizePromises,
 		distilledVersions: distilledVersionsPromises
 	}
