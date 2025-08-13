@@ -46,6 +46,7 @@ export interface DbContent {
 	filename: string
 	content: string
 	size_bytes: number
+	language?: string // Language field
 	metadata: Record<string, unknown>
 	created_at: Date
 	updated_at: Date
@@ -57,6 +58,7 @@ export interface DbContentDistilled {
 	filename: string
 	content: string
 	size_bytes: number
+	language?: string // Added language field for consistency
 	metadata: Record<string, unknown>
 	created_at: Date
 	updated_at: Date
@@ -88,6 +90,7 @@ export interface CreateContentInput {
 	filename: string
 	content: string
 	size_bytes: number
+	language?: string // Language field
 	metadata?: Record<string, unknown>
 }
 
@@ -96,11 +99,13 @@ export interface CreateContentDistilledInput {
 	filename: string
 	content: string
 	size_bytes: number
+	language?: string // Added language field
 	metadata?: Record<string, unknown>
 }
 
 export interface ContentFilter {
 	path_pattern?: string // For glob pattern matching
+	language?: string // Language filter
 }
 
 export interface ContentStats {

@@ -10,7 +10,7 @@ export type PresetConfig = {
 	minimize?: MinimizeOptions
 	distilled?: boolean
 	distilledFilenameBase?: string
-	languageCode?: string // Added for language-specific presets
+	languageCode?: string // Language code for filtering
 	isLanguageVariant?: boolean // Flag to identify language variants
 }
 
@@ -22,6 +22,8 @@ export function generateLanguagePreset(
 ): PresetConfig {
 	const isEnglish = languageCode === 'en'
 
+	// For language-specific presets, we still use glob patterns but they're more efficient
+	// because the database already has the language column indexed
 	return {
 		...basePreset,
 		title: isEnglish ? 'Astro (English)' : `Astro (${languageName})`,
@@ -51,7 +53,8 @@ export const astroPresetsBase: Record<string, PresetConfig> = {
 		title: '🔮 Astro (LLM Distilled - English)',
 		description:
 			'AI-condensed version of the English Astro docs focused on code examples and key concepts',
-		glob: ['**/src/content/docs/en/**/*.md', '**/src/content/docs/en/**/*.mdx'], // Now English-only
+		glob: ['**/src/content/docs/en/**/*.md', '**/src/content/docs/en/**/*.mdx'], // English-only
+		languageCode: 'en', // Explicitly set language code for distilled preset
 		minimize: {
 			normalizeWhitespace: false,
 			removeLegacy: true,

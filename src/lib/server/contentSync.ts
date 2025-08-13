@@ -41,6 +41,7 @@ export class ContentSyncService {
 			upserted_files: number
 			deleted_files: number
 			unchanged_files: number
+			languages_found: string[]
 		}
 		timestamp: string
 	}> {
@@ -52,6 +53,7 @@ export class ContentSyncService {
 		let upsertedFiles = 0
 		let deletedFiles = 0
 		let unchangedFiles = 0
+		const languagesFound = new Set<string>()
 
 		try {
 			logAlways(`Step 1: Syncing repository ${owner}/${repoName}`)
@@ -84,8 +86,13 @@ export class ContentSyncService {
 			for (const file of filesWithPaths) {
 				const filename = ContentDbService.extractFilename(file.path)
 				const sizeBytes = new TextEncoder().encode(file.content).length
-
 				const metadata = ContentDbService.extractFrontmatter(file.content)
+
+				// Extract language from path
+				const language = ContentDbService.extractLanguageFromPath(file.path)
+				if (language) {
+					languagesFound.add(language)
+				}
 
 				const hasChanged = await ContentDbService.hasContentChanged(file.path, file.content)
 
@@ -95,6 +102,7 @@ export class ContentSyncService {
 						filename,
 						content: file.content,
 						size_bytes: sizeBytes,
+						language, // Include the extracted language
 						metadata
 					})
 				} else {
@@ -142,6 +150,7 @@ export class ContentSyncService {
 			logAlways(
 				`Sync completed successfully: ${upsertedFiles} upserted, ${deletedFiles} deleted, ${unchangedFiles} unchanged`
 			)
+			logAlways(`Languages found: ${Array.from(languagesFound).join(', ')}`)
 
 			return {
 				success: true,
@@ -149,7 +158,8 @@ export class ContentSyncService {
 				sync_details: {
 					upserted_files: upsertedFiles,
 					deleted_files: deletedFiles,
-					unchanged_files: unchangedFiles
+					unchanged_files: unchangedFiles,
+					languages_found: Array.from(languagesFound)
 				},
 				timestamp: new Date().toISOString()
 			}

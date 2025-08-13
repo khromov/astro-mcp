@@ -13,13 +13,17 @@ export class ContentDistilledDbService {
 		input: CreateContentDistilledInput
 	): Promise<DbContentDistilled> {
 		try {
+			// Auto-extract language if not provided (reuse logic from ContentDbService)
+			const language = input.language || ContentDbService.extractLanguageFromPath(input.path)
+
 			const result = await query(
 				`INSERT INTO content_distilled (
-					path, filename, content, size_bytes, metadata
-				) VALUES ($1, $2, $3, $4, $5)
+					path, filename, content, size_bytes, language, metadata
+				) VALUES ($1, $2, $3, $4, $5, $6)
 				ON CONFLICT (path) DO UPDATE SET
 					content = EXCLUDED.content,
 					size_bytes = EXCLUDED.size_bytes,
+					language = EXCLUDED.language,
 					metadata = EXCLUDED.metadata,
 					updated_at = CURRENT_TIMESTAMP
 				RETURNING *`,
@@ -28,11 +32,12 @@ export class ContentDistilledDbService {
 					input.filename,
 					input.content,
 					input.size_bytes,
+					language,
 					input.metadata ? JSON.stringify(input.metadata) : '{}'
 				]
 			)
 
-			logAlways(`Upserted distilled content for ${input.path}`)
+			logAlways(`Upserted distilled content for ${input.path} (language: ${language})`)
 			return result.rows[0] as DbContentDistilled
 		} catch (error) {
 			logErrorAlways(`Failed to upsert distilled content for ${input.path}:`, error)
@@ -111,6 +116,24 @@ export class ContentDistilledDbService {
 		} catch (error) {
 			logErrorAlways('Error fetching content by path patterns:', error)
 			return ''
+		}
+	}
+
+	/**
+	 * Get content by language filter
+	 */
+	static async getContentByLanguage(language: string): Promise<DbContentDistilled[]> {
+		try {
+			const result = await query(
+				`SELECT * FROM content_distilled WHERE language = $1 ORDER BY path`,
+				[language]
+			)
+			return result.rows as DbContentDistilled[]
+		} catch (error) {
+			logErrorAlways(`Failed to get distilled content for language ${language}:`, error)
+			throw new Error(
+				`Failed to get distilled content by language: ${error instanceof Error ? error.message : String(error)}`
+			)
 		}
 	}
 

@@ -11,6 +11,7 @@ import type { RequestHandler } from './$types'
 import { AnthropicProvider, type AnthropicBatchRequest } from '$lib/anthropic'
 import { PresetDbService } from '$lib/server/presetDb'
 import { ContentDistilledDbService } from '$lib/server/contentDistilledDb'
+import { ContentDbService } from '$lib/server/contentDb'
 import { DistillablePreset } from '$lib/types/db'
 import type { DbDistillationJob, CreateContentDistilledInput } from '$lib/types/db'
 import { logAlways, logErrorAlways } from '$lib/log'
@@ -209,14 +210,20 @@ export const GET: RequestHandler = async ({ url }) => {
 		const finalContent = distilledContent + prompt
 
 		logAlways(`Storing ${successfulResults.length} individual distilled files`)
+
+		// Extract language for each file and include it in the distilled content input
 		const distilledContentInputs: CreateContentDistilledInput[] = successfulResults.map(
-			(result) => ({
-				path: result.path,
-				filename: ContentDistilledDbService.extractFilename(result.path),
-				content: result.content,
-				size_bytes: new TextEncoder().encode(result.content).length,
-				metadata: {}
-			})
+			(result) => {
+				const language = ContentDbService.extractLanguageFromPath(result.path)
+				return {
+					path: result.path,
+					filename: ContentDistilledDbService.extractFilename(result.path),
+					content: result.content,
+					size_bytes: new TextEncoder().encode(result.content).length,
+					language, // Include the extracted language
+					metadata: {}
+				}
+			}
 		)
 
 		await ContentDistilledDbService.batchUpsertContentDistilled(distilledContentInputs)

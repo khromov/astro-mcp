@@ -41,31 +41,25 @@ const LANGUAGE_NAMES: Record<string, string> = {
 
 export class LanguageService {
 	/**
-	 * Extract available languages from the content table
-	 * Parses the path field to find unique language codes
+	 * Get available languages from the content table using the language column
+	 * Much simpler and more efficient than parsing paths
 	 */
 	static async getAvailableLanguages(): Promise<LanguageInfo[]> {
 		try {
-			// Query to extract language codes from paths and count files per language
-			// The language code is the directory immediately after 'src/content/docs/'
+			// Simple query using the language column
 			const result = await query(`
 				SELECT 
-					CASE 
-						WHEN path LIKE 'src/content/docs/%' THEN 
-							SPLIT_PART(SUBSTRING(path FROM 'src/content/docs/(.*)'), '/', 1)
-						ELSE NULL
-					END AS language_code,
+					language AS language_code,
 					COUNT(*) AS file_count
 				FROM content
-				WHERE path LIKE 'src/content/docs/%'
-				GROUP BY language_code
-				HAVING SPLIT_PART(SUBSTRING(path FROM 'src/content/docs/(.*)'), '/', 1) IS NOT NULL
+				WHERE language IS NOT NULL
+				GROUP BY language
 				ORDER BY 
 					CASE 
-						WHEN SPLIT_PART(SUBSTRING(path FROM 'src/content/docs/(.*)'), '/', 1) = 'en' THEN 0
+						WHEN language = 'en' THEN 0
 						ELSE 1
 					END,
-					language_code
+					language
 			`)
 
 			const languages: LanguageInfo[] = result.rows.map((row) => ({
@@ -75,6 +69,10 @@ export class LanguageService {
 			}))
 
 			logAlways(`Found ${languages.length} languages in content table`)
+			languages.forEach((lang) => {
+				logAlways(`  - ${lang.code} (${lang.name}): ${lang.fileCount} files`)
+			})
+
 			return languages
 		} catch (error) {
 			logErrorAlways('Error fetching available languages:', error)
@@ -97,8 +95,8 @@ export class LanguageService {
 			const result = await query(
 				`SELECT COUNT(*) as count 
 				FROM content 
-				WHERE path LIKE $1`,
-				[`src/content/docs/${languageCode}/%`]
+				WHERE language = $1`,
+				[languageCode]
 			)
 
 			return parseInt(result.rows[0]?.count || '0')
@@ -120,5 +118,29 @@ export class LanguageService {
 	 */
 	static isValidLanguage(code: string): boolean {
 		return code === 'en' || code in LANGUAGE_NAMES
+	}
+
+	/**
+	 * Get all unique languages (just the codes) as a simple list
+	 */
+	static async getLanguageCodes(): Promise<string[]> {
+		try {
+			const result = await query(`
+				SELECT DISTINCT language 
+				FROM content 
+				WHERE language IS NOT NULL
+				ORDER BY 
+					CASE 
+						WHEN language = 'en' THEN 0
+						ELSE 1
+					END,
+					language
+			`)
+
+			return result.rows.map((row) => row.language)
+		} catch (error) {
+			logErrorAlways('Error fetching language codes:', error)
+			return ['en'] // Return English as fallback
+		}
 	}
 }

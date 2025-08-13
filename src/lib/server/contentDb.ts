@@ -22,15 +22,36 @@ export class ContentDbService {
 		return path.split('/').pop() || path
 	}
 
+	/**
+	 * Extract language code from a documentation path
+	 * @param path The file path (e.g., 'src/content/docs/en/guide.md')
+	 * @returns The language code (e.g., 'en') or null if not a docs path
+	 */
+	static extractLanguageFromPath(path: string): string | null {
+		if (!path.startsWith('src/content/docs/')) {
+			return null
+		}
+
+		// Extract the part after 'src/content/docs/' and get the first segment
+		const afterDocs = path.substring('src/content/docs/'.length)
+		const languageCode = afterDocs.split('/')[0]
+
+		return languageCode || null
+	}
+
 	static async upsertContent(input: CreateContentInput): Promise<DbContent> {
 		try {
+			// Auto-extract language if not provided
+			const language = input.language || ContentDbService.extractLanguageFromPath(input.path)
+
 			const result = await query(
 				`INSERT INTO content (
-					path, filename, content, size_bytes, metadata
-				) VALUES ($1, $2, $3, $4, $5)
+					path, filename, content, size_bytes, language, metadata
+				) VALUES ($1, $2, $3, $4, $5, $6)
 				ON CONFLICT (path) DO UPDATE SET
 					content = EXCLUDED.content,
 					size_bytes = EXCLUDED.size_bytes,
+					language = EXCLUDED.language,
 					metadata = EXCLUDED.metadata,
 					updated_at = CURRENT_TIMESTAMP
 				RETURNING *`,
@@ -39,11 +60,12 @@ export class ContentDbService {
 					input.filename,
 					input.content,
 					input.size_bytes,
+					language,
 					input.metadata ? JSON.stringify(input.metadata) : '{}'
 				]
 			)
 
-			logAlways(`Upserted content for ${input.path}`)
+			logAlways(`Upserted content for ${input.path} (language: ${language})`)
 			return result.rows[0] as DbContent
 		} catch (error) {
 			logErrorAlways(`Failed to upsert content for ${input.path}:`, error)
@@ -89,6 +111,12 @@ export class ContentDbService {
 				paramCount++
 			}
 
+			if (filter.language) {
+				conditions.push(`language = $${paramCount}`)
+				params.push(filter.language)
+				paramCount++
+			}
+
 			const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
 			const filterQueryStr = `SELECT * FROM content ${whereClause} ORDER BY path`
 
@@ -108,7 +136,7 @@ export class ContentDbService {
 	static async searchContent<T extends TableName>(
 		searchQuery: string,
 		tableName: T,
-		pathPattern: string = 'apps/svelte.dev/content/docs/%'
+		pathPattern: string = 'src/content/docs/%'
 	): Promise<TableTypeMap[T] | null> {
 		try {
 			const lowerQuery = searchQuery.toLowerCase()
@@ -178,7 +206,7 @@ export class ContentDbService {
 
 	static async searchAllContent(
 		searchQuery: string,
-		pathPattern: string = 'apps/svelte.dev/content/docs/%',
+		pathPattern: string = 'src/content/docs/%',
 		limit: number = 50
 	): Promise<DbContent[]> {
 		try {
@@ -231,7 +259,7 @@ export class ContentDbService {
 	}
 
 	static async getDocumentationSections(
-		pathPattern: string = 'apps/svelte.dev/content/docs/%',
+		pathPattern: string = 'src/content/docs/%',
 		minContentLength: number = 100
 	): Promise<Array<{ path: string; metadata: Record<string, unknown>; content: string }>> {
 		try {
