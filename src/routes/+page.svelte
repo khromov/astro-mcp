@@ -14,8 +14,8 @@
 	// Get the streamed data from the load function
 	let { data }: { data: PageData } = $props()
 
-	const SSE_ENDPOINT = 'https://astro-llm.stanislav.garden/mcp/sse'
-	const STREAMABLE_ENDPOINT = 'https://astro-llm.stanislav.garden/mcp/mcp'
+	const SSE_ENDPOINT = 'https://astro-mcp.stanislav.garden/mcp/sse'
+	const STREAMABLE_ENDPOINT = 'https://astro-mcp.stanislav.garden/mcp/mcp'
 
 	const astroPresetsFormatted = transformAndSortPresets(astroPresets)
 </script>

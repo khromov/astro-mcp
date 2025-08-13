@@ -1,13 +1,13 @@
 ## astro-llm
 
-LLM presets and MCP for Astro. Visit the site at [astro-llm.stanislav.garden](https://astro-llm.stanislav.garden).
+LLM presets and MCP for Astro. Visit the site at [astro-mcp.stanislav.garden](https://astro-mcp.stanislav.garden).
 
 ## MCP Endpoint
 
 This service provides an MCP (Model Context Protocol) endpoint for use with AI assistants:
 
-- **SSE (Claude Desktop)**: `https://astro-llm.stanislav.garden/mcp/sse`
-- **Streamable HTTP (most other clients)**: `https://astro-llm.stanislav.garden/mcp/mcp`
+- **SSE (Claude Desktop)**: `https://astro-mcp.stanislav.garden/mcp/sse`
+- **Streamable HTTP (most other clients)**: `https://astro-mcp.stanislav.garden/mcp/mcp`
 
 # Setup
 
@@ -33,7 +33,7 @@ You can also visit http://localhost:5173/admin to see all the "hidden" endpoints
 
 ## Supported presets
 
-Visit [astro-llm.stanislav.garden](https://astro-llm.stanislav.garden) to see all presets.
+Visit [astro-mcp.stanislav.garden](https://astro-mcp.stanislav.garden) to see all presets.
 
 ### Adding presets
 

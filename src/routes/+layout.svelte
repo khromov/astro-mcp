@@ -4,7 +4,7 @@
 
 	let { children, data } = $props()
 
-	const TITLE = 'astro-llm - Astro Developer documentation in an LLM-ready format'
+	const TITLE = 'astro-mcp - Astro Developer documentation MCP and distilled llms.txt'
 </script>
 
 <svelte:head>
@@ -16,7 +16,6 @@
 	<meta property="og:url" content={SITE_URL} />
 	<meta property="og:image" content="{SITE_URL}/og.jpg" />
 </svelte:head>
-
 
 <div class="layout">
 	<a
@@ -61,7 +60,6 @@
 		min-height: 100vh;
 	}
 
-
 	.github-corner {
 		position: fixed;
 		top: 0;
@@ -102,5 +100,4 @@
 			animation: octocat-wave 560ms ease-in-out;
 		}
 	}
-
 </style>

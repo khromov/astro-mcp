@@ -6,7 +6,7 @@
 		}
 	},
 	"mcpServers": {
-		"svelte-llm-local": {
+		"astro-mcp-local": {
 			"type": "sse",
 			"url": "http://localhost:5173/mcp/sse"
 		}
