@@ -1,12 +1,12 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { ContentDistilledDbService } from '$lib/server/contentDistilledDb'
-import { SVELTE_5_PROMPT } from '$lib/utils/prompts'
+import { ASTRO_PROMPT } from '$lib/utils/prompts'
 import { PRESET_CONFIGS } from '$lib/mcpPresets'
 
 /**
  * Register template-based prompts for documentation injection
  * These prompts automatically fetch and inject relevant documentation content
- * based on predefined path patterns for different Svelte/SvelteKit sections
+ * based on predefined path patterns for different Astro sections
  */
 export function registerTemplatePrompts(server: McpServer): void {
 	// Register prompts for each preset configuration
@@ -20,7 +20,7 @@ export function registerTemplatePrompts(server: McpServer): void {
 			},
 			async () => {
 				const content = await ContentDistilledDbService.getContentByPathPatterns(preset.patterns)
-				const promptText = `${SVELTE_5_PROMPT}\n\n${preset.title}:\n\n${content}`
+				const promptText = `${ASTRO_PROMPT}\n\n${preset.title}:\n\n${content}`
 
 				return {
 					messages: [

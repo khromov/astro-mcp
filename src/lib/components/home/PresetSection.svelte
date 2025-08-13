@@ -89,7 +89,7 @@
 		left: 0;
 		width: 60px;
 		height: 3px;
-		background: linear-gradient(90deg, #ff3e00 0%, #ff6b35 100%);
+		background: linear-gradient(90deg, #000000 0%, #4a4a4a 100%);
 		border-radius: 2px;
 	}
 

@@ -30,7 +30,7 @@ export const GET: RequestHandler = async ({ url }) => {
 	}
 
 	const distilledPreset = Object.values(presets).find(
-		(preset) => preset.distilled && preset.distilledFilenameBase === 'svelte-complete-distilled'
+		(preset) => preset.distilled && preset.distilledFilenameBase === 'astro-distilled'
 	)
 
 	if (!distilledPreset) {
@@ -86,7 +86,7 @@ export const GET: RequestHandler = async ({ url }) => {
 		const anthropic = new AnthropicProvider('claude-sonnet-4-20250514')
 
 		distillationJob = await PresetDbService.createDistillationJob({
-			preset_name: DistillablePreset.SVELTE_COMPLETE_DISTILLED,
+			preset_name: DistillablePreset.ASTRO_DISTILLED,
 			status: 'pending',
 			model_used: anthropic.getModelIdentifier(),
 			total_files: filesToProcess.length,
@@ -191,14 +191,6 @@ export const GET: RequestHandler = async ({ url }) => {
 
 		const successfulResults = processedResults.filter((result) => result.content)
 
-		// Split results into Svelte and SvelteKit categories based on the new path structure
-		const svelteResults = successfulResults.filter((result) =>
-			result.path.includes('apps/svelte.dev/content/docs/svelte/')
-		)
-		const svelteKitResults = successfulResults.filter((result) =>
-			result.path.includes('apps/svelte.dev/content/docs/kit/')
-		)
-
 		const createContentFromResults = (results: typeof successfulResults) => {
 			const contentParts = results.map((result) => {
 				// Use the unified path utility to clean paths for display
@@ -210,17 +202,11 @@ export const GET: RequestHandler = async ({ url }) => {
 
 		const distilledContent = createContentFromResults(successfulResults)
 
-		const svelteContent = createContentFromResults(svelteResults)
-
-		const svelteKitContent = createContentFromResults(svelteKitResults)
-
 		const prompt = distilledPreset.prompt
 			? `\n\nInstructions for LLMs: <s>${distilledPreset.prompt}</s>`
 			: ''
 
 		const finalContent = distilledContent + prompt
-		const finalSvelteContent = svelteContent + prompt
-		const finalSvelteKitContent = svelteKitContent + prompt
 
 		logAlways(`Storing ${successfulResults.length} individual distilled files`)
 		const distilledContentInputs: CreateContentDistilledInput[] = successfulResults.map(
@@ -246,7 +232,7 @@ export const GET: RequestHandler = async ({ url }) => {
 
 		try {
 			await PresetDbService.createDistillation({
-				preset_name: DistillablePreset.SVELTE_COMPLETE_DISTILLED,
+				preset_name: DistillablePreset.ASTRO_DISTILLED,
 				version: 'latest',
 				content: finalContent,
 				size_kb: Math.floor(new TextEncoder().encode(finalContent).length / 1024),
@@ -255,47 +241,11 @@ export const GET: RequestHandler = async ({ url }) => {
 			})
 
 			await PresetDbService.createDistillation({
-				preset_name: DistillablePreset.SVELTE_COMPLETE_DISTILLED,
+				preset_name: DistillablePreset.ASTRO_DISTILLED,
 				version: dateStr,
 				content: finalContent,
 				size_kb: Math.floor(new TextEncoder().encode(finalContent).length / 1024),
 				document_count: successfulResults.length,
-				distillation_job_id: distillationJob?.id
-			})
-
-			await PresetDbService.createDistillation({
-				preset_name: DistillablePreset.SVELTE_DISTILLED,
-				version: 'latest',
-				content: finalSvelteContent,
-				size_kb: Math.floor(new TextEncoder().encode(finalSvelteContent).length / 1024),
-				document_count: svelteResults.length,
-				distillation_job_id: distillationJob?.id
-			})
-
-			await PresetDbService.createDistillation({
-				preset_name: DistillablePreset.SVELTE_DISTILLED,
-				version: dateStr,
-				content: finalSvelteContent,
-				size_kb: Math.floor(new TextEncoder().encode(finalSvelteContent).length / 1024),
-				document_count: svelteResults.length,
-				distillation_job_id: distillationJob?.id
-			})
-
-			await PresetDbService.createDistillation({
-				preset_name: DistillablePreset.SVELTEKIT_DISTILLED,
-				version: 'latest',
-				content: finalSvelteKitContent,
-				size_kb: Math.floor(new TextEncoder().encode(finalSvelteKitContent).length / 1024),
-				document_count: svelteKitResults.length,
-				distillation_job_id: distillationJob?.id
-			})
-
-			await PresetDbService.createDistillation({
-				preset_name: DistillablePreset.SVELTEKIT_DISTILLED,
-				version: dateStr,
-				content: finalSvelteKitContent,
-				size_kb: Math.floor(new TextEncoder().encode(finalSvelteKitContent).length / 1024),
-				document_count: svelteKitResults.length,
 				distillation_job_id: distillationJob?.id
 			})
 
@@ -319,17 +269,13 @@ export const GET: RequestHandler = async ({ url }) => {
 			minimizeApplied: !!distilledPreset.minimize,
 			resultsReceived: results.length,
 			successfulResults: successfulResults.length,
-			svelteResults: svelteResults.length,
-			svelteKitResults: svelteKitResults.length,
 			distillationJobId: distillationJob?.id,
 			tokenUsage: {
 				totalInputTokens,
 				totalOutputTokens
 			},
 			bytes: {
-				combined: finalContent.length,
-				svelte: finalSvelteContent.length,
-				svelteKit: finalSvelteKitContent.length
+				content: finalContent.length
 			}
 		})
 	} catch (e) {

@@ -40,32 +40,16 @@ export const listSectionsHandler = async () => {
 
 		sections.sort((a, b) => a.filePath.localeCompare(b.filePath))
 
-		// Group by Svelte vs SvelteKit using cleaned paths (without leading slash)
-		const svelteSections = sections.filter((s) => s.filePath.includes('docs/svelte/'))
-		const svelteKitSections = sections.filter((s) => s.filePath.includes('docs/kit/'))
-
-		let output = ''
-
-		if (svelteSections.length > 0) {
-			output += '# Svelte\n'
-			output +=
-				svelteSections
-					.map((section) => `* title: ${section.title}, path: ${section.filePath}`)
-					.join('\n') + '\n\n'
-		}
-
-		if (svelteKitSections.length > 0) {
-			output += '# SvelteKit\n'
-			output += svelteKitSections
-				.map((section) => `* title: ${section.title}, path: ${section.filePath}`)
-				.join('\n')
-		}
+		let output = '# Astro Documentation\n'
+		output +=
+			sections.map((section) => `* title: ${section.title}, path: ${section.filePath}`).join('\n') +
+			'\n\n'
 
 		return {
 			content: [
 				{
 					type: 'text' as const,
-					text: `📋 Available documentation sections:\n\n${output}\n\nUse get_documentation with a section name to retrieve specific content for a section.`
+					text: `📋 Available Astro documentation sections:\n\n${output}\n\nUse get_documentation with a section name to retrieve specific content for a section.`
 				}
 			]
 		}

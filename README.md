@@ -1,13 +1,13 @@
-## svelte-llm
+## astro-llm
 
-LLM presets and MCP for Svelte 5 and SvelteKit. Visit the site at [svelte-llm.stanislav.garden](https://svelte-llm.stanislav.garden).
+LLM presets and MCP for Astro. Visit the site at [astro-llm.stanislav.garden](https://astro-llm.stanislav.garden).
 
 ## MCP Endpoint
 
 This service provides an MCP (Model Context Protocol) endpoint for use with AI assistants:
 
-- **SSE (Claude Desktop)**: `https://svelte-llm.stanislav.garden/mcp/sse`
-- **Streamable HTTP (most other clients)**: `https://svelte-llm.stanislav.garden/mcp/mcp`
+- **SSE (Claude Desktop)**: `https://astro-llm.stanislav.garden/mcp/sse`
+- **Streamable HTTP (most other clients)**: `https://astro-llm.stanislav.garden/mcp/mcp`
 
 # Setup
 
@@ -33,7 +33,7 @@ You can also visit http://localhost:5173/admin to see all the "hidden" endpoints
 
 ## Supported presets
 
-Visit [llmctx.com](https://llmctx.com) to see all presets.
+Visit [astro-llm.stanislav.garden](https://astro-llm.stanislav.garden) to see all presets.
 
 ### Adding presets
 
@@ -48,7 +48,7 @@ To add a new preset:
      title: 'Preset Title',
      owner: 'github-owner',
      repo: 'github-repo',
-     glob: ['**/*.md', '**/*.mdx', '!**/excluded/**'], // Required, supports glob patterns
+     glob: ['**/*.md', '**/*.mdx'], // Required, supports glob patterns
      prompt: 'Optional prompt for additional context'
    }
    ```

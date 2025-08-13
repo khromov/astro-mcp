@@ -4,9 +4,7 @@ export interface QueryConfig {
 
 // Enum for distillable preset names
 export enum DistillablePreset {
-	SVELTE_DISTILLED = 'svelte-distilled',
-	SVELTEKIT_DISTILLED = 'sveltekit-distilled',
-	SVELTE_COMPLETE_DISTILLED = 'svelte-complete-distilled'
+	ASTRO_DISTILLED = 'astro-distilled'
 }
 
 // Database table types

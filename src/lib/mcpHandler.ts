@@ -16,7 +16,7 @@ import {
 	extractTitleFromPath,
 	removeFrontmatter
 } from '$lib/utils/pathUtils'
-import { createSvelteDeveloperPromptWithTask } from '$lib/utils/prompts'
+import { createAstroDeveloperPromptWithTask } from '$lib/utils/prompts'
 
 // Helper function to search for sections in the database
 async function searchSectionInDb(query: string): Promise<DbContent | null> {
@@ -45,19 +45,19 @@ export const handler = createMcpHandler(
 	(server: McpServer) => {
 		server.tool(
 			'list_sections',
-			'Lists all available Svelte 5 and SvelteKit documentation sections in a structured format. Returns sections as a list of "* title: [section_title], path: [file_path]" - you can use either the title or path when querying a specific section via the get_documentation tool. Always run list_sections first for any query related to Svelte development to discover available content.',
+			'Lists all available Astro documentation sections in a structured format. Returns sections as a list of "* title: [section_title], path: [file_path]" - you can use either the title or path when querying a specific section via the get_documentation tool. Always run list_sections first for any query related to Astro development to discover available content.',
 			{},
 			async () => listSectionsHandler()
 		)
 
 		server.tool(
 			'get_documentation',
-			'Retrieves full documentation content for Svelte 5 or SvelteKit sections. Supports flexible search by title (e.g., "$state", "routing") or file path (e.g., "docs/svelte/state.md"). Can accept a single section name or an array of sections. Before running this, make sure to analyze the users query, as well as the output from list_sections (which should be called first). Then ask for ALL relevant sections the user might require. For example, if the user asks to build anything interactive, you will need to fetch all relevant runes, and so on.',
+			'Retrieves full documentation content for Astro sections. Supports flexible search by title (e.g., "Components", "routing") or file path (e.g., "docs/en/core-concepts/astro-components.md"). Can accept a single section name or an array of sections. Before running this, make sure to analyze the users query, as well as the output from list_sections (which should be called first). Then ask for ALL relevant sections the user might require.',
 			{
 				section: z
 					.union([z.string(), z.array(z.string())])
 					.describe(
-						'The section name(s) to retrieve. Can search by title (e.g., "$state", "load functions") or file path (e.g., "docs/svelte/state.md"). Supports single string and array of strings'
+						'The section name(s) to retrieve. Can search by title (e.g., "Components", "Islands Architecture") or file path (e.g., "docs/en/core-concepts/astro-components.md"). Supports single string and array of strings'
 					)
 			},
 			async ({ section }: { section: string | string[] }) => getDocumentationHandler({ section })
@@ -65,17 +65,17 @@ export const handler = createMcpHandler(
 
 		// Main developer prompt with optional task parameter
 		server.registerPrompt(
-			'svelte-developer',
+			'astro-developer',
 			{
-				title: 'Svelte 5 Developer Assistant',
+				title: 'Astro Developer Assistant',
 				description:
-					'Expert-level guidance for Svelte 5 and SvelteKit development with optional task-specific focus',
+					'Expert-level guidance for Astro development with optional task-specific focus',
 				argsSchema: {
 					task: z.string().optional().describe('Optional specific task or requirement to focus on')
 				}
 			},
 			({ task }: { task?: string }) => {
-				const promptText = createSvelteDeveloperPromptWithTask(task)
+				const promptText = createAstroDeveloperPromptWithTask(task)
 
 				return {
 					messages: [
@@ -95,8 +95,8 @@ export const handler = createMcpHandler(
 		registerTemplatePrompts(server)
 
 		server.resource(
-			'svelte-doc',
-			new ResourceTemplate('svelte-llm://{+slug}', {
+			'astro-doc',
+			new ResourceTemplate('astro-llm://{+slug}', {
 				list: async () => {
 					const resources = []
 
@@ -104,14 +104,14 @@ export const handler = createMcpHandler(
 					for (const preset of PRESET_CONFIGS) {
 						resources.push({
 							name: `📦 ${preset.title}`,
-							uri: `svelte-llm://${preset.id}`,
+							uri: `astro-llm://${preset.id}`,
 							description: preset.description
 						})
 					}
 
 					// Then add individual documents
 					const documents = await ContentDbService.getContentByFilter({
-						path_pattern: 'apps/svelte.dev/content/docs/%'
+						path_pattern: 'src/content/docs/en/%'
 					})
 
 					logAlways(`Found ${documents.length} individual documents for resource listing`)
@@ -124,7 +124,7 @@ export const handler = createMcpHandler(
 							// Use title and clean path for better display, prefix with 📄 to distinguish from presets
 							name: `📄 ${title} (${cleanPath})`,
 							// Use cleaned path with prefix to avoid conflicts with preset IDs
-							uri: `svelte-llm://doc/${cleanPath}`,
+							uri: `astro-llm://doc/${cleanPath}`,
 							// Add description from metadata if available
 							description: doc.metadata?.description as string | undefined
 						})
@@ -215,7 +215,7 @@ export const handler = createMcpHandler(
 				if (!document) {
 					// Try to find by cleaned path - need to search all content and match cleaned paths
 					const allDocs = await ContentDbService.getContentByFilter({
-						path_pattern: 'apps/svelte.dev/content/docs/%'
+						path_pattern: 'src/content/docs/en/%'
 					})
 
 					document =
@@ -223,8 +223,8 @@ export const handler = createMcpHandler(
 				}
 
 				// If still not found, try with the full path pattern (for backward compatibility)
-				if (!document && !documentSlug.startsWith('apps/svelte.dev/content/')) {
-					const fullPath = `apps/svelte.dev/content/docs/${documentSlug}`
+				if (!document && !documentSlug.startsWith('src/content/')) {
+					const fullPath = `src/content/docs/en/${documentSlug}`
 					document = await ContentDbService.getContentByPath(fullPath)
 				}
 
@@ -235,7 +235,7 @@ export const handler = createMcpHandler(
 
 				if (!document) {
 					throw new Error(
-						`Document not found for slug: ${documentSlug}. Try using a document title (e.g., "$state") or a valid path.`
+						`Document not found for slug: ${documentSlug}. Try using a document title (e.g., "Components") or a valid path.`
 					)
 				}
 

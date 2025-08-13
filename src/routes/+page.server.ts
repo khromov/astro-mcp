@@ -6,15 +6,8 @@ import { DistillablePreset } from '$lib/types/db'
 import type { DbDistillation } from '$lib/types/db'
 import { logAlways, logErrorAlways } from '$lib/log'
 
-// Virtual distilled presets that aren't in the presets object
-const VIRTUAL_DISTILLED_PRESETS = [
-	DistillablePreset.SVELTE_DISTILLED,
-	DistillablePreset.SVELTEKIT_DISTILLED,
-	DistillablePreset.SVELTE_COMPLETE_DISTILLED
-]
-
-// Get all preset keys from both regular presets and virtual ones
-const ALL_PRESET_KEYS = [...Object.keys(presets), ...VIRTUAL_DISTILLED_PRESETS]
+// Get all preset keys
+const ALL_PRESET_KEYS = Object.keys(presets)
 
 // Valid basenames for distilled content - now using the enum values
 const VALID_DISTILLED_BASENAMES = Object.values(DistillablePreset)
@@ -23,11 +16,10 @@ async function fetchPresetSize(
 	presetKey: string
 ): Promise<{ key: string; sizeKb: number | null; error?: string }> {
 	try {
-		const isVirtualPreset = VIRTUAL_DISTILLED_PRESETS.includes(presetKey as DistillablePreset)
 		const isRegularPreset = presetKey in presets
-		const isDistilledPreset = isVirtualPreset || presets[presetKey]?.distilled
+		const isDistilledPreset = presets[presetKey]?.distilled
 
-		if (!isVirtualPreset && !isRegularPreset) {
+		if (!isRegularPreset) {
 			return { key: presetKey, sizeKb: null, error: 'Invalid preset' }
 		}
 

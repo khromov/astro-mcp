@@ -4,17 +4,17 @@
 
 <header class="hero" class:rounded-top={isOldHost}>
 	<div class="hero-content">
-		<div class="logo">svelte-llm</div>
-		<h1>Svelte & SvelteKit documentation for AI assistants</h1>
+		<div class="logo">astro-llm</div>
+		<h1>Astro documentation for AI assistants</h1>
 		<p class="hero-description">
-			Connect your AI coding assistant directly to up-to-date Svelte 5 and SvelteKit documentation
-			via this <strong>Model Context Protocol (MCP) server</strong>, or download preset
-			documentation in llms.txt format and add the docs to your context.
+			Connect your AI coding assistant directly to up-to-date Astro documentation via this <strong
+				>Model Context Protocol (MCP) server</strong
+			>, or download preset documentation in llms.txt format and add the docs to your context.
 		</p>
 		<p class="hero-note">
 			Documentation is automatically fetched from the <a
 				target="_blank"
-				href="https://github.com/sveltejs/svelte.dev/tree/main/apps/svelte.dev/content"
+				href="https://github.com/withastro/docs/tree/main/src/content/docs/en"
 				>official documentation</a
 			> source on GitHub and updated hourly.
 		</p>
@@ -25,7 +25,7 @@
 	.hero {
 		text-align: center;
 		padding: 60px 0 40px 0;
-		background: linear-gradient(135deg, #ff3e00 0%, #ff6b35 100%);
+		background: linear-gradient(135deg, #000000 0%, #2d2d2d 100%);
 		color: white;
 		margin: 0 0 30px 0;
 		border-radius: 0 0 20px 20px;

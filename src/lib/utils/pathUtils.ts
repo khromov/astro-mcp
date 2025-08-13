@@ -3,14 +3,14 @@
  */
 
 /**
- * Clean a path by removing the "apps/svelte.dev/content/" prefix
+ * Clean a path by removing the "src/content/" prefix
  * This is used to convert database paths to display paths
  *
  * @param path - The path to clean
  * @returns The cleaned path
  */
 export function cleanDocumentationPath(path: string): string {
-	const prefix = 'apps/svelte.dev/content/'
+	const prefix = 'src/content/'
 	if (path.startsWith(prefix)) {
 		return path.substring(prefix.length)
 	}
@@ -48,8 +48,8 @@ export function extractTitleFromPath(filePath: string): string {
 		return ''
 	}
 
-	// Remove .md extension and numbered prefixes
-	return filename.replace('.md', '').replace(/^\d+-/, '')
+	// Remove .md and .mdx extensions and numbered prefixes
+	return filename.replace(/\.(md|mdx)$/, '').replace(/^\d+-/, '')
 }
 
 /**

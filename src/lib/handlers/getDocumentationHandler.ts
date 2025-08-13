@@ -65,9 +65,8 @@ export const getDocumentationHandler = async ({ section }: { section: string | s
 			if (matchedContent) {
 				const cleanedPath = cleanDocumentationPath(matchedContent.path)
 				const formattedContent = `## ${cleanedPath}\n\n${matchedContent.content}`
-				const framework = matchedContent.path.includes('/docs/svelte/') ? 'Svelte' : 'SvelteKit'
 				const title = getTitleFromMetadata(matchedContent.metadata, matchedContent.path)
-				results.push(`📖 ${framework} documentation (${title}):\n\n${formattedContent}`)
+				results.push(`📖 Astro documentation (${title}):\n\n${formattedContent}`)
 			} else {
 				notFound.push(cleanSection)
 			}
@@ -79,7 +78,7 @@ export const getDocumentationHandler = async ({ section }: { section: string | s
 				content: [
 					{
 						type: 'text' as const,
-						text: `❌ Section(s) "${sectionList}" not found in Svelte or SvelteKit documentation. Use list_sections to see all available sections.`
+						text: `❌ Section(s) "${sectionList}" not found in Astro documentation. Use list_sections to see all available sections.`
 					}
 				]
 			}

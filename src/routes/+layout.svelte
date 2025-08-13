@@ -5,7 +5,7 @@
 
 	let { children, data } = $props()
 
-	const TITLE = 'svelte-llm - Svelte 5 and SvelteKit Developer documentation in an LLM-ready format'
+	const TITLE = 'astro-llm - Astro Developer documentation in an LLM-ready format'
 </script>
 
 <svelte:head>

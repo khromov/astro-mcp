@@ -16,7 +16,7 @@
 			icon: '🔧',
 			description:
 				'The official Anthropic command-line tool. Run this command to add the MCP server:',
-			instruction: `claude mcp add --transport sse --scope project svelte-llm ${sseEndpoint}`,
+			instruction: `claude mcp add --transport sse --scope project astro-llm ${sseEndpoint}`,
 			isCommand: true
 		},
 		{
@@ -30,7 +30,7 @@
 				'Navigate to Settings > Integrations',
 				'Locate the "Integrations" section',
 				'Click "Add custom integration" at the bottom of the section',
-				'Add your integration\'s remote MCP server URL and name it "svelte-llm"',
+				'Add your integration\'s remote MCP server URL and name it "astro-llm"',
 				'Finish configuring your integration by clicking "Add"'
 			]
 		},
@@ -41,7 +41,7 @@
 			description:
 				'GitHub Copilot extension for VS Code - put this in .vscode/mcp.json inside a "servers" object.',
 			instruction: `{
-  "svelte-llm": {
+  "astro-llm": {
     "command": "npx",
     "args": ["mcp-remote", "${streamableEndpoint}"]
   }
@@ -54,7 +54,7 @@
 			icon: '🧑‍💻',
 			url: sseEndpoint,
 			description:
-				'Add this URL to your Cline MCP settings. Name the MCP svelte-llm or whatever you like.'
+				'Add this URL to your Cline MCP settings. Name the MCP astro-llm or whatever you like.'
 		},
 		{
 			id: 'others',
@@ -95,7 +95,7 @@
 			<h2>MCP Server Integration</h2>
 		</div>
 		<p class="section-description">
-			Connect your AI assistant directly to live Svelte documentation using the Model Context
+			Connect your AI assistant directly to live Astro documentation using the Model Context
 			Protocol. Choose your client below for setup instructions.
 		</p>
 	</div>
@@ -143,7 +143,7 @@
 		left: 0;
 		right: 0;
 		height: 4px;
-		background: linear-gradient(90deg, #ff3e00 0%, #ff6b35 100%);
+		background: linear-gradient(90deg, #000000 0%, #4a4a4a 100%);
 	}
 
 	.section-header {
@@ -168,7 +168,7 @@
 		left: 0;
 		width: 60px;
 		height: 3px;
-		background: linear-gradient(90deg, #ff3e00 0%, #ff6b35 100%);
+		background: linear-gradient(90deg, #000000 0%, #4a4a4a 100%);
 		border-radius: 2px;
 	}
 
