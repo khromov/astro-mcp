@@ -11,20 +11,19 @@ import { logAlways, logErrorAlways } from '$lib/log'
 const VALID_DISTILLED_BASENAMES = Object.values(DistillablePreset)
 
 async function fetchPresetSize(
-	presetKey: string
+	presetKey: string,
+	presets: Record<string, PresetConfig>
 ): Promise<{ key: string; sizeKb: number | null; error?: string }> {
 	try {
-		// Check if preset exists in either base or dynamic presets
-		const isRegularPreset = presetKey in astroPresetsBase || presetKey.startsWith('astro-full-')
-		const isDistilledPreset = astroPresetsBase[presetKey]?.distilled
-
-		if (!isRegularPreset) {
+		// Check if preset exists
+		const preset = presets[presetKey]
+		if (!preset) {
 			return { key: presetKey, sizeKb: null, error: 'Invalid preset' }
 		}
 
 		let sizeKb: number | null = null
 
-		if (isDistilledPreset) {
+		if (preset.distilled) {
 			// Get size from distillations table
 			const distillation = await PresetDbService.getLatestDistillation(presetKey)
 			if (distillation) {
@@ -123,7 +122,7 @@ export const load: PageServerLoad = async () => {
 	// These will resolve independently as each preset size is calculated
 	const presetSizePromises = ALL_PRESET_KEYS.reduce(
 		(acc, presetKey) => {
-			acc[presetKey] = fetchPresetSize(presetKey)
+			acc[presetKey] = fetchPresetSize(presetKey, presets)
 			return acc
 		},
 		{} as Record<string, Promise<{ key: string; sizeKb: number | null; error?: string }>>
