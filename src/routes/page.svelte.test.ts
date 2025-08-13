@@ -15,55 +15,21 @@ vi.mock('$lib/log', () => ({
 
 // Mock preset sizes data for tests
 const mockPresetSizes = {
-	'svelte-complete': Promise.resolve({ key: 'svelte-complete', sizeKb: 120 }),
-	'svelte-small': Promise.resolve({ key: 'svelte-small', sizeKb: 50 }),
-	'svelte-medium': Promise.resolve({ key: 'svelte-medium', sizeKb: 80 }),
-	'sveltekit-complete': Promise.resolve({ key: 'sveltekit-complete', sizeKb: 100 }),
-	'sveltekit-small': Promise.resolve({ key: 'sveltekit-small', sizeKb: 40 }),
-	'sveltekit-medium': Promise.resolve({ key: 'sveltekit-medium', sizeKb: 70 }),
-	'svelte-distilled': Promise.resolve({ key: 'svelte-distilled', sizeKb: 30 }),
-	'sveltekit-distilled': Promise.resolve({ key: 'sveltekit-distilled', sizeKb: 25 }),
-	'svelte-complete-distilled': Promise.resolve({ key: 'svelte-complete-distilled', sizeKb: 45 })
+	'astro-full': Promise.resolve({ key: 'astro-full', sizeKb: 120 }),
+	'astro-distilled': Promise.resolve({ key: 'astro-distilled', sizeKb: 30 })
 }
 
 // Mock distilled versions data for tests
 const mockDistilledVersions = {
-	'svelte-complete': Promise.resolve({ key: 'svelte-complete', versions: [] }),
-	'svelte-small': Promise.resolve({ key: 'svelte-small', versions: [] }),
-	'svelte-medium': Promise.resolve({ key: 'svelte-medium', versions: [] }),
-	'sveltekit-complete': Promise.resolve({ key: 'sveltekit-complete', versions: [] }),
-	'sveltekit-small': Promise.resolve({ key: 'sveltekit-small', versions: [] }),
-	'sveltekit-medium': Promise.resolve({ key: 'sveltekit-medium', versions: [] }),
-	'svelte-distilled': Promise.resolve({
-		key: 'svelte-distilled',
+	'astro-full': Promise.resolve({ key: 'astro-full', versions: [] }),
+	'astro-distilled': Promise.resolve({
+		key: 'astro-distilled',
 		versions: [
 			{
-				filename: 'svelte-distilled-2024-01-15.md',
+				filename: 'astro-distilled-2024-01-15.md',
 				date: '2024-01-15',
-				path: '/api/preset-content/svelte-distilled/2024-01-15',
+				path: '/api/preset-content/astro-distilled/2024-01-15',
 				sizeKb: 30
-			}
-		]
-	}),
-	'sveltekit-distilled': Promise.resolve({
-		key: 'sveltekit-distilled',
-		versions: [
-			{
-				filename: 'sveltekit-distilled-2024-01-15.md',
-				date: '2024-01-15',
-				path: '/api/preset-content/sveltekit-distilled/2024-01-15',
-				sizeKb: 25
-			}
-		]
-	}),
-	'svelte-complete-distilled': Promise.resolve({
-		key: 'svelte-complete-distilled',
-		versions: [
-			{
-				filename: 'svelte-complete-distilled-2024-01-15.md',
-				date: '2024-01-15',
-				path: '/api/preset-content/svelte-complete-distilled/2024-01-15',
-				sizeKb: 45
 			}
 		]
 	})
@@ -94,7 +60,7 @@ describe('/+page.svelte', () => {
 	test('should render main heading', () => {
 		render(Page, { data: mockPageData })
 		expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
-			'Svelte & SvelteKit documentation for AI assistants'
+			'Astro documentation for AI assistants'
 		)
 	})
 
@@ -105,9 +71,7 @@ describe('/+page.svelte', () => {
 
 	test('should render preset sections', () => {
 		render(Page, { data: mockPageData })
-		expect(screen.getByText('Combined presets')).toBeInTheDocument()
-		expect(screen.getByText('Svelte 5')).toBeInTheDocument()
-		expect(screen.getByText('SvelteKit')).toBeInTheDocument()
+		expect(screen.getByText('Astro Documentation')).toBeInTheDocument()
 	})
 
 	test('should handle distilled versions loading gracefully', async () => {
@@ -117,9 +81,9 @@ describe('/+page.svelte', () => {
 			json: () =>
 				Promise.resolve([
 					{
-						filename: 'svelte-complete-distilled-2024-01-15.md',
+						filename: 'astro-distilled-2024-01-15.md',
 						date: '2024-01-15',
-						path: '/api/preset-content/svelte-complete-distilled/2024-01-15',
+						path: '/api/preset-content/astro-distilled/2024-01-15',
 						sizeKb: 150
 					}
 				])
@@ -128,7 +92,7 @@ describe('/+page.svelte', () => {
 		render(Page, { data: mockPageData })
 
 		// The component should render without throwing errors
-		expect(screen.getByText('Combined presets')).toBeInTheDocument()
+		expect(screen.getByText('Astro Documentation')).toBeInTheDocument()
 	})
 
 	test('should handle failed distilled versions API calls gracefully', async () => {
@@ -137,15 +101,13 @@ describe('/+page.svelte', () => {
 			presetSizes: mockPresetSizes,
 			distilledVersions: {
 				...mockDistilledVersions,
-				'svelte-complete-distilled': Promise.reject(new Error('API Error'))
+				'astro-distilled': Promise.reject(new Error('API Error'))
 			}
 		}
 
 		render(Page, { data: mockPageDataWithFailures })
 
 		// The component should still render even if API calls fail
-		expect(screen.getByText('Combined presets')).toBeInTheDocument()
-		expect(screen.getByText('Svelte 5')).toBeInTheDocument()
-		expect(screen.getByText('SvelteKit')).toBeInTheDocument()
+		expect(screen.getByText('Astro Documentation')).toBeInTheDocument()
 	})
 })
