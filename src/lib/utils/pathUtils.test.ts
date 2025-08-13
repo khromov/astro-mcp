@@ -8,15 +8,15 @@ import {
 
 describe('pathUtils', () => {
 	describe('cleanDocumentationPath', () => {
-		it('should remove apps/svelte.dev/content/ prefix', () => {
-			const input = 'apps/svelte.dev/content/docs/svelte/01-introduction.md'
-			const expected = 'docs/svelte/01-introduction.md'
+		it('should remove src/content/ prefix', () => {
+			const input = 'src/content/docs/en/getting-started.mdx'
+			const expected = 'docs/en/getting-started.mdx'
 			expect(cleanDocumentationPath(input)).toBe(expected)
 		})
 
 		it('should handle paths without the prefix', () => {
-			const input = 'docs/svelte/01-introduction.md'
-			const expected = 'docs/svelte/01-introduction.md'
+			const input = 'docs/en/getting-started.mdx'
+			const expected = 'docs/en/getting-started.mdx'
 			expect(cleanDocumentationPath(input)).toBe(expected)
 		})
 
@@ -27,26 +27,26 @@ describe('pathUtils', () => {
 		})
 
 		it('should handle partial prefix matches', () => {
-			const input = 'apps/svelte.dev/content-extra/docs/svelte/01-introduction.md'
-			const expected = 'apps/svelte.dev/content-extra/docs/svelte/01-introduction.md'
+			const input = 'src/content-extra/docs/en/getting-started.mdx'
+			const expected = 'src/content-extra/docs/en/getting-started.mdx'
 			expect(cleanDocumentationPath(input)).toBe(expected)
 		})
 
 		it('should handle paths with similar but different prefixes', () => {
-			const input = 'apps/svelte.dev/contents/docs/svelte/01-introduction.md'
-			const expected = 'apps/svelte.dev/contents/docs/svelte/01-introduction.md'
+			const input = 'src/contents/docs/en/getting-started.mdx'
+			const expected = 'src/contents/docs/en/getting-started.mdx'
 			expect(cleanDocumentationPath(input)).toBe(expected)
 		})
 
-		it('should handle SvelteKit documentation paths', () => {
-			const input = 'apps/svelte.dev/content/docs/kit/01-routing.md'
-			const expected = 'docs/kit/01-routing.md'
+		it('should handle Astro guides documentation paths', () => {
+			const input = 'src/content/docs/en/guides/routing.mdx'
+			const expected = 'docs/en/guides/routing.mdx'
 			expect(cleanDocumentationPath(input)).toBe(expected)
 		})
 
-		it('should handle tutorial paths', () => {
-			const input = 'apps/svelte.dev/content/tutorial/01-introduction/01-hello-world.md'
-			const expected = 'tutorial/01-introduction/01-hello-world.md'
+		it('should handle reference paths', () => {
+			const input = 'src/content/docs/en/reference/api-reference.mdx'
+			const expected = 'docs/en/reference/api-reference.mdx'
 			expect(cleanDocumentationPath(input)).toBe(expected)
 		})
 	})
