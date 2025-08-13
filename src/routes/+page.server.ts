@@ -1,5 +1,5 @@
 import type { PageServerLoad } from './$types'
-import { astroPresetsBase, setDynamicLanguagePresets } from '$lib/presets'
+import { astroPresetsBase, generateLanguagePreset, type PresetConfig } from '$lib/presets'
 import { getPresetSizeKb } from '$lib/presetCache'
 import { PresetDbService } from '$lib/server/presetDb'
 import { LanguageService } from '$lib/server/languageService'
@@ -103,11 +103,14 @@ export const load: PageServerLoad = async () => {
 	// Fetch available languages from the database
 	const languages = await LanguageService.getAvailableLanguages()
 
-	// Set dynamic language presets based on available languages
-	setDynamicLanguagePresets(languages)
-
-	// Import the updated presets after setting dynamic ones
-	const { presets } = await import('$lib/presets')
+	// Generate presets directly here
+	const presets: Record<string, PresetConfig> = { ...astroPresetsBase }
+	
+	// Generate language-specific presets
+	languages.forEach(({ code, name }) => {
+		const presetKey = `astro-${code}`
+		presets[presetKey] = generateLanguagePreset(astroPresetsBase['astro-distilled'], code, name)
+	})
 
 	// Get all preset keys including dynamically generated ones
 	const ALL_PRESET_KEYS = Object.keys(presets)
@@ -148,6 +151,7 @@ export const load: PageServerLoad = async () => {
 	logAlways('Returning streaming promises for preset sizes and distilled versions')
 
 	return {
+		presets: Object.fromEntries(Object.entries(presets).map(([key, preset]) => [key, preset])),
 		presetSizes: presetSizePromises,
 		distilledVersions: distilledVersionsPromises,
 		availableLanguages: languages

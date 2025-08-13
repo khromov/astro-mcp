@@ -4,19 +4,12 @@
 
 <script lang="ts">
 	import type { PageData } from './$types'
-	import {
-		astroPresetsBase,
-		setDynamicLanguagePresets,
-		transformAndSortPresets
-	} from '$lib/presets'
 	import { SITE_URL } from '$lib/constants'
-	import { DistillablePreset } from '$lib/types/db'
+	import type { PresetConfig } from '$lib/presets'
 
 	import HeroSection from '$lib/components/home/HeroSection.svelte'
 	import McpSection from '$lib/components/home/McpSection.svelte'
 	import UsageSection from '$lib/components/home/UsageSection.svelte'
-	import PresetSection from '$lib/components/home/PresetSection.svelte'
-	import LanguageExpandablePresets from '$lib/components/home/LanguageExpandablePresets.svelte'
 	import IntegrationSection from '$lib/components/home/IntegrationSection.svelte'
 	import SiteFooter from '$lib/components/home/SiteFooter.svelte'
 
@@ -26,39 +19,23 @@
 	const SSE_ENDPOINT = 'https://astro-mcp.stanislav.garden/mcp/sse'
 	const STREAMABLE_ENDPOINT = 'https://astro-mcp.stanislav.garden/mcp/mcp'
 
-	// Set dynamic language presets based on available languages
-	if (data.availableLanguages) {
-		setDynamicLanguagePresets(data.availableLanguages)
-	}
-
-	// Import the updated presets after setting dynamic ones
-	const { presets } = $derived.by(async () => {
-		const module = await import('$lib/presets')
-		return module
-	})
+	// Use presets from server data
+	const presets = data.presets as Record<string, PresetConfig>
 
 	// Separate base presets from language variants
 	const basePresets = $derived(
-		presets
-			? Object.entries(presets)
-					.filter(([key, preset]) => !preset.isLanguageVariant)
-					.map(([key, preset]) => ({ key, ...preset }))
-			: []
+		Object.entries(presets)
+			.filter(([, preset]) => !preset.isLanguageVariant)
+			.map(([key, preset]) => ({ key, ...preset }))
 	)
 
 	const languagePresets = $derived(
-		presets
-			? Object.entries(presets)
-					.filter(([key, preset]) => preset.isLanguageVariant)
-					.map(([key, preset]) => ({ key, ...preset }))
-			: []
+		Object.entries(presets)
+			.filter(([, preset]) => preset.isLanguageVariant)
+			.map(([key, preset]) => ({ key, ...preset }))
 	)
 
-	// Find the main Astro preset and its language variants
-	const astroFullPreset = $derived(basePresets.find((p) => p.key === 'astro-full'))
-	const astroLanguagePresets = $derived(
-		languagePresets.filter((p) => p.key.startsWith('astro-full-'))
-	)
+	// Find the distilled preset and language variants
 	const astroDistilledPreset = $derived(basePresets.find((p) => p.key === 'astro-distilled'))
 </script>
 
@@ -87,14 +64,13 @@
 				/>
 			{/if}
 
-			{#if astroFullPreset && presets}
-				<LanguageExpandablePresets
-					basePreset={astroFullPreset}
-					languagePresets={astroLanguagePresets}
-					presetSizes={data.presetSizes}
-					distilledVersionsPromises={data.distilledVersions}
+			{#each languagePresets as preset}
+				<PresetListItem
+					{...preset}
+					presetSizePromise={data.presetSizes[preset.key]}
+					distilledVersionsPromise={data.distilledVersions[preset.key]}
 				/>
-			{/if}
+			{/each}
 		</div>
 	</section>
 

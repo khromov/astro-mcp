@@ -7,6 +7,7 @@ import { ContentDbService } from '$lib/server/contentDb'
 import type { CreateContentInput } from '$lib/types/db'
 import { presets, DEFAULT_REPOSITORY } from '$lib/presets'
 import { logAlways, logErrorAlways, log } from '$lib/log'
+import { minimatch } from 'minimatch'
 
 function sortFilesWithinGroup(
 	files: Array<{ path: string; content: string }>
@@ -214,7 +215,6 @@ export class ContentSyncService {
 			log(`Glob patterns: ${JSON.stringify(preset.glob)}`)
 			log(`Ignore patterns: ${JSON.stringify(preset.ignore || [])}`)
 
-			const { minimatch } = await import('minimatch')
 
 			const orderedResults: Array<{ path: string; content: string }> = []
 

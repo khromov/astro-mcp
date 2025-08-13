@@ -1,9 +1,11 @@
 import { ContentSyncService } from '$lib/server/contentSync'
-import { presets, DEFAULT_REPOSITORY } from '$lib/presets'
+import { DEFAULT_REPOSITORY, type PresetConfig } from '$lib/presets'
 import { log, logAlways, logErrorAlways } from '$lib/log'
 import { cleanDocumentationPath } from '$lib/utils/pathUtils'
 import { CacheDbService } from '$lib/server/cacheDb'
 import { minimizeContent } from '$lib/fetchMarkdown'
+import { ContentDbService } from '$lib/server/contentDb'
+import { minimatch } from 'minimatch'
 
 // Maximum age of cached content in milliseconds (24 hours)
 export const MAX_CACHE_AGE_MS = 24 * 60 * 60 * 1000
@@ -33,13 +35,8 @@ function sortFilesWithinGroup(
 	})
 }
 
-export async function getPresetContent(presetKey: string): Promise<string | null> {
+export async function getPresetContent(presetKey: string, preset: PresetConfig): Promise<string | null> {
 	try {
-		const preset = presets[presetKey]
-		if (!preset) {
-			log(`Preset not found: ${presetKey}`)
-			return null
-		}
 
 		// Check cache first
 		const cache = getCacheService()
@@ -116,7 +113,6 @@ async function getPresetContentFromDb(
 	}
 
 	try {
-		const { ContentDbService } = await import('$lib/server/contentDb')
 		const allContent = await ContentDbService.getAllContent()
 
 		if (allContent.length === 0) {
@@ -127,7 +123,6 @@ async function getPresetContentFromDb(
 		log(`Glob patterns: ${JSON.stringify(preset.glob)}`)
 		log(`Ignore patterns: ${JSON.stringify(preset.ignore || [])}`)
 
-		const { minimatch } = await import('minimatch')
 
 		const orderedResults: Array<{ path: string; content: string }> = []
 

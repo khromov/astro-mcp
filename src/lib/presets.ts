@@ -35,20 +35,14 @@ export function generateLanguagePreset(
 			`**/src/content/docs/${languageCode}/**/*.mdx`
 		],
 		languageCode,
-		isLanguageVariant: true
+		isLanguageVariant: true,
+		distilled: false,
+		distilledFilenameBase: undefined
 	}
 }
 
 // Base Astro presets (without language variants)
 export const astroPresetsBase: Record<string, PresetConfig> = {
-	'astro-full': {
-		title: 'Astro (All Languages)',
-		description: 'Complete Astro documentation including all available languages',
-		glob: ['**/src/content/docs/**/*.md', '**/src/content/docs/**/*.mdx'],
-		ignore: [],
-		prompt: ASTRO_PROMPT,
-		minimize: {}
-	},
 	'astro-distilled': {
 		title: '🔮 Astro (LLM Distilled - English)',
 		description:
@@ -81,13 +75,13 @@ export function setDynamicLanguagePresets(languages: Array<{ code: string; name:
 
 	// Generate language-specific presets
 	languages.forEach(({ code, name }) => {
-		const presetKey = `astro-full-${code}`
-		astroPresets[presetKey] = generateLanguagePreset(astroPresetsBase['astro-full'], code, name)
+		const presetKey = `astro-${code}`
+		astroPresets[presetKey] = generateLanguagePreset(astroPresetsBase['astro-distilled'], code, name)
 	})
 }
 
 // For backward compatibility, combine all presets
-export const presets = astroPresets
+export const getPresets = () => astroPresets
 
 export function transformAndSortPresets(presetsObject: Record<string, PresetConfig>) {
 	return Object.entries(presetsObject)
