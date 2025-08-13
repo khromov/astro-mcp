@@ -3,10 +3,11 @@ import type { RequestHandler } from './$types'
 
 // Utils
 import { error } from '@sveltejs/kit'
-import { presets } from '$lib/presets'
+import { astroPresetsBase, setDynamicLanguagePresets } from '$lib/presets'
 import { dev } from '$app/environment'
 import { getPresetContent } from '$lib/presetCache'
 import { PresetDbService } from '$lib/server/presetDb'
+import { LanguageService } from '$lib/server/languageService'
 import { DistillablePreset } from '$lib/types/db'
 import { logAlways, logErrorAlways } from '$lib/log'
 
@@ -14,6 +15,13 @@ export const GET: RequestHandler = async ({ params, url }) => {
 	const presetNames = params.preset.split(',').map((p) => p.trim())
 
 	logAlways(`Received request for presets: ${presetNames.join(', ')}`)
+
+	// Initialize dynamic language presets if needed
+	const languages = await LanguageService.getAvailableLanguages()
+	setDynamicLanguagePresets(languages)
+
+	// Import the updated presets after setting dynamic ones
+	const { presets } = await import('$lib/presets')
 
 	// Validate all preset names first
 	const invalidPresets = presetNames.filter((name) => !(name in presets))

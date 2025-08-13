@@ -3,6 +3,7 @@ import { presets, DEFAULT_REPOSITORY } from '$lib/presets'
 import { log, logAlways, logErrorAlways } from '$lib/log'
 import { cleanDocumentationPath } from '$lib/utils/pathUtils'
 import { CacheDbService } from '$lib/server/cacheDb'
+import { minimizeContent } from '$lib/fetchMarkdown'
 
 // Maximum age of cached content in milliseconds (24 hours)
 export const MAX_CACHE_AGE_MS = 24 * 60 * 60 * 1000
@@ -14,6 +15,22 @@ function getCacheService(): CacheDbService {
 		cacheService = new CacheDbService()
 	}
 	return cacheService
+}
+
+// Helper function to sort files within a group while preserving original order
+function sortFilesWithinGroup(
+	files: Array<{ path: string; content: string }>
+): Array<{ path: string; content: string }> {
+	return files.sort((a, b) => {
+		const aPath = a.path
+		const bPath = b.path
+
+		// Check if one path is a parent of the other
+		if (bPath.startsWith(aPath.replace('/index.md', '/'))) return -1
+		if (aPath.startsWith(bPath.replace('/index.md', '/'))) return 1
+
+		return aPath.localeCompare(bPath)
+	})
 }
 
 export async function getPresetContent(presetKey: string): Promise<string | null> {
@@ -41,7 +58,7 @@ export async function getPresetContent(presetKey: string): Promise<string | null
 		}
 
 		// Try to get files from the content table first
-		let filesWithPaths = await ContentSyncService.getPresetContentFromDb(presetKey)
+		let filesWithPaths = await getPresetContentFromDb(presetKey)
 
 		// If no content in database, fetch from GitHub and sync
 		if (!filesWithPaths || filesWithPaths.length === 0) {
@@ -51,7 +68,7 @@ export async function getPresetContent(presetKey: string): Promise<string | null
 			await ContentSyncService.syncRepository()
 
 			// Try again from database
-			filesWithPaths = await ContentSyncService.getPresetContentFromDb(presetKey)
+			filesWithPaths = await getPresetContentFromDb(presetKey)
 
 			if (!filesWithPaths || filesWithPaths.length === 0) {
 				log(`Still no content found for preset: ${presetKey} after sync`)
@@ -67,7 +84,7 @@ export async function getPresetContent(presetKey: string): Promise<string | null
 			return `## ${cleanPath}\n\n${f.content}`
 		})
 
-		// DO NOT sort - files are already in correct glob pattern order from ContentSyncService
+		// DO NOT sort - files are already in correct glob pattern order from getPresetContentFromDb
 		const content = files.join('\n\n')
 
 		logAlways(`Generated content for ${presetKey} on-demand (${filesWithPaths.length} files)`)
@@ -85,6 +102,88 @@ export async function getPresetContent(presetKey: string): Promise<string | null
 		return content
 	} catch (error) {
 		logErrorAlways(`Error generating preset content for ${presetKey}:`, error)
+		return null
+	}
+}
+
+// Extracted helper function to get preset content from database
+async function getPresetContentFromDb(
+	presetKey: string
+): Promise<Array<{ path: string; content: string }> | null> {
+	const preset = presets[presetKey]
+	if (!preset) {
+		return null
+	}
+
+	try {
+		const { ContentDbService } = await import('$lib/server/contentDb')
+		const allContent = await ContentDbService.getAllContent()
+
+		if (allContent.length === 0) {
+			return null
+		}
+
+		log(`Checking ${allContent.length} files against glob patterns for preset ${presetKey}`)
+		log(`Glob patterns: ${JSON.stringify(preset.glob)}`)
+		log(`Ignore patterns: ${JSON.stringify(preset.ignore || [])}`)
+
+		const { minimatch } = await import('minimatch')
+
+		const orderedResults: Array<{ path: string; content: string }> = []
+
+		// Process one glob pattern at a time
+		for (const pattern of preset.glob) {
+			log(`\nProcessing glob pattern: ${pattern}`)
+
+			const matchingFiles: Array<{ path: string; content: string }> = []
+
+			for (const dbContent of allContent) {
+				const shouldIgnore = preset.ignore?.some((ignorePattern) => {
+					const matches = minimatch(dbContent.path, ignorePattern)
+					if (matches) {
+						log(`  File ${dbContent.path} ignored by pattern: ${ignorePattern}`)
+					}
+					return matches
+				})
+				if (shouldIgnore) continue
+
+				if (minimatch(dbContent.path, pattern)) {
+					log(`  File ${dbContent.path} matched`)
+
+					let processedContent = dbContent.content
+					if (preset.minimize && Object.keys(preset.minimize).length > 0) {
+						processedContent = minimizeContent(dbContent.content, preset.minimize)
+					}
+
+					matchingFiles.push({
+						path: dbContent.path,
+						content: processedContent
+					})
+				}
+			}
+
+			const sortedFiles = sortFilesWithinGroup(matchingFiles)
+
+			log(`  Found ${sortedFiles.length} files for pattern: ${pattern}`)
+			sortedFiles.forEach((file, i) => {
+				log(`    ${i + 1}. ${file.path}`)
+			})
+
+			orderedResults.push(...sortedFiles)
+		}
+
+		logAlways(
+			`Found ${orderedResults.length} files matching preset ${presetKey} from database in natural glob order`
+		)
+
+		log('\nFinal file order:')
+		orderedResults.forEach((file, i) => {
+			log(`  ${i + 1}. ${file.path}`)
+		})
+
+		return orderedResults
+	} catch (error) {
+		logErrorAlways(`Failed to get preset content from database for ${presetKey}:`, error)
 		return null
 	}
 }
@@ -149,7 +248,7 @@ export async function getPresetMetadata(presetKey: string): Promise<{
 		}
 
 		// Get the files again to count them (this will use cached data)
-		const filesWithPaths = await ContentSyncService.getPresetContentFromDb(presetKey)
+		const filesWithPaths = await getPresetContentFromDb(presetKey)
 		const documentCount = filesWithPaths?.length || 0
 
 		const sizeKb = Math.floor(new TextEncoder().encode(content).length / 1024)

@@ -1,13 +1,11 @@
 import type { PageServerLoad } from './$types'
-import { presets } from '$lib/presets'
+import { astroPresetsBase, setDynamicLanguagePresets } from '$lib/presets'
 import { getPresetSizeKb } from '$lib/presetCache'
 import { PresetDbService } from '$lib/server/presetDb'
+import { LanguageService } from '$lib/server/languageService'
 import { DistillablePreset } from '$lib/types/db'
 import type { DbDistillation } from '$lib/types/db'
 import { logAlways, logErrorAlways } from '$lib/log'
-
-// Get all preset keys
-const ALL_PRESET_KEYS = Object.keys(presets)
 
 // Valid basenames for distilled content - now using the enum values
 const VALID_DISTILLED_BASENAMES = Object.values(DistillablePreset)
@@ -16,8 +14,9 @@ async function fetchPresetSize(
 	presetKey: string
 ): Promise<{ key: string; sizeKb: number | null; error?: string }> {
 	try {
-		const isRegularPreset = presetKey in presets
-		const isDistilledPreset = presets[presetKey]?.distilled
+		// Check if preset exists in either base or dynamic presets
+		const isRegularPreset = presetKey in astroPresetsBase || presetKey.startsWith('astro-full-')
+		const isDistilledPreset = astroPresetsBase[presetKey]?.distilled
 
 		if (!isRegularPreset) {
 			return { key: presetKey, sizeKb: null, error: 'Invalid preset' }
@@ -101,8 +100,21 @@ async function fetchDistilledVersions(presetKey: string): Promise<{
 }
 
 export const load: PageServerLoad = async () => {
+	// Fetch available languages from the database
+	const languages = await LanguageService.getAvailableLanguages()
 
-	logAlways(`Starting parallel fetch of sizes for ${ALL_PRESET_KEYS.length} presets`)
+	// Set dynamic language presets based on available languages
+	setDynamicLanguagePresets(languages)
+
+	// Import the updated presets after setting dynamic ones
+	const { presets } = await import('$lib/presets')
+
+	// Get all preset keys including dynamically generated ones
+	const ALL_PRESET_KEYS = Object.keys(presets)
+
+	logAlways(
+		`Starting parallel fetch of sizes for ${ALL_PRESET_KEYS.length} presets (including ${languages.length} languages)`
+	)
 
 	// Create streaming promises for all preset sizes
 	// These will resolve independently as each preset size is calculated
@@ -137,6 +149,7 @@ export const load: PageServerLoad = async () => {
 
 	return {
 		presetSizes: presetSizePromises,
-		distilledVersions: distilledVersionsPromises
+		distilledVersions: distilledVersionsPromises,
+		availableLanguages: languages
 	}
 }

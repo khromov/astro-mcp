@@ -97,9 +97,7 @@ describe('MCP Handler Integration', () => {
 		const pathResult = await getDocumentationHandler({
 			section: 'src/content/docs/en/guides/routing.mdx'
 		})
-		expect(pathResult.content[0].text).toContain(
-			'file-based routing to generate your build URLs'
-		)
+		expect(pathResult.content[0].text).toContain('file-based routing to generate your build URLs')
 		expect(pathResult.content[0].text).not.toContain('❌')
 	})
 

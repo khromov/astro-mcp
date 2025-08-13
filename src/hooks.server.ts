@@ -12,7 +12,6 @@ const headers: Handle = async ({ event, resolve }) => {
 	return response
 }
 
-
 const logger: Handle = async ({ event, resolve }) => {
 	const requestStartTime = Date.now()
 	const response = await resolve(event)
