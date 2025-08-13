@@ -1,14 +1,29 @@
 import { ContentSyncService } from '$lib/server/contentSync'
-import { DEFAULT_REPOSITORY, type PresetConfig } from '$lib/presets'
+import { DEFAULT_REPOSITORY, astroPresetsBase, generateLanguagePreset, type PresetConfig } from '$lib/presets'
 import { log, logAlways, logErrorAlways } from '$lib/log'
 import { cleanDocumentationPath } from '$lib/utils/pathUtils'
 import { CacheDbService } from '$lib/server/cacheDb'
 import { minimizeContent } from '$lib/fetchMarkdown'
 import { ContentDbService } from '$lib/server/contentDb'
 import { minimatch } from 'minimatch'
+import { LanguageService } from '$lib/server/languageService'
 
 // Maximum age of cached content in milliseconds (24 hours)
 export const MAX_CACHE_AGE_MS = 24 * 60 * 60 * 1000
+
+// Stateless helper to generate all presets
+async function getAllPresets(): Promise<Record<string, PresetConfig>> {
+	const languages = await LanguageService.getAvailableLanguages()
+	const presets: Record<string, PresetConfig> = { ...astroPresetsBase }
+	
+	// Generate language-specific presets
+	languages.forEach(({ code, name }) => {
+		const presetKey = `astro-${code}`
+		presets[presetKey] = generateLanguagePreset(astroPresetsBase['astro-distilled'], code, name)
+	})
+	
+	return presets
+}
 
 let cacheService: CacheDbService | null = null
 
@@ -35,8 +50,14 @@ function sortFilesWithinGroup(
 	})
 }
 
-export async function getPresetContent(presetKey: string, preset: PresetConfig): Promise<string | null> {
+export async function getPresetContent(presetKey: string): Promise<string | null> {
 	try {
+		const presets = await getAllPresets()
+		const preset = presets[presetKey]
+		if (!preset) {
+			log(`Preset not found: ${presetKey}`)
+			return null
+		}
 
 		// Check cache first
 		const cache = getCacheService()
@@ -107,6 +128,7 @@ export async function getPresetContent(presetKey: string, preset: PresetConfig):
 async function getPresetContentFromDb(
 	presetKey: string
 ): Promise<Array<{ path: string; content: string }> | null> {
+	const presets = await getAllPresets()
 	const preset = presets[presetKey]
 	if (!preset) {
 		return null
@@ -210,6 +232,7 @@ export async function isPresetStale(presetKey: string): Promise<boolean> {
 
 export async function presetExists(presetKey: string): Promise<boolean> {
 	try {
+		const presets = await getAllPresets()
 		const preset = presets[presetKey]
 		if (!preset) {
 			return false
@@ -231,6 +254,7 @@ export async function getPresetMetadata(presetKey: string): Promise<{
 	is_stale: boolean
 } | null> {
 	try {
+		const presets = await getAllPresets()
 		const preset = presets[presetKey]
 		if (!preset) {
 			return null
@@ -287,6 +311,7 @@ export async function clearPresetCache(presetKey: string): Promise<boolean> {
 export async function clearAllPresetCaches(): Promise<number> {
 	try {
 		const cache = getCacheService()
+		const presets = await getAllPresets()
 		const allPresetKeys = Object.keys(presets)
 		let clearedCount = 0
 

@@ -5,9 +5,10 @@ import {
 } from '$lib/fetchMarkdown'
 import { ContentDbService } from '$lib/server/contentDb'
 import type { CreateContentInput } from '$lib/types/db'
-import { presets, DEFAULT_REPOSITORY } from '$lib/presets'
+import { DEFAULT_REPOSITORY, astroPresetsBase, generateLanguagePreset, type PresetConfig } from '$lib/presets'
 import { logAlways, logErrorAlways, log } from '$lib/log'
 import { minimatch } from 'minimatch'
+import { LanguageService } from '$lib/server/languageService'
 
 function sortFilesWithinGroup(
 	files: Array<{ path: string; content: string }>
@@ -199,6 +200,16 @@ export class ContentSyncService {
 	static async getPresetContentFromDb(
 		presetKey: string
 	): Promise<Array<{ path: string; content: string }> | null> {
+		// Generate presets dynamically
+		const languages = await LanguageService.getAvailableLanguages()
+		const presets: Record<string, PresetConfig> = { ...astroPresetsBase }
+		
+		// Generate language-specific presets
+		languages.forEach(({ code, name }) => {
+			const presetKeyLang = `astro-${code}`
+			presets[presetKeyLang] = generateLanguagePreset(astroPresetsBase['astro-distilled'], code, name)
+		})
+		
 		const preset = presets[presetKey]
 		if (!preset) {
 			return null

@@ -65,23 +65,6 @@ export const astroPresetsBase: Record<string, PresetConfig> = {
 	}
 }
 
-// This will be populated dynamically with language variants
-export let astroPresets: Record<string, PresetConfig> = { ...astroPresetsBase }
-
-// Function to dynamically add language-specific presets
-export function setDynamicLanguagePresets(languages: Array<{ code: string; name: string }>) {
-	// Reset to base presets
-	astroPresets = { ...astroPresetsBase }
-
-	// Generate language-specific presets
-	languages.forEach(({ code, name }) => {
-		const presetKey = `astro-${code}`
-		astroPresets[presetKey] = generateLanguagePreset(astroPresetsBase['astro-distilled'], code, name)
-	})
-}
-
-// For backward compatibility, combine all presets
-export const getPresets = () => astroPresets
 
 export function transformAndSortPresets(presetsObject: Record<string, PresetConfig>) {
 	return Object.entries(presetsObject)
