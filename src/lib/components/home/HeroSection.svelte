@@ -3,7 +3,7 @@
 
 <header class="hero">
 	<div class="hero-content">
-		<div class="logo">astro-llm</div>
+		<div class="logo">astro-mcp</div>
 		<h1>Astro documentation for AI assistants</h1>
 		<p class="hero-description">
 			Connect your AI coding assistant directly to up-to-date Astro documentation via this <strong
@@ -29,7 +29,6 @@
 		margin: 0 0 30px 0;
 		border-radius: 0 0 20px 20px;
 	}
-
 
 	.hero-content {
 		max-width: 800px;
@@ -86,7 +85,6 @@
 			margin: 0 -16px 40px -16px;
 			padding: 60px 0 40px 0;
 		}
-
 
 		.hero-content {
 			padding: 0 16px;

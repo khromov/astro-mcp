@@ -96,7 +96,7 @@ export const handler = createMcpHandler(
 
 		server.resource(
 			'astro-doc',
-			new ResourceTemplate('astro-llm://{+slug}', {
+			new ResourceTemplate('astro-mcp://{+slug}', {
 				list: async () => {
 					const resources = []
 
@@ -104,7 +104,7 @@ export const handler = createMcpHandler(
 					for (const preset of PRESET_CONFIGS) {
 						resources.push({
 							name: `📦 ${preset.title}`,
-							uri: `astro-llm://${preset.id}`,
+							uri: `astro-mcp://${preset.id}`,
 							description: preset.description
 						})
 					}
@@ -124,7 +124,7 @@ export const handler = createMcpHandler(
 							// Use title and clean path for better display, prefix with 📄 to distinguish from presets
 							name: `📄 ${title} (${cleanPath})`,
 							// Use cleaned path with prefix to avoid conflicts with preset IDs
-							uri: `astro-llm://doc/${cleanPath}`,
+							uri: `astro-mcp://doc/${cleanPath}`,
 							// Add description from metadata if available
 							description: doc.metadata?.description as string | undefined
 						})

@@ -48,7 +48,7 @@ This is a **SvelteKit-based MCP (Model Context Protocol) server** that provides 
 
 - Core MCP server implementation using `mcp-handler` package
 - Provides two main tools: `list_sections` and `get_documentation`
-- Serves resources via `astro-llm://` protocol
+- Serves resources via `astro-mcp://` protocol
 - Supports both preset bundles and individual documents
 - Redis-backed caching with 1-hour max duration
 

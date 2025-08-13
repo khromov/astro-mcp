@@ -1,4 +1,4 @@
-## astro-llm
+## astro-mcp
 
 LLM presets and MCP for Astro. Visit the site at [astro-mcp.stanislav.garden](https://astro-mcp.stanislav.garden).
 

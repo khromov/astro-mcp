@@ -9,6 +9,10 @@
 		"astro-mcp-local": {
 			"type": "sse",
 			"url": "http://localhost:5173/mcp/sse"
+		},
+		"postgres": {
+			"command": "npx",
+			"args": ["-y", "@modelcontextprotocol/server-postgres", "postgresql://localhost:5432/db"]
 		}
 	}
 }

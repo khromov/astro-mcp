@@ -16,7 +16,7 @@
 			icon: '🔧',
 			description:
 				'The official Anthropic command-line tool. Run this command to add the MCP server:',
-			instruction: `claude mcp add --transport sse --scope project astro-llm ${sseEndpoint}`,
+			instruction: `claude mcp add --transport sse --scope project astro-mcp ${sseEndpoint}`,
 			isCommand: true
 		},
 		{
@@ -30,7 +30,7 @@
 				'Navigate to Settings > Integrations',
 				'Locate the "Integrations" section',
 				'Click "Add custom integration" at the bottom of the section',
-				'Add your integration\'s remote MCP server URL and name it "astro-llm"',
+				'Add your integration\'s remote MCP server URL and name it "astro-mcp"',
 				'Finish configuring your integration by clicking "Add"'
 			]
 		},
@@ -41,7 +41,7 @@
 			description:
 				'GitHub Copilot extension for VS Code - put this in .vscode/mcp.json inside a "servers" object.',
 			instruction: `{
-  "astro-llm": {
+  "astro-mcp": {
     "command": "npx",
     "args": ["mcp-remote", "${streamableEndpoint}"]
   }
@@ -54,7 +54,7 @@
 			icon: '🧑‍💻',
 			url: sseEndpoint,
 			description:
-				'Add this URL to your Cline MCP settings. Name the MCP astro-llm or whatever you like.'
+				'Add this URL to your Cline MCP settings. Name the MCP astro-mcp or whatever you like.'
 		},
 		{
 			id: 'others',

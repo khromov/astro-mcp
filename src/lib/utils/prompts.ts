@@ -83,8 +83,8 @@ Use these for instant access to curated documentation sets:
 - **astro-distilled**: AI-condensed Astro documentation
 
 ### Resources Access:
-- **📦 Preset Resources**: Use astro-llm://astro-full, astro-llm://astro-distilled for curated documentation sets
-- **📄 Individual Docs**: Use astro-llm://doc/[path] for specific documentation files
+- **📦 Preset Resources**: Use astro-mcp://astro-full, astro-mcp://astro-distilled for curated documentation sets
+- **📄 Individual Docs**: Use astro-mcp://doc/[path] for specific documentation files
 - Access via list_resources or direct URI for browsing and reference
 
 ### When to use list_sections + get_documentation:
