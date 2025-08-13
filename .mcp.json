@@ -12,7 +12,11 @@
 		},
 		"postgres": {
 			"command": "npx",
-			"args": ["-y", "@modelcontextprotocol/server-postgres", "postgresql://localhost:5432/db"]
+			"args": [
+				"-y",
+				"@modelcontextprotocol/server-postgres",
+				"postgresql://admin:admin@localhost:5432/db"
+			]
 		}
 	}
 }
