@@ -19,7 +19,7 @@ services:
       - '8081:8081'
   db:
     image: postgres:14-alpine
-    container_name: llmctx_db
+    container_name: astro_llm_db
     environment:
       - POSTGRES_DB=db
       - POSTGRES_USER=admin
@@ -30,7 +30,7 @@ services:
       - ./.db/data:/var/lib/postgresql/data
   adminer:
     image: michalhosna/adminer
-    container_name: llmctx_adminer
+    container_name: astro_llm_adminer
     ports:
       - '8080:8080'
     environment:
