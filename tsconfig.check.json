@@ -4,6 +4,7 @@
 		"verbatimModuleSyntax": false,
 		"isolatedModules": false,
 		"useUnknownInCatchVariables": false,
-		"skipLibCheck": true
+		"skipLibCheck": true,
+		"noImplicitAny": false
 	}
 }
